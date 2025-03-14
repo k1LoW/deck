@@ -1,4 +1,11 @@
+PKG = github.com/k1LoW/deck
+COMMIT = $$(git describe --tags --always)
+OSNAME=${shell uname -s}
+DATE = $$(date '+%Y-%m-%d_%H:%M:%S%z')
+
 export GO111MODULE=on
+
+BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT) -X $(PKG).date=$(DATE)
 
 default: test
 
@@ -6,6 +13,9 @@ ci: depsdev test
 
 test:
 	go test ./... -coverprofile=coverage.out -covermode=count
+
+build:
+	go build -ldflags="$(BUILD_LDFLAGS)" -o deck cmd/deck/main.go
 
 lint:
 	golangci-lint run ./...
