@@ -46,6 +46,11 @@ type bulletRange struct {
 	end    int
 }
 
+type Slide struct {
+	ID    string
+	Title string
+}
+
 // New creates a new Deck.
 func New(ctx context.Context, id string) (*Deck, error) {
 	d := &Deck{id: id}
@@ -88,6 +93,11 @@ func New(ctx context.Context, id string) (*Deck, error) {
 		return nil, err
 	}
 	d.driveSrv = driveSrv
+
+	if id == "" {
+		return d, nil
+	}
+
 	if err := d.refresh(); err != nil {
 		return nil, err
 	}
@@ -112,6 +122,24 @@ func New(ctx context.Context, id string) (*Deck, error) {
 	}
 
 	return d, nil
+}
+
+func (d *Deck) List() ([]*Slide, error) {
+	var slides []*Slide
+
+	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range r.Files {
+		slides = append(slides, &Slide{
+			ID:    f.Id,
+			Title: f.Name,
+		})
+	}
+
+	return slides, nil
 }
 
 func (d *Deck) ListLayouts() []string {
