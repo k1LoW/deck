@@ -24,6 +24,7 @@ prerelease:
 	git tag ${VER}
 
 prerelease_for_tagpr: depsdev
+	go mod download
 	gocredits -w .
 	git add CHANGELOG.md CREDITS go.mod go.sum
 
