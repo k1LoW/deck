@@ -1,0 +1,41 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  job-test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Run lint
+        uses: reviewdog/action-golangci-lint@v2
+        with:
+          fail_on_error: true
+          go_version_file: go.mod
+          golangci_lint_flags: --timeout=5m
+
+      - name: Run tests
+        run: make ci
+
+      - name: Run octocov
+        uses: k1LoW/octocov-action@v1

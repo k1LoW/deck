@@ -1,0 +1,616 @@
+package deck
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
+	"strings"
+	"unicode/utf8"
+
+	"github.com/k1LoW/deck/md"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
+	"google.golang.org/api/slides/v1"
+)
+
+type Deck struct {
+	id                   string
+	dataHomePath         string
+	stateHomePath        string
+	srv                  *slides.Service
+	driveSrv             *drive.Service
+	presentation         *slides.Presentation
+	defaultTitleLayout   string
+	defaultSectionLayout string
+	defaultLayout        string
+}
+
+type placeholder struct {
+	objectID string
+	x        float64
+	y        float64
+}
+
+type bulletRange struct {
+	bullet md.Bullet
+	start  int
+	end    int
+}
+
+// New creates a new Deck.
+func New(ctx context.Context, id string) (*Deck, error) {
+	d := &Deck{id: id}
+	if os.Getenv("XDG_DATA_HOME") != "" {
+		d.dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
+	} else {
+		d.dataHomePath = filepath.Join(os.Getenv("HOME"), ".local", "share", "deck")
+	}
+	if os.Getenv("XDG_STATE_HOME") != "" {
+		d.stateHomePath = filepath.Join(os.Getenv("XDG_STATE_HOME"), "deck")
+	} else {
+		d.stateHomePath = filepath.Join(os.Getenv("HOME"), ".local", "state", "deck")
+	}
+	if err := os.MkdirAll(d.dataHomePath, 0700); err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(d.stateHomePath, 0700); err != nil {
+		return nil, err
+	}
+	creds := filepath.Join(d.dataHomePath, "credentials.json")
+	b, err := os.ReadFile(creds)
+	if err != nil {
+		return nil, err
+	}
+	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
+	if err != nil {
+		return nil, err
+	}
+	client, err := d.getClient(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, err
+	}
+	d.srv = srv
+	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return nil, err
+	}
+	d.driveSrv = driveSrv
+	if err := d.refresh(); err != nil {
+		return nil, err
+	}
+
+	// set default layouts
+	for _, l := range d.presentation.Layouts {
+		layout := l.LayoutProperties.Name
+		switch {
+		case strings.HasPrefix(layout, "TITLE_AND_BODY"):
+			if d.defaultLayout == "" {
+				d.defaultLayout = l.LayoutProperties.DisplayName
+			}
+		case strings.HasPrefix(layout, "TITLE"):
+			if d.defaultTitleLayout == "" {
+				d.defaultTitleLayout = l.LayoutProperties.DisplayName
+			}
+		case strings.HasPrefix(layout, "SECTION_HEADER"):
+			if d.defaultSectionLayout == "" {
+				d.defaultSectionLayout = l.LayoutProperties.DisplayName
+			}
+		}
+	}
+
+	return d, nil
+}
+
+func (d *Deck) ListLayouts() []string {
+	var layouts []string
+	for _, l := range d.presentation.Layouts {
+		layouts = append(layouts, l.LayoutProperties.DisplayName)
+	}
+	return layouts
+}
+
+func (d *Deck) Apply(slides md.Slides) error {
+	for i, page := range slides {
+		if page.Layout == "" {
+			switch {
+			case i == 0:
+				page.Layout = d.defaultTitleLayout
+			case len(page.Bodies) == 0:
+				page.Layout = d.defaultSectionLayout
+			default:
+				page.Layout = d.defaultLayout
+			}
+		}
+		if err := d.applyPage(i, page); err != nil {
+			return err
+		}
+	}
+
+	if err := d.DeletePageAfter(len(slides) - 1); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Deck) Export(w io.Writer) error {
+	req, err := d.driveSrv.Files.Export(d.id, "application/pdf").Download()
+	if err != nil {
+		return err
+	}
+	if err := req.Write(w); err != nil {
+		log.Fatalf("Unable to write PDF file: %v", err)
+	}
+	return nil
+}
+
+func (d *Deck) applyPage(index int, page *md.Page) error {
+	layoutMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutMap[l.LayoutProperties.DisplayName] = l
+	}
+
+	layout, ok := layoutMap[page.Layout]
+	if !ok {
+		return fmt.Errorf("layout not found: %s", page.Layout)
+	}
+
+	if len(d.presentation.Slides) <= index {
+		if err := d.CreatePage(index, page); err != nil {
+			return err
+		}
+	}
+	currentSlide := d.presentation.Slides[index]
+	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
+		// create new page
+		if err := d.CreatePage(index+1, page); err != nil {
+			return err
+		}
+		if err := d.DeletePage(index); err != nil {
+			return err
+		}
+	}
+
+	var (
+		titles    []placeholder
+		subtitles []placeholder
+		bodies    []placeholder
+	)
+	currentSlide = d.presentation.Slides[index]
+	for _, element := range currentSlide.PageElements {
+		if element.Shape != nil && element.Shape.Placeholder != nil {
+			switch element.Shape.Placeholder.Type {
+			case "CENTERED_TITLE":
+				titles = append(titles, placeholder{
+					objectID: element.ObjectId,
+					x:        element.Transform.TranslateX,
+					y:        element.Transform.TranslateY,
+				})
+				if err := d.clearPlaceholder(element.ObjectId); err != nil {
+					return err
+				}
+			case "SUBTITLE":
+				subtitles = append(subtitles, placeholder{
+					objectID: element.ObjectId,
+					x:        element.Transform.TranslateX,
+					y:        element.Transform.TranslateY,
+				})
+				if err := d.clearPlaceholder(element.ObjectId); err != nil {
+					return err
+				}
+			case "BODY":
+				bodies = append(bodies, placeholder{
+					objectID: element.ObjectId,
+					x:        element.Transform.TranslateX,
+					y:        element.Transform.TranslateY,
+				})
+				if err := d.clearPlaceholder(element.ObjectId); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	// set titles
+	{
+		sort.Slice(titles, func(i, j int) bool {
+			if titles[i].y == titles[j].y {
+				return titles[i].x < titles[j].x
+			}
+			return titles[i].y < titles[j].y
+		})
+		req := &slides.BatchUpdatePresentationRequest{}
+		for i, title := range page.Titles {
+			if len(titles) <= i {
+				continue
+			}
+			req.Requests = append(req.Requests, &slides.Request{
+				InsertText: &slides.InsertTextRequest{
+					ObjectId: titles[i].objectID,
+					Text:     title,
+				},
+			})
+		}
+		if len(req.Requests) > 0 {
+			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// set subtitles
+	{
+		sort.Slice(subtitles, func(i, j int) bool {
+			if subtitles[i].y == subtitles[j].y {
+				return subtitles[i].x < subtitles[j].x
+			}
+			return subtitles[i].y < subtitles[j].y
+		})
+		req := &slides.BatchUpdatePresentationRequest{}
+		for i, subtitle := range page.Subtitles {
+			if len(subtitles) <= i {
+				continue
+			}
+			req.Requests = append(req.Requests, &slides.Request{
+				InsertText: &slides.InsertTextRequest{
+					ObjectId: subtitles[i].objectID,
+					Text:     subtitle,
+				},
+			})
+		}
+		if len(req.Requests) > 0 {
+			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+				return err
+			}
+		}
+	}
+
+	// set bodies
+	{
+		sort.Slice(bodies, func(i, j int) bool {
+			if bodies[i].y == bodies[j].y {
+				return bodies[i].x < bodies[j].x
+			}
+			return bodies[i].y < bodies[j].y
+		})
+		req := &slides.BatchUpdatePresentationRequest{}
+		bulletStartIndex := -1
+		bulletEndIndex := -1
+		currentBullet := md.BulletNone
+		bulletRanges := map[int]*bulletRange{}
+		for i, body := range page.Bodies {
+			if len(bodies) <= i {
+				continue
+			}
+			count := 0
+			text := ""
+			var styleReqs []*slides.Request
+			for _, paragraph := range body.Paragraphs {
+				plen := 0
+				if paragraph.Bullet != md.BulletNone {
+					if paragraph.Nesting > 0 {
+						text += "\t"
+						plen++
+					}
+				}
+				for _, fragment := range paragraph.Fragments {
+					flen := utf8.RuneCountInString(fragment.Value)
+					if fragment.Bold {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold: true,
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: ptrInt64(int64(count)),
+									EndIndex:   ptrInt64(int64(count + flen)),
+								},
+								Fields: "bold",
+							},
+						})
+					}
+					plen += flen
+					text += fragment.Value
+					if fragment.SoftLineBreak {
+						text += "\n"
+						plen++
+					}
+				}
+				text += "\n"
+				plen++
+				if paragraph.Bullet != md.BulletNone {
+					if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
+						bulletStartIndex = count
+						bulletEndIndex = count
+						bulletRanges[bulletStartIndex] = &bulletRange{
+							bullet: paragraph.Bullet,
+							start:  bulletStartIndex,
+							end:    bulletEndIndex,
+						}
+					}
+					bulletEndIndex += plen
+					bulletRanges[bulletStartIndex].end = bulletEndIndex
+				}
+				currentBullet = paragraph.Bullet
+				count += plen
+			}
+
+			req.Requests = append(req.Requests, &slides.Request{
+				InsertText: &slides.InsertTextRequest{
+					ObjectId: bodies[i].objectID,
+					Text:     text,
+				},
+			})
+			req.Requests = append(req.Requests, styleReqs...)
+			bulletRangeSlice := []*bulletRange{}
+			for _, r := range bulletRanges {
+				bulletRangeSlice = append(bulletRangeSlice, r)
+			}
+			// reverse sort
+			// Because the Range changes each time it is converted to a list, convert from the end to a list.
+			sort.Slice(bulletRangeSlice, func(i, j int) bool {
+				return bulletRangeSlice[i].start > bulletRangeSlice[j].start
+			})
+			for _, r := range bulletRangeSlice {
+				req.Requests = append(req.Requests, &slides.Request{
+					CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+						ObjectId:     bodies[i].objectID,
+						BulletPreset: convertBullet(r.bullet),
+						TextRange: &slides.Range{
+							Type:       "FIXED_RANGE",
+							StartIndex: ptrInt64(int64(r.start)),
+							EndIndex:   ptrInt64(int64(r.end - 1)),
+						},
+					},
+				})
+			}
+		}
+		if len(req.Requests) > 0 {
+			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (d *Deck) CreatePage(index int, page *md.Page) error {
+	layoutMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutMap[l.LayoutProperties.DisplayName] = l
+	}
+
+	layout, ok := layoutMap[page.Layout]
+	if !ok {
+		return fmt.Errorf("layout not found: %s", page.Layout)
+	}
+
+	// create new page
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{
+			{
+				CreateSlide: &slides.CreateSlideRequest{
+					InsertionIndex: int64(index),
+					SlideLayoutReference: &slides.LayoutReference{
+						LayoutId: layout.ObjectId,
+					},
+				},
+			},
+		},
+	}
+
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+		return err
+	}
+
+	if err := d.refresh(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *Deck) DeletePage(index int) error {
+	if len(d.presentation.Slides) <= index {
+		return nil
+	}
+	currentSlide := d.presentation.Slides[index]
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{
+			{
+				DeleteObject: &slides.DeleteObjectRequest{
+					ObjectId: currentSlide.ObjectId,
+				},
+			},
+		},
+	}
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+		return err
+	}
+	if err := d.refresh(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Deck) DeletePageAfter(index int) error {
+	if len(d.presentation.Slides) <= index {
+		return nil
+	}
+	req := &slides.BatchUpdatePresentationRequest{}
+	for i := index + 1; i < len(d.presentation.Slides); i++ {
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: d.presentation.Slides[i].ObjectId,
+			},
+		})
+	}
+	if len(req.Requests) == 0 {
+		return nil
+	}
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Deck) refresh() error {
+	presentation, err := d.srv.Presentations.Get(d.id).Do()
+	if err != nil {
+		return err
+	}
+	d.presentation = presentation
+	return nil
+}
+
+func (d *Deck) clearPlaceholder(placeholderID string) error {
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{
+			{
+				DeleteParagraphBullets: &slides.DeleteParagraphBulletsRequest{
+					ObjectId: placeholderID,
+					TextRange: &slides.Range{
+						Type: "ALL",
+					},
+				},
+			},
+			{
+				DeleteText: &slides.DeleteTextRequest{
+					ObjectId: placeholderID,
+					TextRange: &slides.Range{
+						Type: "ALL",
+					},
+				},
+			},
+		},
+	}
+
+	_, _ = d.srv.Presentations.BatchUpdate(d.id, req).Do()
+	return nil
+}
+
+func (d *Deck) getClient(ctx context.Context, config *oauth2.Config) (*http.Client, error) {
+	tokenPath := filepath.Join(d.stateHomePath, "token.json")
+	token, err := d.tokenFromFile(tokenPath)
+	if err != nil {
+		token, err = d.getTokenFromWeb(ctx, config)
+		if err != nil {
+			return nil, err
+		}
+		if err := d.saveToken(tokenPath, token); err != nil {
+			return nil, err
+		}
+	}
+	return config.Client(ctx, token), nil
+}
+
+func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {
+	var (
+		authCode string
+		listen   = make(chan struct{})
+		done     = make(chan struct{})
+	)
+	// run and stop local server
+	handler := http.NewServeMux()
+	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// get query params
+		authCode = r.URL.Query().Get("code")
+		w.Write([]byte("Received code. You may now close this tab."))
+		close(done)
+	})
+	srv := &http.Server{Handler: handler}
+	var listenErr error
+	go func() {
+		ln, err := net.Listen("tcp", "localhost:0")
+		if err != nil {
+			listenErr = fmt.Errorf("Listen: %w", err)
+			close(listen)
+			close(done)
+			return
+		}
+		srv.Addr = ln.Addr().String()
+		close(listen)
+		if err := srv.Serve(ln); err != nil {
+			if err != http.ErrServerClosed {
+				log.Fatalf("ListenAndServe: %v", err)
+			}
+		}
+	}()
+	<-listen
+	if listenErr != nil {
+		return nil, listenErr
+	}
+	config.RedirectURL = "http://" + srv.Addr + "/"
+
+	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	fmt.Printf("Go to the following link in your browser: \n%v\n", authURL)
+
+	<-done
+	if err := srv.Shutdown(ctx); err != nil {
+		return nil, err
+	}
+
+	token, err := config.Exchange(ctx, authCode)
+	if err != nil {
+		return nil, err
+	}
+	return token, nil
+}
+
+func (d *Deck) tokenFromFile(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	token := &oauth2.Token{}
+	if err := json.NewDecoder(f).Decode(token); err != nil {
+		return nil, err
+	}
+	return token, err
+}
+
+func (d *Deck) saveToken(path string, token *oauth2.Token) error {
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("Unable to cache oauth token: %w", err)
+	}
+	defer f.Close()
+	if err := json.NewEncoder(f).Encode(token); err != nil {
+		return fmt.Errorf("Unable to cache oauth token: %w", err)
+	}
+	return nil
+}
+
+func ptrInt64(i int64) *int64 {
+	return &i
+}
+
+func convertBullet(b md.Bullet) string {
+	switch b {
+	case md.BulletDash:
+		return "BULLET_DISC_CIRCLE_SQUARE"
+	case md.BulletNumber:
+		return "NUMBERED_DIGIT_ALPHA_ROMAN"
+	case md.BulletAlpha:
+		return "NUMBERED_DIGIT_ALPHA_ROMAN"
+	default:
+		return "UNRECOGNIZED"
+	}
+}

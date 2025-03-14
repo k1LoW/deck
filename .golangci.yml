@@ -1,0 +1,25 @@
+run:
+  timeout: 2m
+linters:
+  fast: false
+  enable:
+    - misspell
+    - gosec
+    - godot
+    - revive
+    - errorlint
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  misspell:
+    locale: US
+    ignore-words: []
+  revive:
+    rules:
+      - name: unexported-return
+        disabled: true
+      - name: exported
+        disabled: false
+issues:
+  exclude-dirs:
+    - tmpmod

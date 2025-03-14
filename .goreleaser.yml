@@ -1,0 +1,78 @@
+version: 2
+before:
+  hooks:
+    - go mod download
+    - go mod tidy
+builds:
+  -
+    id: deck-darwin
+    ldflags:
+      - -s -w -X github.com/k1LoW/deck.version={{.Version}} -X github.com/k1LoW/deck.commit={{.FullCommit}} -X github.com/k1LoW/deck.date={{.Date}} -X github.com/k1LoW/deck/version.Version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  -
+    id: deck-windows
+    ldflags:
+      - -s -w -X github.com/k1LoW/deck.version={{.Version}} -X github.com/k1LoW/deck.commit={{.FullCommit}} -X github.com/k1LoW/deck.date={{.Date}} -X github.com/k1LoW/deck/version.Version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - windows
+    goarch:
+      - amd64
+  -
+    id: deck-linux
+    ldflags:
+      - -s -w -X github.com/k1LoW/deck.version={{.Version}} -X github.com/k1LoW/deck.commit={{.FullCommit}} -X github.com/k1LoW/deck.date={{.Date}} -X github.com/k1LoW/deck/version.Version={{.Version}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+archives:
+  -
+    id: deck-archive
+    name_template: '{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}'
+    format_overrides:
+      - goos: darwin
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - CREDITS
+      - README.md
+      - CHANGELOG.md
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+nfpms:
+  -
+    id: deck-nfpms
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}-1_{{ .Arch }}"
+    builds:
+      - deck-linux
+    homepage: https://github.com/k1LoW/deck
+    maintainer: Ken'ichiro Oyama <k1lowxb@gmail.com>
+    description: deck is a tool for creating deck using Google Slides.
+    license: MIT
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+    epoch: 1
+release:
+  draft: true
+  replace_existing_draft: true
