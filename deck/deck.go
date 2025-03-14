@@ -12,8 +12,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 	"unicode/utf8"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/k1LoW/deck/md"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -79,7 +81,7 @@ func New(ctx context.Context, id string) (*Deck, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := d.getClient(ctx, config)
+	client, err := d.getHTTPClient(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -533,7 +535,7 @@ func (d *Deck) clearPlaceholder(placeholderID string) error {
 	return nil
 }
 
-func (d *Deck) getClient(ctx context.Context, config *oauth2.Config) (*http.Client, error) {
+func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.Client, error) {
 	tokenPath := filepath.Join(d.stateHomePath, "token.json")
 	token, err := d.tokenFromFile(tokenPath)
 	if err != nil {
@@ -545,7 +547,16 @@ func (d *Deck) getClient(ctx context.Context, config *oauth2.Config) (*http.Clie
 			return nil, err
 		}
 	}
-	return config.Client(ctx, token), nil
+	client := config.Client(ctx, token)
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.HTTPClient = client
+	retryClient.RetryMax = 5
+	retryClient.RetryWaitMin = 1 * time.Second
+	retryClient.RetryWaitMax = 10 * time.Second
+	retryClient.Logger = nil
+
+	return retryClient.StandardClient(), nil
 }
 
 func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {

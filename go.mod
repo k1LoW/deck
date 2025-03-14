@@ -3,6 +3,7 @@ module github.com/k1LoW/deck
 go 1.23.6
 
 require (
+	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/spf13/cobra v1.9.1
 	github.com/tenntenn/golden v0.5.4
 	github.com/yuin/goldmark v1.7.8
@@ -22,6 +23,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/mapfs v0.0.0-20210615234106-095c008854e6 // indirect
 	github.com/josharian/txtarfs v0.0.0-20210615234325-77aca6df5bca // indirect
