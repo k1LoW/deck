@@ -24,7 +24,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/k1LoW/deck/deck"
+	"github.com/k1LoW/deck"
 	"github.com/spf13/cobra"
 )
 

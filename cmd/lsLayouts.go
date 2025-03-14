@@ -22,7 +22,7 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"github.com/k1LoW/deck/deck"
+	"github.com/k1LoW/deck"
 	"github.com/spf13/cobra"
 )
 
