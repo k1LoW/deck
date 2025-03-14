@@ -24,6 +24,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/k1LoW/deck/version"
 	"github.com/spf13/cobra"
 )
 
@@ -32,6 +33,7 @@ var rootCmd = &cobra.Command{
 	Short:        "deck is a tool for creating deck using Google Slides",
 	Long:         `deck is a tool for creating deck using Google Slides.`,
 	SilenceUsage: true,
+	Version:      version.Version,
 }
 
 func Execute() {
