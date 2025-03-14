@@ -17,6 +17,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/k1LoW/deck/md"
+	"github.com/skratchdot/open-golang/open"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -597,7 +598,9 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 	config.RedirectURL = "http://" + srv.Addr + "/"
 
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	fmt.Printf("Go to the following link in your browser: \n%v\n", authURL)
+	if err := open.Start(authURL); err != nil {
+		return nil, err
+	}
 
 	<-doneCtx.Done()
 	if err := srv.Shutdown(ctx); err != nil {
