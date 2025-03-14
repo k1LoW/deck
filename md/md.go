@@ -74,7 +74,7 @@ func ParseFile(f string) (Slides, error) {
 
 // Parse
 func Parse(b []byte) (Slides, error) {
-	bpages := bytes.Split(b, []byte("\n---\n"))
+	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
 	pages := make(Slides, len(bpages))
 	for i, bpage := range bpages {
 		page, err := ParsePage(bpage)
