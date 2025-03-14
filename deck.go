@@ -562,16 +562,15 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.
 func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {
 	var (
 		authCode string
-		listen   = make(chan struct{})
-		done     = make(chan struct{})
 	)
+	listenCtx, listening := context.WithCancel(ctx)
+	doneCtx, done := context.WithCancel(ctx)
 	// run and stop local server
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// get query params
 		authCode = r.URL.Query().Get("code")
 		w.Write([]byte("Received code. You may now close this tab."))
-		close(done)
+		done()
 	})
 	srv := &http.Server{Handler: handler}
 	var listenErr error
@@ -579,19 +578,19 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 		ln, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
 			listenErr = fmt.Errorf("Listen: %w", err)
-			close(listen)
-			close(done)
+			listening()
+			done()
 			return
 		}
 		srv.Addr = ln.Addr().String()
-		close(listen)
+		listening()
 		if err := srv.Serve(ln); err != nil {
 			if err != http.ErrServerClosed {
 				log.Fatalf("ListenAndServe: %v", err)
 			}
 		}
 	}()
-	<-listen
+	<-listenCtx.Done()
 	if listenErr != nil {
 		return nil, listenErr
 	}
@@ -600,7 +599,7 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
 	fmt.Printf("Go to the following link in your browser: \n%v\n", authURL)
 
-	<-done
+	<-doneCtx.Done()
 	if err := srv.Shutdown(ctx); err != nil {
 		return nil, err
 	}
