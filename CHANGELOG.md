@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.2.0](https://github.com/k1LoW/deck/compare/v0.1.1...v0.2.0) - 2025-03-14
+### New Features 🎉
+- feat: open browser automatically for OAuth authentication by @k1LoW in https://github.com/k1LoW/deck/pull/10
+### Fix bug 🐛
+- fix: Use context instead of channel by @k1LoW in https://github.com/k1LoW/deck/pull/8
+### Other Changes
+- fix(md): handle leading horizontal line in markdown by @k1LoW in https://github.com/k1LoW/deck/pull/11
+
 ## [v0.1.1](https://github.com/k1LoW/deck/compare/v0.1.0...v0.1.1) - 2025-03-14
 
 ## [v0.1.0](https://github.com/k1LoW/deck/compare/v0.0.1...v0.1.0) - 2025-03-14
