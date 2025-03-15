@@ -1,6 +1,6 @@
 [
   {
-    "layout": "title-1",
+    "layout": "title",
     "titles": [
       "Title"
     ],
@@ -22,7 +22,7 @@
     ]
   },
   {
-    "layout": "section-1",
+    "layout": "section",
     "titles": [
       "Title"
     ],
@@ -45,13 +45,16 @@
           {
             "fragments": [
               {
-                "value": "A"
+                "value": "aA"
               }
             ],
             "bullet": "-"
           },
           {
             "fragments": [
+              {
+                "value": "b"
+              },
               {
                 "value": "B",
                 "bold": true
@@ -62,7 +65,7 @@
           {
             "fragments": [
               {
-                "value": "C"
+                "value": "cC"
               }
             ],
             "bullet": "-"
@@ -70,7 +73,7 @@
           {
             "fragments": [
               {
-                "value": "D"
+                "value": "dD"
               }
             ],
             "bullet": "-",
@@ -79,8 +82,11 @@
           {
             "fragments": [
               {
-                "value": "E",
+                "value": "e",
                 "bold": true
+              },
+              {
+                "value": "E"
               }
             ],
             "bullet": "-"
@@ -88,7 +94,7 @@
           {
             "fragments": [
               {
-                "value": "F"
+                "value": "fF"
               }
             ],
             "bullet": "-",
@@ -97,7 +103,7 @@
           {
             "fragments": [
               {
-                "value": "G"
+                "value": "gG"
               }
             ],
             "bullet": "-",
@@ -106,13 +112,21 @@
           {
             "fragments": [
               {
-                "value": "H"
+                "value": "h"
+              },
+              {
+                "value": "H",
+                "bold": true
               }
             ],
             "bullet": "1"
           },
           {
             "fragments": [
+              {
+                "value": "i",
+                "bold": true
+              },
               {
                 "value": "I"
               }
@@ -123,7 +137,11 @@
           {
             "fragments": [
               {
-                "value": "ref: https://github.com/k1LoW/deck"
+                "value": "ref: "
+              },
+              {
+                "value": "deck repo",
+                "link": "https://github.com/k1LoW/deck"
               }
             ]
           }
@@ -132,7 +150,7 @@
     ]
   },
   {
-    "layout": "title-and-body-2",
+    "layout": "title-and-body",
     "titles": [
       "1"
     ],
@@ -155,7 +173,7 @@
     ]
   },
   {
-    "layout": "title-and-body-4",
+    "layout": "title-and-body-3col",
     "titles": [
       "1"
     ],

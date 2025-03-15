@@ -429,10 +429,28 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 								},
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(int64(count)),
-									EndIndex:   ptrInt64(int64(count + flen)),
+									StartIndex: ptrInt64(int64(count + plen)),
+									EndIndex:   ptrInt64(int64(count + plen + flen)),
 								},
 								Fields: "bold",
+							},
+						})
+					}
+					if fragment.Link != "" {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Link: &slides.Link{
+										Url: fragment.Link,
+									},
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: ptrInt64(int64(count + plen)),
+									EndIndex:   ptrInt64(int64(count + plen + flen)),
+								},
+								Fields: "link",
 							},
 						})
 					}

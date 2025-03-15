@@ -4,7 +4,7 @@
 
 @k1LoW
 
-<!-- {"layout":"title-1"} -->
+<!-- {"layout":"title"} -->
 
 ---
 
@@ -18,23 +18,23 @@ comment
 
 <!-- comment -->
 
-<!-- {"layout":"section-1"} -->
+<!-- {"layout":"section"} -->
 
 ---
 
 # Title
 
-- A
-- **B**
-- C
-    - D
-- **E**
-    - F
-        - G
-1. H
-  2. I
+- aA
+- b**B**
+- cC
+    - dD
+- **e**E
+    - fF
+        - gG
+1. h**H**
+  2. **i**I
 
-ref: https://github.com/k1LoW/deck
+ref: [deck repo](https://github.com/k1LoW/deck)
 
 ---
 
@@ -46,7 +46,7 @@ ref: https://github.com/k1LoW/deck
 
 body
 
-<!-- {"layout":"title-and-body-2"} -->
+<!-- {"layout":"title-and-body"} -->
 
 ---
 
@@ -66,5 +66,5 @@ b
 
 c
 
-<!-- {"layout":"title-and-body-4"} -->
+<!-- {"layout":"title-and-body-3col"} -->
 
