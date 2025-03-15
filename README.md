@@ -46,6 +46,16 @@ The `---` at the beginning of the markdown is ignored.
 $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
+## Support markdown rules
+
+### Insertion rule
+
+`deck` inserts values according to the following rules regardless of the slide layout.
+
+- Heading1 (`#`) is inserted into the title placeholder ( `CENTERED_TITLE` ) in order.
+- Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
+- All other items are inserted into the body placeholder ( `BODY` ) in order.
+
 ## Install
 
 **homebrew tap:**
