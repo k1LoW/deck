@@ -1,3 +1,7 @@
+<p align="center">
+<img src="https://github.com/k1LoW/deck/raw/main/img/logo.svg" width="200" alt="deck">
+</p>
+
 # deck
 
 `deck` is a tool for creating deck using Google Slides.
