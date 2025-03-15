@@ -335,6 +335,17 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 			}
 		}
 	}
+	var speakerNotesID string
+	for _, element := range currentSlide.SlideProperties.NotesPage.PageElements {
+		if element.Shape != nil && element.Shape.Placeholder != nil {
+			if element.Shape.Placeholder.Type == "BODY" {
+				speakerNotesID = element.ObjectId
+			}
+		}
+	}
+	if speakerNotesID == "" {
+		return fmt.Errorf("speaker notes not found")
+	}
 
 	// set titles
 	req := &slides.BatchUpdatePresentationRequest{}
@@ -374,6 +385,14 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 			},
 		})
 	}
+
+	// set speacker notes
+	req.Requests = append(req.Requests, &slides.Request{
+		InsertText: &slides.InsertTextRequest{
+			ObjectId: speakerNotesID,
+			Text:     strings.Join(page.Comments, "\n\n"),
+		},
+	})
 
 	// set bodies
 	sort.Slice(bodies, func(i, j int) bool {
