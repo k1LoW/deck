@@ -335,185 +335,186 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 			}
 		}
 	}
+	var speakerNotesID string
+	for _, element := range currentSlide.SlideProperties.NotesPage.PageElements {
+		if element.Shape != nil && element.Shape.Placeholder != nil {
+			if element.Shape.Placeholder.Type == "BODY" {
+				speakerNotesID = element.ObjectId
+			}
+		}
+	}
+	if speakerNotesID == "" {
+		return fmt.Errorf("speaker notes not found")
+	}
 
 	// set titles
-	{
-		sort.Slice(titles, func(i, j int) bool {
-			if titles[i].y == titles[j].y {
-				return titles[i].x < titles[j].x
-			}
-			return titles[i].y < titles[j].y
+	req := &slides.BatchUpdatePresentationRequest{}
+	sort.Slice(titles, func(i, j int) bool {
+		if titles[i].y == titles[j].y {
+			return titles[i].x < titles[j].x
+		}
+		return titles[i].y < titles[j].y
+	})
+	for i, title := range page.Titles {
+		if len(titles) <= i {
+			continue
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			InsertText: &slides.InsertTextRequest{
+				ObjectId: titles[i].objectID,
+				Text:     title,
+			},
 		})
-		req := &slides.BatchUpdatePresentationRequest{}
-		for i, title := range page.Titles {
-			if len(titles) <= i {
-				continue
-			}
-			req.Requests = append(req.Requests, &slides.Request{
-				InsertText: &slides.InsertTextRequest{
-					ObjectId: titles[i].objectID,
-					Text:     title,
-				},
-			})
-		}
-		if len(req.Requests) > 0 {
-			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
-				return err
-			}
-		}
 	}
 
 	// set subtitles
-	{
-		sort.Slice(subtitles, func(i, j int) bool {
-			if subtitles[i].y == subtitles[j].y {
-				return subtitles[i].x < subtitles[j].x
-			}
-			return subtitles[i].y < subtitles[j].y
+	sort.Slice(subtitles, func(i, j int) bool {
+		if subtitles[i].y == subtitles[j].y {
+			return subtitles[i].x < subtitles[j].x
+		}
+		return subtitles[i].y < subtitles[j].y
+	})
+	for i, subtitle := range page.Subtitles {
+		if len(subtitles) <= i {
+			continue
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			InsertText: &slides.InsertTextRequest{
+				ObjectId: subtitles[i].objectID,
+				Text:     subtitle,
+			},
 		})
-		req := &slides.BatchUpdatePresentationRequest{}
-		for i, subtitle := range page.Subtitles {
-			if len(subtitles) <= i {
-				continue
-			}
-			req.Requests = append(req.Requests, &slides.Request{
-				InsertText: &slides.InsertTextRequest{
-					ObjectId: subtitles[i].objectID,
-					Text:     subtitle,
-				},
-			})
-		}
-		if len(req.Requests) > 0 {
-			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
-				return err
-			}
-		}
 	}
 
-	// set bodies
-	{
-		sort.Slice(bodies, func(i, j int) bool {
-			if bodies[i].y == bodies[j].y {
-				return bodies[i].x < bodies[j].x
-			}
-			return bodies[i].y < bodies[j].y
-		})
-		req := &slides.BatchUpdatePresentationRequest{}
-		bulletStartIndex := -1
-		bulletEndIndex := -1
-		currentBullet := md.BulletNone
-		bulletRanges := map[int]*bulletRange{}
-		for i, body := range page.Bodies {
-			if len(bodies) <= i {
-				continue
-			}
-			count := 0
-			text := ""
-			var styleReqs []*slides.Request
-			for _, paragraph := range body.Paragraphs {
-				plen := 0
-				if paragraph.Bullet != md.BulletNone {
-					if paragraph.Nesting > 0 {
-						text += "\t"
-						plen++
-					}
-				}
-				for _, fragment := range paragraph.Fragments {
-					flen := utf8.RuneCountInString(fragment.Value)
-					if fragment.Bold {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold: true,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(int64(count + plen)),
-									EndIndex:   ptrInt64(int64(count + plen + flen)),
-								},
-								Fields: "bold",
-							},
-						})
-					}
-					if fragment.Link != "" {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Link: &slides.Link{
-										Url: fragment.Link,
-									},
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(int64(count + plen)),
-									EndIndex:   ptrInt64(int64(count + plen + flen)),
-								},
-								Fields: "link",
-							},
-						})
-					}
-					plen += flen
-					text += fragment.Value
-					if fragment.SoftLineBreak {
-						text += "\n"
-						plen++
-					}
-				}
-				text += "\n"
-				plen++
-				if paragraph.Bullet != md.BulletNone {
-					if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
-						bulletStartIndex = count
-						bulletEndIndex = count
-						bulletRanges[bulletStartIndex] = &bulletRange{
-							bullet: paragraph.Bullet,
-							start:  bulletStartIndex,
-							end:    bulletEndIndex,
-						}
-					}
-					bulletEndIndex += plen
-					bulletRanges[bulletStartIndex].end = bulletEndIndex
-				}
-				currentBullet = paragraph.Bullet
-				count += plen
-			}
+	// set speacker notes
+	req.Requests = append(req.Requests, &slides.Request{
+		InsertText: &slides.InsertTextRequest{
+			ObjectId: speakerNotesID,
+			Text:     strings.Join(page.Comments, "\n\n"),
+		},
+	})
 
+	// set bodies
+	sort.Slice(bodies, func(i, j int) bool {
+		if bodies[i].y == bodies[j].y {
+			return bodies[i].x < bodies[j].x
+		}
+		return bodies[i].y < bodies[j].y
+	})
+	bulletStartIndex := -1
+	bulletEndIndex := -1
+	currentBullet := md.BulletNone
+	bulletRanges := map[int]*bulletRange{}
+	for i, body := range page.Bodies {
+		if len(bodies) <= i {
+			continue
+		}
+		count := 0
+		text := ""
+		var styleReqs []*slides.Request
+		for _, paragraph := range body.Paragraphs {
+			plen := 0
+			if paragraph.Bullet != md.BulletNone {
+				if paragraph.Nesting > 0 {
+					text += "\t"
+					plen++
+				}
+			}
+			for _, fragment := range paragraph.Fragments {
+				flen := utf8.RuneCountInString(fragment.Value)
+				if fragment.Bold {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: bodies[i].objectID,
+							Style: &slides.TextStyle{
+								Bold: true,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: ptrInt64(int64(count + plen)),
+								EndIndex:   ptrInt64(int64(count + plen + flen)),
+							},
+							Fields: "bold",
+						},
+					})
+				}
+				if fragment.Link != "" {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: bodies[i].objectID,
+							Style: &slides.TextStyle{
+								Link: &slides.Link{
+									Url: fragment.Link,
+								},
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: ptrInt64(int64(count + plen)),
+								EndIndex:   ptrInt64(int64(count + plen + flen)),
+							},
+							Fields: "link",
+						},
+					})
+				}
+				plen += flen
+				text += fragment.Value
+				if fragment.SoftLineBreak {
+					text += "\n"
+					plen++
+				}
+			}
+			text += "\n"
+			plen++
+			if paragraph.Bullet != md.BulletNone {
+				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
+					bulletStartIndex = count
+					bulletEndIndex = count
+					bulletRanges[bulletStartIndex] = &bulletRange{
+						bullet: paragraph.Bullet,
+						start:  bulletStartIndex,
+						end:    bulletEndIndex,
+					}
+				}
+				bulletEndIndex += plen
+				bulletRanges[bulletStartIndex].end = bulletEndIndex
+			}
+			currentBullet = paragraph.Bullet
+			count += plen
+		}
+
+		req.Requests = append(req.Requests, &slides.Request{
+			InsertText: &slides.InsertTextRequest{
+				ObjectId: bodies[i].objectID,
+				Text:     text,
+			},
+		})
+		req.Requests = append(req.Requests, styleReqs...)
+		bulletRangeSlice := []*bulletRange{}
+		for _, r := range bulletRanges {
+			bulletRangeSlice = append(bulletRangeSlice, r)
+		}
+		// reverse sort
+		// Because the Range changes each time it is converted to a list, convert from the end to a list.
+		sort.Slice(bulletRangeSlice, func(i, j int) bool {
+			return bulletRangeSlice[i].start > bulletRangeSlice[j].start
+		})
+		for _, r := range bulletRangeSlice {
 			req.Requests = append(req.Requests, &slides.Request{
-				InsertText: &slides.InsertTextRequest{
-					ObjectId: bodies[i].objectID,
-					Text:     text,
+				CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+					ObjectId:     bodies[i].objectID,
+					BulletPreset: convertBullet(r.bullet),
+					TextRange: &slides.Range{
+						Type:       "FIXED_RANGE",
+						StartIndex: ptrInt64(int64(r.start)),
+						EndIndex:   ptrInt64(int64(r.end - 1)),
+					},
 				},
 			})
-			req.Requests = append(req.Requests, styleReqs...)
-			bulletRangeSlice := []*bulletRange{}
-			for _, r := range bulletRanges {
-				bulletRangeSlice = append(bulletRangeSlice, r)
-			}
-			// reverse sort
-			// Because the Range changes each time it is converted to a list, convert from the end to a list.
-			sort.Slice(bulletRangeSlice, func(i, j int) bool {
-				return bulletRangeSlice[i].start > bulletRangeSlice[j].start
-			})
-			for _, r := range bulletRangeSlice {
-				req.Requests = append(req.Requests, &slides.Request{
-					CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
-						ObjectId:     bodies[i].objectID,
-						BulletPreset: convertBullet(r.bullet),
-						TextRange: &slides.Range{
-							Type:       "FIXED_RANGE",
-							StartIndex: ptrInt64(int64(r.start)),
-							EndIndex:   ptrInt64(int64(r.end - 1)),
-						},
-					},
-				})
-			}
 		}
-		if len(req.Requests) > 0 {
-			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
-				return err
-			}
+	}
+	if len(req.Requests) > 0 {
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+			return err
 		}
 	}
 
