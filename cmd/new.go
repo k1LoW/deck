@@ -22,26 +22,46 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/k1LoW/deck"
 	"github.com/spf13/cobra"
 )
 
-var lsCmd = &cobra.Command{
-	Use:   "ls",
-	Short: "list Google Slides presentations",
-	Long:  `list Google Slides presentations.`,
+var from string
+
+var newCmd = &cobra.Command{
+	Use:   "new",
+	Short: "create new presentation",
+	Long:  `create new presentation.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		slides, err := deck.List(cmd.Context())
-		if err != nil {
-			return err
+		var (
+			d   *deck.Deck
+			err error
+		)
+		if from != "" {
+			d, err = deck.CreateFrom(cmd.Context(), from)
+			if err != nil {
+				return err
+			}
+		} else {
+			d, err = deck.Create(cmd.Context())
+			if err != nil {
+				return err
+			}
 		}
-		for _, slide := range slides {
-			cmd.Printf("%s\t%s\n", slide.ID, slide.Title)
+		if title != "" {
+			if err := d.UpdateTitle(title); err != nil {
+				return err
+			}
 		}
+		fmt.Println(d.ID())
 		return nil
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(lsCmd)
+	rootCmd.AddCommand(newCmd)
+	newCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
+	newCmd.Flags().StringVarP(&from, "from", "f", "", "presentation id that uses the theme you want to use")
 }

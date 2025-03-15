@@ -56,7 +56,96 @@ type Slide struct {
 
 // New creates a new Deck.
 func New(ctx context.Context, id string) (*Deck, error) {
-	d := &Deck{id: id}
+	d, err := initialize(ctx)
+	if err != nil {
+		return nil, err
+	}
+	d.id = id
+	if err := d.refresh(); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// Create Google Slides presentation.
+func Create(ctx context.Context) (*Deck, error) {
+	d, err := initialize(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	title := "Untitled"
+	file := &drive.File{
+		Name:     title,
+		MimeType: "application/vnd.google-apps.presentation",
+	}
+	f, err := d.driveSrv.Files.Create(file).Do()
+	if err != nil {
+		return nil, err
+	}
+	d.id = f.Id
+	if err := d.refresh(); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// CreateFrom creates a new Deck from the presentation ID.
+func CreateFrom(ctx context.Context, id string) (*Deck, error) {
+	d, err := initialize(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	// copy presentation
+	file := &drive.File{
+		Name:     "Untitled",
+		MimeType: "application/vnd.google-apps.presentation",
+	}
+	f, err := d.driveSrv.Files.Copy(id, file).Do()
+	if err != nil {
+		return nil, err
+	}
+	d.id = f.Id
+	if err := d.refresh(); err != nil {
+		return nil, err
+	}
+	// delete all slides
+	if err := d.DeletePageAfter(-1); err != nil {
+		return nil, err
+	}
+	// create first slide
+	if err := d.CreatePage(0, &md.Page{
+		Layout: d.defaultTitleLayout,
+	}); err != nil {
+		return nil, err
+	}
+	return d, nil
+}
+
+// List Google Slides presentations.
+func List(ctx context.Context) ([]*Slide, error) {
+	d, err := initialize(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	var slides []*Slide
+
+	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range r.Files {
+		slides = append(slides, &Slide{
+			ID:    f.Id,
+			Title: f.Name,
+		})
+	}
+
+	return slides, nil
+}
+
+func initialize(ctx context.Context) (*Deck, error) {
+	d := &Deck{}
 	if os.Getenv("XDG_DATA_HOME") != "" {
 		d.dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
 	} else {
@@ -96,35 +185,12 @@ func New(ctx context.Context, id string) (*Deck, error) {
 		return nil, err
 	}
 	d.driveSrv = driveSrv
-
-	if id == "" {
-		return d, nil
-	}
-
-	if err := d.refresh(); err != nil {
-		return nil, err
-	}
-
-	// set default layouts
-	for _, l := range d.presentation.Layouts {
-		layout := l.LayoutProperties.Name
-		switch {
-		case strings.HasPrefix(layout, "TITLE_AND_BODY"):
-			if d.defaultLayout == "" {
-				d.defaultLayout = l.LayoutProperties.DisplayName
-			}
-		case strings.HasPrefix(layout, "TITLE"):
-			if d.defaultTitleLayout == "" {
-				d.defaultTitleLayout = l.LayoutProperties.DisplayName
-			}
-		case strings.HasPrefix(layout, "SECTION_HEADER"):
-			if d.defaultSectionLayout == "" {
-				d.defaultSectionLayout = l.LayoutProperties.DisplayName
-			}
-		}
-	}
-
 	return d, nil
+}
+
+// ID returns the ID of the presentation.
+func (d *Deck) ID() string {
+	return d.id
 }
 
 // List Google Slides presentations.
@@ -513,6 +579,9 @@ func (d *Deck) DeletePageAfter(index int) error {
 	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
 		return err
 	}
+	if err := d.refresh(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -522,6 +591,26 @@ func (d *Deck) refresh() error {
 		return err
 	}
 	d.presentation = presentation
+
+	// set default layouts
+	for _, l := range d.presentation.Layouts {
+		layout := l.LayoutProperties.Name
+		switch {
+		case strings.HasPrefix(layout, "TITLE_AND_BODY"):
+			if d.defaultLayout == "" {
+				d.defaultLayout = l.LayoutProperties.DisplayName
+			}
+		case strings.HasPrefix(layout, "TITLE"):
+			if d.defaultTitleLayout == "" {
+				d.defaultTitleLayout = l.LayoutProperties.DisplayName
+			}
+		case strings.HasPrefix(layout, "SECTION_HEADER"):
+			if d.defaultSectionLayout == "" {
+				d.defaultSectionLayout = l.LayoutProperties.DisplayName
+			}
+		}
+	}
+
 	return nil
 }
 
