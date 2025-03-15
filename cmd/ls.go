@@ -22,6 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/k1LoW/deck"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +38,7 @@ var lsCmd = &cobra.Command{
 			return err
 		}
 		for _, slide := range slides {
-			cmd.Printf("%s\t%s\n", slide.ID, slide.Title)
+			fmt.Printf("%s\t%s\n", slide.ID, slide.Title)
 		}
 		return nil
 	},

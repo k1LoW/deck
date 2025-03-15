@@ -22,6 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/k1LoW/deck"
 	"github.com/spf13/cobra"
 )
@@ -39,7 +41,7 @@ var lsLayoutsCmd = &cobra.Command{
 		}
 		layouts := d.ListLayouts()
 		for _, l := range layouts {
-			cmd.Println(l)
+			fmt.Println(l)
 		}
 		return nil
 	},
