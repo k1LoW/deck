@@ -4,7 +4,9 @@
 
 ## Usage
 
-### Get and set your OAuth client ID credentials
+### Setup
+
+#### Get and set your OAuth client ID credentials
 
 - Create (or reuse) a developer project at https://console.cloud.google.com/apis/dashboard
 - Enable `Google Slides API` and `Google Drive API` at `API & Services` page.
@@ -24,3 +26,32 @@ For example, presentation ID is `xxxxxXXXXxxxxxXXXXxxxxxxxxxx` of https://docs.g
 The slide pages are represented by dividing them with horizontal lines `---`.
 
 The `---` at the beginning of the markdown is ignored.
+
+### Apply desk written in markdown to Google Slides presentation
+
+```console
+$ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
+## Install
+
+**homebrew tap:**
+
+```console
+$ brew install k1LoW/tap/deck
+```
+
+**go install:**
+
+```console
+$ go install github.com/k1LoW/deck/cmd/deck@latest
+```
+
+**manually:**
+
+Download binary from [releases page](https://github.com/k1LoW/deck/releases)
+
+## References
+
+- [googleworkspace/md2googleslides](https://github.com/googleworkspace/md2googleslides): Generate Google Slides from markdown
+
