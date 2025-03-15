@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.4.0](https://github.com/k1LoW/deck/compare/v0.3.0...v0.4.0) - 2025-03-15
+### New Features 🎉
+- feat: support link by @k1LoW in https://github.com/k1LoW/deck/pull/16
+
 ## [v0.3.0](https://github.com/k1LoW/deck/compare/v0.2.0...v0.3.0) - 2025-03-15
 ### New Features 🎉
 - feat(apply): add `--title` flag to update presentation title by @k1LoW in https://github.com/k1LoW/deck/pull/13
