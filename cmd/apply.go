@@ -27,6 +27,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var title string
+
 var applyCmd = &cobra.Command{
 	Use:   "apply [PRESENTATION_ID] [DECK_FILE]",
 	Short: "apply desk written in markdown to Google Slides presentation",
@@ -46,10 +48,16 @@ var applyCmd = &cobra.Command{
 		if err := d.Apply(slides); err != nil {
 			return err
 		}
+		if title != "" {
+			if err := d.UpdateTitle(title); err != nil {
+				return err
+			}
+		}
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(applyCmd)
+	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 }

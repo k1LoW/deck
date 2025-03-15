@@ -127,6 +127,7 @@ func New(ctx context.Context, id string) (*Deck, error) {
 	return d, nil
 }
 
+// List Google Slides presentations.
 func (d *Deck) List() ([]*Slide, error) {
 	var slides []*Slide
 
@@ -145,6 +146,7 @@ func (d *Deck) List() ([]*Slide, error) {
 	return slides, nil
 }
 
+// ListLayouts lists layouts of the presentation.
 func (d *Deck) ListLayouts() []string {
 	var layouts []string
 	for _, l := range d.presentation.Layouts {
@@ -153,6 +155,7 @@ func (d *Deck) ListLayouts() []string {
 	return layouts
 }
 
+// Apply the markdown slides to the presentation.
 func (d *Deck) Apply(slides md.Slides) error {
 	for i, page := range slides {
 		if page.Layout == "" {
@@ -177,6 +180,18 @@ func (d *Deck) Apply(slides md.Slides) error {
 	return nil
 }
 
+// UpdateTitle updates the title of the presentation.
+func (d *Deck) UpdateTitle(title string) error {
+	file := &drive.File{
+		Name: title,
+	}
+	if _, err := d.driveSrv.Files.Update(d.id, file).Do(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Export the presentation as PDF.
 func (d *Deck) Export(w io.Writer) error {
 	req, err := d.driveSrv.Files.Export(d.id, "application/pdf").Download()
 	if err != nil {
