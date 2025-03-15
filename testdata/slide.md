@@ -28,7 +28,7 @@ comment
 - b**B**
 - cC
     - dD
-- **e**E
+- *e*E
     - fF
         - gG
 1. h**H**

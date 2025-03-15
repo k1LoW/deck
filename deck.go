@@ -422,12 +422,13 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 			}
 			for _, fragment := range paragraph.Fragments {
 				flen := utf8.RuneCountInString(fragment.Value)
-				if fragment.Bold {
+				if fragment.Bold || fragment.Italic {
 					styleReqs = append(styleReqs, &slides.Request{
 						UpdateTextStyle: &slides.UpdateTextStyleRequest{
 							ObjectId: bodies[i].objectID,
 							Style: &slides.TextStyle{
-								Bold: true,
+								Bold:   fragment.Bold,
+								Italic: fragment.Italic,
 							},
 							TextRange: &slides.Range{
 								Type:       "FIXED_RANGE",

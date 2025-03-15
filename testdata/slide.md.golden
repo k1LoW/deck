@@ -83,7 +83,7 @@
             "fragments": [
               {
                 "value": "e",
-                "bold": true
+                "italic": true
               },
               {
                 "value": "E"
