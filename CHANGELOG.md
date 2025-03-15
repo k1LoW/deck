@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.6.1](https://github.com/k1LoW/deck/compare/v0.6.0...v0.6.1) - 2025-03-15
+### Fix bug 🐛
+- fix(deck): correct text style update logic by @k1LoW in https://github.com/k1LoW/deck/pull/24
+
 ## [v0.6.0](https://github.com/k1LoW/deck/compare/v0.5.0...v0.6.0) - 2025-03-15
 ### New Features 🎉
 - feat: add support for italic text by @k1LoW in https://github.com/k1LoW/deck/pull/22
