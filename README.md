@@ -17,9 +17,22 @@
 
 ### Get presentation ID
 
+#### When using an existing presentation
+
 Get the presentation ID you want to operate. You can get a list with `deck ls`.
 
 For example, presentation ID is `xxxxxXXXXxxxxxXXXXxxxxxxxxxx` of https://docs.google.com/presentation/d/xxxxxXXXXxxxxxXXXXxxxxxxxxxx/edit .
+
+#### When creating a new presentation
+
+You can create a new presentation with the deck new command and obtain the presentation ID.
+
+If you want to apply a theme, specify the presentation ID of a presentation that is already using that theme with the `--from` option.
+
+```console
+$ deck new --from yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
+xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+```
 
 ### Write desk in markdown
 
