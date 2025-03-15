@@ -98,6 +98,26 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Ordered list ( `1.` `1)` )
 - Link ( `[Link](https://example.com)`
 
+### Comment
+
+The comments `<!--` `-->` are used as a speaker notes or page config.
+
+## Page config
+
+If the comment `<!--` `-->` can be JSON-encoded, it will be processed as page config.
+
+```markdown
+<!-- {"layout": "title-and-body"} -->
+```
+
+### `layout`
+
+It is possible to specify the page layout.
+
+The layout name (e.g. `title-and-body`) is specified.
+
+![img](img/layout_name.png)
+
 ## Install
 
 **homebrew tap:**
