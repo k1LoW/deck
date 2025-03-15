@@ -16,7 +16,7 @@
 - Enable `Google Slides API` and `Google Drive API` at [`API & Services` page](https://console.cloud.google.com/apis/dashboard).
 - Go to `Credentials` page and click `+ CREATE CREDENTIALS` at the top.
 - Create `OAuth client ID` type of credentials.
-- Choose type `Desktop app"`.
+- Choose type `Desktop app`.
 - Download credentials file to `~/.local/share/deck/credentials.json` ( or `${XDG_DATA_HOME}/deck/credentials.json` ).
 
 ### Get presentation ID
