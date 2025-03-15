@@ -92,7 +92,8 @@ The system continues to operate despite an arbitrary number of messages being dr
 
 ### Support syntax in body
 
-- Bold ( `**boled**` )
+- Bold ( `**bold**` )
+- Italic ( `*italic*` `__italic__` )
 - List ( `-` `*` )
 - Ordered list ( `1.` `1)` )
 - Link ( `[Link](https://example.com)`
