@@ -123,7 +123,11 @@
           {
             "fragments": [
               {
-                "value": "ref: https://github.com/k1LoW/deck"
+                "value": "ref: "
+              },
+              {
+                "value": "deck repo",
+                "link": "https://github.com/k1LoW/deck"
               }
             ]
           }

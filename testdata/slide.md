@@ -34,7 +34,7 @@ comment
 1. H
   2. I
 
-ref: https://github.com/k1LoW/deck
+ref: [deck repo](https://github.com/k1LoW/deck)
 
 ---
 
