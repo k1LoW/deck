@@ -118,6 +118,19 @@ The layout name (e.g. `title-and-body`) is specified.
 
 ![img](img/layout_name.png)
 
+With `deck ls-layouts` it is possible to obtain a list of the layout names for a specific presentation.
+
+```console
+$ deck ls-layouts xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+title
+section
+section-dark
+title-and-body
+title-and-body-half
+title-and-body-2col
+title-and-body-3col
+```
+
 ## Install
 
 **homebrew tap:**
