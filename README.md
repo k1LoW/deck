@@ -60,6 +60,36 @@ $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 - Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
 
+It inserts them into the placeholders in the order they appear in the markdown document, from the top of the slide (or from the left if they are the same height).
+
+#### Input markdown document
+
+```markdown
+# CAP theorem
+
+## In Database theory
+
+## Consistency
+
+Every read receives the most recent write or an error.
+
+## Availability
+
+Every request received by a non-failing node in the system must result in a response.
+
+## Partition tolerance
+
+The system continues to operate despite an arbitrary number of messages being dropped (or delayed) by the network between nodes.
+```
+
+#### Layout and placeholders
+
+![img](img/layout.png)
+
+#### Result of applying
+
+![img](img/result.png)
+
 ### Support syntax in body
 
 - Bold ( `**boled**` )
