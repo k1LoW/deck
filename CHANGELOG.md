@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.4.1](https://github.com/k1LoW/deck/compare/v0.4.0...v0.4.1) - 2025-03-15
+### Other Changes
+- fix: print to STDOUT by @k1LoW in https://github.com/k1LoW/deck/pull/18
+
 ## [v0.4.0](https://github.com/k1LoW/deck/compare/v0.3.0...v0.4.0) - 2025-03-15
 ### New Features 🎉
 - feat: support link by @k1LoW in https://github.com/k1LoW/deck/pull/16
