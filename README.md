@@ -56,6 +56,13 @@ $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 - Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
 
+### Support syntax in body
+
+- Bold ( `**boled**` )
+- List ( `-` `*` )
+- Ordered list ( `1.` `1)` )
+- Link ( `[Link](https://example.com)`
+
 ## Install
 
 **homebrew tap:**
