@@ -38,6 +38,7 @@ type Paragraph struct {
 type Fragment struct {
 	Value         string `json:"value"`
 	Bold          bool   `json:"bold,omitempty"`
+	Italic        bool   `json:"italic,omitempty"`
 	Link          string `json:"link,omitempty"`
 	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
 }
@@ -194,7 +195,8 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 			}
 			frags = append(frags, &Fragment{
 				Value:         children[0].Value,
-				Bold:          true,
+				Bold:          (n.Level == 2),
+				Italic:        (n.Level == 1),
 				SoftLineBreak: children[0].SoftLineBreak,
 			})
 		case *ast.Link:
