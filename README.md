@@ -6,6 +6,13 @@
 
 `deck` is a tool for creating deck using Google Slides.
 
+## Key concept
+
+- **Continuous deck building**
+    - Generate and modify deck iteratively.
+- **Separate content and design**
+    - Markdown for content, Google Slides for design.
+
 ## Usage
 
 ### Setup
