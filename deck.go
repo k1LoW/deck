@@ -692,9 +692,9 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.
 
 	retryClient := retryablehttp.NewClient()
 	retryClient.HTTPClient = client
-	retryClient.RetryMax = 5
+	retryClient.RetryMax = 10
 	retryClient.RetryWaitMin = 1 * time.Second
-	retryClient.RetryWaitMax = 10 * time.Second
+	retryClient.RetryWaitMax = 30 * time.Second
 	retryClient.Logger = nil
 
 	return retryClient.StandardClient(), nil
