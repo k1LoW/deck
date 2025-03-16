@@ -10,7 +10,10 @@ import (
 	"github.com/mattn/go-colorable"
 )
 
-var yellow = color.New(color.FgYellow, color.Bold).SprintFunc()
+var (
+	yellow = color.New(color.FgYellow, color.Bold).SprintFunc()
+	cyan   = color.New(color.FgCyan).SprintFunc()
+)
 
 func New(h slog.Handler) slog.Handler {
 	return &dotHandler{
@@ -29,10 +32,14 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
-	if !strings.Contains(r.Message, "applied") {
+	if strings.Contains(r.Message, "applied") {
+		h.stdout.Write([]byte(yellow(".")))
 		return nil
 	}
-	h.stdout.Write([]byte(yellow(".")))
+	if strings.Contains(r.Message, "freeze") {
+		h.stdout.Write([]byte(cyan("*")))
+		return nil
+	}
 	return nil
 }
 

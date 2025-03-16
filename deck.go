@@ -278,8 +278,7 @@ func (d *Deck) SetLogger(logger *slog.Logger) {
 }
 
 func (d *Deck) applyPage(index int, page *md.Page) error {
-	d.logger.Info("appling page", slog.Int("index", 0))
-	defer d.logger.Info("applied page", slog.Int("index", 0))
+	d.logger.Info("appling page", slog.Int("index", index))
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
@@ -294,6 +293,10 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		if err := d.CreatePage(index, page); err != nil {
 			return err
 		}
+	}
+	if page.Freeze {
+		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
+		return nil
 	}
 	currentSlide := d.presentation.Slides[index]
 	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
@@ -535,6 +538,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		}
 	}
 
+	d.logger.Info("applied page", slog.Int("index", index))
 	return nil
 }
 
