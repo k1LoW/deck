@@ -1,0 +1,27 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Hello\nWorld"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Hello"
+              },
+              {
+                "value": "\n"
+              },
+              {
+                "value": "World"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
