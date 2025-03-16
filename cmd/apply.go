@@ -22,7 +22,12 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
+	"log/slog"
+	"os"
+
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/handler/dot"
 	"github.com/k1LoW/deck/md"
 	"github.com/spf13/cobra"
 )
@@ -45,9 +50,15 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		logger := slog.New(
+			dot.New(slog.NewTextHandler(os.Stdout, nil)),
+		)
+		d.SetLogger(logger)
+
 		if err := d.Apply(slides); err != nil {
 			return err
 		}
+		fmt.Println()
 		if title != "" {
 			if err := d.UpdateTitle(title); err != nil {
 				return err

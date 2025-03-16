@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -35,6 +36,7 @@ type Deck struct {
 	defaultTitleLayout   string
 	defaultSectionLayout string
 	defaultLayout        string
+	logger               *slog.Logger
 }
 
 type placeholder struct {
@@ -145,7 +147,9 @@ func List(ctx context.Context) ([]*Slide, error) {
 }
 
 func initialize(ctx context.Context) (*Deck, error) {
-	d := &Deck{}
+	d := &Deck{
+		logger: slog.New(slog.NewJSONHandler(io.Discard, nil)),
+	}
 	if os.Getenv("XDG_DATA_HOME") != "" {
 		d.dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
 	} else {
@@ -269,7 +273,13 @@ func (d *Deck) Export(w io.Writer) error {
 	return nil
 }
 
+func (d *Deck) SetLogger(logger *slog.Logger) {
+	d.logger = logger
+}
+
 func (d *Deck) applyPage(index int, page *md.Page) error {
+	d.logger.Info("appling page", slog.Int("index", 0))
+	defer d.logger.Info("applied page", slog.Int("index", 0))
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
