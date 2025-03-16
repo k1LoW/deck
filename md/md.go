@@ -105,13 +105,13 @@ func ParsePage(b []byte) (*Page, error) {
 			case *ast.Heading:
 				switch v.Level {
 				case 1:
-					page.Titles = append(page.Titles, string(v.Lines().Value(b)))
+					page.Titles = append(page.Titles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &Body{}
 						page.Bodies = append(page.Bodies, currentBody)
 					}
 				case 2:
-					page.Subtitles = append(page.Subtitles, string(v.Lines().Value(b)))
+					page.Subtitles = append(page.Subtitles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &Body{}
 						page.Bodies = append(page.Bodies, currentBody)
@@ -120,7 +120,7 @@ func ParsePage(b []byte) (*Page, error) {
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
 						Fragments: []*Fragment{
 							{
-								Value:         string(v.Lines().Value(b)),
+								Value:         convert(v.Lines().Value(b)),
 								Bold:          false,
 								SoftLineBreak: false,
 							},
@@ -156,7 +156,7 @@ func ParsePage(b []byte) (*Page, error) {
 				})
 			case *ast.HTMLBlock:
 				if v.HTMLBlockType == ast.HTMLBlockType2 {
-					block := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(string(v.Lines().Value(b))), "<!--"), "-->"))
+					block := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(convert(v.Lines().Value(b))), "<!--"), "-->"))
 					config := &Config{}
 					if err := json.Unmarshal([]byte(block), config); err == nil {
 						page.Layout = config.Layout
@@ -168,7 +168,7 @@ func ParsePage(b []byte) (*Page, error) {
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
 						Fragments: []*Fragment{
 							{
-								Value:         string(v.Lines().Value(b)),
+								Value:         convert(v.Lines().Value(b)),
 								Bold:          false,
 								SoftLineBreak: false,
 							},
@@ -221,23 +221,29 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 			}
 			frags = append(frags, &Fragment{
 				Value:         children[0].Value,
-				Link:          string(n.Destination),
+				Link:          convert(n.Destination),
 				Bold:          children[0].Bold,
 				SoftLineBreak: children[0].SoftLineBreak,
 			})
 		case *ast.Text:
 			frags = append(frags, &Fragment{
-				Value:         string(n.Segment.Value(b)),
+				Value:         convert(n.Segment.Value(b)),
 				Bold:          false,
 				SoftLineBreak: n.SoftLineBreak(),
 			})
 		default:
 			frags = append(frags, &Fragment{
-				Value:         string(n.Text(b)),
+				Value:         convert(n.Text(b)),
 				Bold:          false,
 				SoftLineBreak: false,
 			})
 		}
 	}
 	return frags, nil
+}
+
+var convertRep = strings.NewReplacer("<br>", "\n", "<br/>", "\n", "<br />", "\n")
+
+func convert(in []byte) string {
+	return convertRep.Replace(string(in))
 }
