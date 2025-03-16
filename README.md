@@ -112,11 +112,15 @@ If the comment `<!--` `-->` can be JSON-encoded, it will be processed as page co
 <!-- {"layout": "title-and-body"} -->
 ```
 
-### `layout`
+### `"layout":`
 
 It is possible to specify the page layout.
 
 The layout name (e.g. `title-and-body`) is specified.
+
+```markdown
+<!-- {"layout": "title-and-body"} -->
+```
 
 ![img](img/layout_name.png)
 
@@ -134,7 +138,7 @@ The layout name (e.g. `title-and-body`) is specified.
 > title-and-body-3col
 > ```
 
-### `freeze`
+### `"freeze":`
 
 It is possible to skip the operation of the target page.
 
