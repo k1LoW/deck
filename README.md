@@ -134,6 +134,17 @@ The layout name (e.g. `title-and-body`) is specified.
 > title-and-body-3col
 > ```
 
+### `freeze`
+
+It is possible to skip the operation of the target page.
+
+> [!TIP]
+> If you set it to a page that has been completed with layout and design, the page will not be modified unnecessarily by deck.
+
+```markdown
+<!-- {"freeze": true} -->
+```
+
 ## Install
 
 **homebrew tap:**

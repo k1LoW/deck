@@ -1,0 +1,7 @@
+# Freeze
+
+<!-- {"freeze": true} -->
+
+---
+
+# Hello

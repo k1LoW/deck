@@ -14,11 +14,13 @@ import (
 type Slides []*Page
 
 type Config struct {
-	Layout string `json:"layout"`
+	Layout string `json:"layout,omitempty"` // layout name
+	Freeze bool   `json:"freeze,omitempty"` // freeze the page
 }
 
 type Page struct {
 	Layout    string   `json:"layout"`
+	Freeze    bool     `json:"freeze,omitempty"`
 	Titles    []string `json:"titles,omitempty"`
 	Subtitles []string `json:"subtitles,omitempty"`
 	Bodies    []*Body  `json:"bodies,omitempty"`
@@ -158,6 +160,7 @@ func ParsePage(b []byte) (*Page, error) {
 					config := &Config{}
 					if err := json.Unmarshal([]byte(block), config); err == nil {
 						page.Layout = config.Layout
+						page.Freeze = config.Freeze
 						return ast.WalkContinue, nil
 					}
 					page.Comments = append(page.Comments, block)

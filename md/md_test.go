@@ -13,6 +13,8 @@ func TestParse(t *testing.T) {
 		in string
 	}{
 		{"../testdata/slide.md"},
+		{"../testdata/cap.md"},
+		{"../testdata/freeze.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {

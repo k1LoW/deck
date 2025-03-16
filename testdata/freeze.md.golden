@@ -1,0 +1,21 @@
+[
+  {
+    "layout": "",
+    "freeze": true,
+    "titles": [
+      "Freeze"
+    ],
+    "bodies": [
+      {}
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Hello"
+    ],
+    "bodies": [
+      {}
+    ]
+  }
+]
