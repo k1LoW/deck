@@ -184,6 +184,18 @@ func ParsePage(b []byte) (*Page, error) {
 		return nil, err
 	}
 
+	// remove empty bodies
+	notEmpty := false
+	for _, body := range page.Bodies {
+		if len(body.Paragraphs) > 0 {
+			notEmpty = true
+			break
+		}
+	}
+	if !notEmpty {
+		page.Bodies = nil
+	}
+
 	return page, nil
 }
 
