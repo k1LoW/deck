@@ -42,7 +42,8 @@ xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 
 The slide pages are represented by dividing them with horizontal lines `---`.
 
-The `---` at the beginning of the markdown is ignored.
+> [!NOTE]
+> The `---` at the beginning of the markdown is ignored.
 
 ### Apply desk written in markdown to Google Slides presentation
 
@@ -60,7 +61,8 @@ $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 - Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
 
-It inserts them into the placeholders in the order they appear in the markdown document, from the top of the slide (or from the left if they are the same height).
+> [!NOTE]
+> It inserts them into the placeholders in the order they appear in the markdown document, from the top of the slide (or from the left if they are the same height).
 
 #### Input markdown document
 
@@ -118,18 +120,19 @@ The layout name (e.g. `title-and-body`) is specified.
 
 ![img](img/layout_name.png)
 
-With `deck ls-layouts` it is possible to obtain a list of the layout names for a specific presentation.
-
-```console
-$ deck ls-layouts xxxxxXXXXxxxxxXXXXxxxxxxxxxx
-title
-section
-section-dark
-title-and-body
-title-and-body-half
-title-and-body-2col
-title-and-body-3col
-```
+> [!TIP]
+> With `deck ls-layouts` it is possible to obtain a list of the layout names for a specific presentation.
+>
+> ```console
+> $ deck ls-layouts xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+> title
+> section
+> section-dark
+> title-and-body
+> title-and-body-half
+> title-and-body-2col
+> title-and-body-3col
+> ```
 
 ## Install
 
