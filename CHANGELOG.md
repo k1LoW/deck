@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.8.1](https://github.com/k1LoW/deck/compare/v0.8.0...v0.8.1) - 2025-03-16
+### Fix bug 🐛
+- fix(md): remove empty bodies from parsed pages by @k1LoW in https://github.com/k1LoW/deck/pull/32
+
 ## [v0.8.0](https://github.com/k1LoW/deck/compare/v0.7.1...v0.8.0) - 2025-03-16
 ### New Features 🎉
 - feat: add freeze functionality to skip page modifications by @k1LoW in https://github.com/k1LoW/deck/pull/29
