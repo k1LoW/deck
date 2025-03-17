@@ -106,6 +106,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - List ( `-` `*` )
 - Ordered list ( `1.` `1)` )
 - Link ( `[Link](https://example.com)`
+- `<br>` (for newline)
 
 ### Comment
 
