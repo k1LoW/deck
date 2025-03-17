@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.9.0](https://github.com/k1LoW/deck/compare/v0.8.1...v0.9.0) - 2025-03-17
+### New Features 🎉
+- feat(md): add support for converting `<br>` tags to newlines by @k1LoW in https://github.com/k1LoW/deck/pull/33
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/35
+
 ## [v0.8.1](https://github.com/k1LoW/deck/compare/v0.8.0...v0.8.1) - 2025-03-16
 ### Fix bug 🐛
 - fix(md): remove empty bodies from parsed pages by @k1LoW in https://github.com/k1LoW/deck/pull/32
