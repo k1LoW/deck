@@ -1,11 +1,12 @@
 module github.com/k1LoW/deck
 
 go 1.23.6
+toolchain go1.24.1
 
 require (
-	github.com/fatih/color v1.16.0
+	github.com/fatih/color v1.18.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
-	github.com/mattn/go-colorable v0.1.13
+	github.com/mattn/go-colorable v0.1.14
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 	github.com/spf13/cobra v1.9.1
 	github.com/tenntenn/golden v0.5.4
