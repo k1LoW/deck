@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.9.1](https://github.com/k1LoW/deck/compare/v0.9.0...v0.9.1) - 2025-03-18
+### Fix bug 🐛
+- fix(deck): reset bullet indices per body by @k1LoW in https://github.com/k1LoW/deck/pull/37
+
 ## [v0.9.0](https://github.com/k1LoW/deck/compare/v0.8.1...v0.9.0) - 2025-03-17
 ### New Features 🎉
 - feat(md): add support for converting `<br>` tags to newlines by @k1LoW in https://github.com/k1LoW/deck/pull/33
