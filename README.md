@@ -69,7 +69,7 @@ $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
 
 > [!NOTE]
-> It inserts them into the placeholders in the order they appear in the markdown document, from the top of the slide (or from the left if they are the same height).
+> They are inserted in the order they appear in the markdown document, **from the placeholder at the top of the slide** (or from the placeholder on the left if the slides are the same height).
 
 #### Input markdown document
 
