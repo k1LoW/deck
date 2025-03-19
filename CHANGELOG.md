@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.10.1](https://github.com/k1LoW/deck/compare/v0.10.0...v0.10.1) - 2025-03-19
+### Other Changes
+- fix(md): trim whitespace and newline characters from HTML Block fragment values by @k1LoW in https://github.com/k1LoW/deck/pull/41
+
 ## [v0.10.0](https://github.com/k1LoW/deck/compare/v0.9.1...v0.10.0) - 2025-03-19
 ### New Features 🎉
 - feat(deck): change sig and add start/end option by @k1LoW in https://github.com/k1LoW/deck/pull/38
