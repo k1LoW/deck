@@ -32,7 +32,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var title string
+var (
+	title      string
+	start, end int
+)
 
 var applyCmd = &cobra.Command{
 	Use:   "apply [PRESENTATION_ID] [DECK_FILE]",
@@ -46,18 +49,23 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		d, err := deck.New(cmd.Context(), id)
-		if err != nil {
-			return err
-		}
 		logger := slog.New(
 			dot.New(slog.NewTextHandler(os.Stdout, nil)),
 		)
-		d.SetLogger(logger)
-
+		opts := []deck.Option{
+			deck.WithPresentationID(id),
+			deck.WithStart(start),
+			deck.WithEnd(end),
+			deck.WithLogger(logger),
+		}
+		d, err := deck.New(cmd.Context(), opts...)
+		if err != nil {
+			return err
+		}
 		if err := d.Apply(slides); err != nil {
 			return err
 		}
+
 		fmt.Println()
 		if title != "" {
 			if err := d.UpdateTitle(title); err != nil {
@@ -71,4 +79,6 @@ var applyCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(applyCmd)
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
+	applyCmd.Flags().IntVarP(&start, "start", "s", 0, "start page of the slide to apply")
+	applyCmd.Flags().IntVarP(&end, "end", "e", 0, "end page of the slide to apply")
 }

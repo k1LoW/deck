@@ -37,6 +37,37 @@ type Deck struct {
 	defaultSectionLayout string
 	defaultLayout        string
 	logger               *slog.Logger
+	start, end           int
+}
+
+type Option func(*Deck) error
+
+func WithPresentationID(id string) Option {
+	return func(d *Deck) error {
+		d.id = id
+		return nil
+	}
+}
+
+func WithLogger(logger *slog.Logger) Option {
+	return func(d *Deck) error {
+		d.logger = logger
+		return nil
+	}
+}
+
+func WithStart(start int) Option {
+	return func(d *Deck) error {
+		d.start = start
+		return nil
+	}
+}
+
+func WithEnd(end int) Option {
+	return func(d *Deck) error {
+		d.end = end
+		return nil
+	}
 }
 
 type placeholder struct {
@@ -57,12 +88,16 @@ type Slide struct {
 }
 
 // New creates a new Deck.
-func New(ctx context.Context, id string) (*Deck, error) {
+func New(ctx context.Context, opts ...Option) (*Deck, error) {
 	d, err := initialize(ctx)
 	if err != nil {
 		return nil, err
 	}
-	d.id = id
+	for _, opt := range opts {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
+	}
 	if err := d.refresh(); err != nil {
 		return nil, err
 	}
@@ -271,10 +306,6 @@ func (d *Deck) Export(w io.Writer) error {
 		log.Fatalf("Unable to write PDF file: %v", err)
 	}
 	return nil
-}
-
-func (d *Deck) SetLogger(logger *slog.Logger) {
-	d.logger = logger
 }
 
 func (d *Deck) applyPage(index int, page *md.Page) error {
