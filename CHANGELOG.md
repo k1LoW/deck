@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.10.0](https://github.com/k1LoW/deck/compare/v0.9.1...v0.10.0) - 2025-03-19
+### New Features 🎉
+- feat(deck): change sig and add start/end option by @k1LoW in https://github.com/k1LoW/deck/pull/38
+### Other Changes
+- fix: add `--page` option instead of `--start/end` by @k1LoW in https://github.com/k1LoW/deck/pull/40
+
 ## [v0.9.1](https://github.com/k1LoW/deck/compare/v0.9.0...v0.9.1) - 2025-03-18
 ### Fix bug 🐛
 - fix(deck): reset bullet indices per body by @k1LoW in https://github.com/k1LoW/deck/pull/37
