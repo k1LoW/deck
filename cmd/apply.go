@@ -25,6 +25,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/handler/dot"
@@ -33,8 +35,8 @@ import (
 )
 
 var (
-	title      string
-	start, end int
+	title string
+	page  string
 )
 
 var applyCmd = &cobra.Command{
@@ -54,15 +56,17 @@ var applyCmd = &cobra.Command{
 		)
 		opts := []deck.Option{
 			deck.WithPresentationID(id),
-			deck.WithStart(start),
-			deck.WithEnd(end),
 			deck.WithLogger(logger),
 		}
 		d, err := deck.New(cmd.Context(), opts...)
 		if err != nil {
 			return err
 		}
-		if err := d.Apply(slides); err != nil {
+		pages, err := pageToPages(page, len(slides))
+		if err != nil {
+			return err
+		}
+		if err := d.ApplyPages(slides, pages); err != nil {
 			return err
 		}
 
@@ -79,6 +83,83 @@ var applyCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(applyCmd)
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
-	applyCmd.Flags().IntVarP(&start, "start", "s", 0, "start page of the slide to apply")
-	applyCmd.Flags().IntVarP(&end, "end", "e", 0, "end page of the slide to apply")
+	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
+}
+
+func pageToPages(page string, total int) ([]int, error) {
+	if page == "" {
+		// If no page is specified, return all pages
+		pages := make([]int, total)
+		for i := 0; i < total; i++ {
+			pages[i] = i + 1
+		}
+		return pages, nil
+	}
+
+	var result []int
+	// Split by comma to handle comma-separated list
+	parts := strings.Split(page, ",")
+
+	for _, part := range parts {
+		// Check if it's a range (contains "-")
+		if strings.Contains(part, "-") {
+			rangeParts := strings.Split(part, "-")
+
+			if len(rangeParts) != 2 {
+				return nil, fmt.Errorf("invalid range format: %s", part)
+			}
+
+			start, end := rangeParts[0], rangeParts[1]
+
+			var startPage, endPage int
+			var err error
+
+			if start == "" {
+				// Open start range: "-5"
+				startPage = 1
+			} else {
+				// Parse start page
+				startPage, err = strconv.Atoi(start)
+				if err != nil {
+					return nil, fmt.Errorf("invalid page number: %s", start)
+				}
+			}
+
+			if end == "" {
+				// Open end range: "3-"
+				endPage = total
+			} else {
+				// Parse end page
+				endPage, err = strconv.Atoi(end)
+				if err != nil {
+					return nil, fmt.Errorf("invalid page number: %s", end)
+				}
+			}
+
+			// Validate page range
+			if startPage < 1 || startPage > total || endPage < 1 || endPage > total || startPage > endPage {
+				return nil, fmt.Errorf("invalid page range: %s (total pages: %d)", part, total)
+			}
+
+			// Add all pages in the range
+			for i := startPage; i <= endPage; i++ {
+				result = append(result, i)
+			}
+		} else {
+			// Single page number
+			pageNum, err := strconv.Atoi(part)
+			if err != nil {
+				return nil, fmt.Errorf("invalid page number: %s", part)
+			}
+
+			// Validate page number
+			if pageNum < 1 || pageNum > total {
+				return nil, fmt.Errorf("page number out of range: %d (total pages: %d)", pageNum, total)
+			}
+
+			result = append(result, pageNum)
+		}
+	}
+
+	return result, nil
 }

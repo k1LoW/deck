@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -37,7 +38,6 @@ type Deck struct {
 	defaultSectionLayout string
 	defaultLayout        string
 	logger               *slog.Logger
-	start, end           int // 1-based
 }
 
 type Option func(*Deck) error
@@ -52,20 +52,6 @@ func WithPresentationID(id string) Option {
 func WithLogger(logger *slog.Logger) Option {
 	return func(d *Deck) error {
 		d.logger = logger
-		return nil
-	}
-}
-
-func WithStart(start int) Option {
-	return func(d *Deck) error {
-		d.start = start
-		return nil
-	}
-}
-
-func WithEnd(end int) Option {
-	return func(d *Deck) error {
-		d.end = end
 		return nil
 	}
 }
@@ -263,11 +249,33 @@ func (d *Deck) ListLayouts() []string {
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(slides md.Slides) error {
 	for i, page := range slides {
-		if d.start > 0 && i < d.start {
-			continue
+		if page.Layout == "" {
+			switch {
+			case i == 0:
+				page.Layout = d.defaultTitleLayout
+			case len(page.Bodies) == 0:
+				page.Layout = d.defaultSectionLayout
+			default:
+				page.Layout = d.defaultLayout
+			}
 		}
-		if d.end > 0 && i >= d.end {
-			break
+		if err := d.applyPage(i, page); err != nil {
+			return err
+		}
+	}
+
+	if err := d.DeletePageAfter(len(slides) - 1); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ApplyPages applies the markdown slides to the presentation with the specified pages.
+func (d *Deck) ApplyPages(slides md.Slides, pages []int) error {
+	for i, page := range slides {
+		if !slices.Contains(pages, i+1) {
+			continue
 		}
 		if page.Layout == "" {
 			switch {
