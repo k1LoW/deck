@@ -704,6 +704,19 @@ func (d *Deck) clearPlaceholder(placeholderID string) error {
 	req := &slides.BatchUpdatePresentationRequest{
 		Requests: []*slides.Request{
 			{
+				UpdateTextStyle: &slides.UpdateTextStyleRequest{
+					ObjectId: placeholderID,
+					Style: &slides.TextStyle{
+						Bold:   false,
+						Italic: false,
+					},
+					TextRange: &slides.Range{
+						Type: "ALL",
+					},
+					Fields: "bold,italic",
+				},
+			},
+			{
 				DeleteParagraphBullets: &slides.DeleteParagraphBulletsRequest{
 					ObjectId: placeholderID,
 					TextRange: &slides.Range{
