@@ -529,9 +529,9 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 					plen++
 				}
 			}
-			text += "\n"
-			plen++
 			if paragraph.Bullet != md.BulletNone {
+				text += "\n"
+				plen++
 				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
 					bulletStartIndex = count
 					bulletEndIndex = count
