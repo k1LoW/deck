@@ -1,0 +1,66 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "A"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "B"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "\n"
+              },
+              {
+                "value": "\n"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "C",
+                "bold": true
+              },
+              {
+                "value": "",
+                "softLineBreak": true
+              },
+              {
+                "value": "D",
+                "softLineBreak": true
+              },
+              {
+                "value": "E"
+              },
+              {
+                "value": "\n"
+              },
+              {
+                "value": "F",
+                "italic": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

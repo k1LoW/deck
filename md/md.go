@@ -168,7 +168,7 @@ func ParsePage(b []byte) (*Page, error) {
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
 						Fragments: []*Fragment{
 							{
-								Value:         convert(v.Lines().Value(b)),
+								Value:         convert(bytes.Trim(v.Lines().Value(b), " \n")),
 								Bold:          false,
 								SoftLineBreak: false,
 							},
