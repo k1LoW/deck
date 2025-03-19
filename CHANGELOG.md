@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.10.2](https://github.com/k1LoW/deck/compare/v0.10.1...v0.10.2) - 2025-03-19
+### Fix bug 🐛
+- fix: remove unnecessary newline by @k1LoW in https://github.com/k1LoW/deck/pull/43
+- fix(deck): clear text style before deleting paragraph bullets by @k1LoW in https://github.com/k1LoW/deck/pull/45
+
 ## [v0.10.1](https://github.com/k1LoW/deck/compare/v0.10.0...v0.10.1) - 2025-03-19
 ### Other Changes
 - fix(md): trim whitespace and newline characters from HTML Block fragment values by @k1LoW in https://github.com/k1LoW/deck/pull/41
