@@ -37,7 +37,7 @@ type Deck struct {
 	defaultSectionLayout string
 	defaultLayout        string
 	logger               *slog.Logger
-	start, end           int
+	start, end           int // 1-based
 }
 
 type Option func(*Deck) error
@@ -263,6 +263,12 @@ func (d *Deck) ListLayouts() []string {
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(slides md.Slides) error {
 	for i, page := range slides {
+		if d.start > 0 && i < d.start {
+			continue
+		}
+		if d.end > 0 && i >= d.end {
+			break
+		}
 		if page.Layout == "" {
 			switch {
 			case i == 0:
