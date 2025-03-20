@@ -482,11 +482,12 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 			for _, fragment := range paragraph.Fragments {
 				flen := utf8.RuneCountInString(fragment.Value)
 				if fragment.Bold || fragment.Italic {
-					var fields string
+					var fields []string
 					if fragment.Bold {
-						fields = "bold"
-					} else if fragment.Italic {
-						fields = "italic"
+						fields = append(fields, "bold")
+					}
+					if fragment.Italic {
+						fields = append(fields, "italic")
 					}
 					styleReqs = append(styleReqs, &slides.Request{
 						UpdateTextStyle: &slides.UpdateTextStyleRequest{
@@ -500,7 +501,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 								StartIndex: ptrInt64(int64(count + plen)),
 								EndIndex:   ptrInt64(int64(count + plen + flen)),
 							},
-							Fields: fields,
+							Fields: strings.Join(fields, ","),
 						},
 					})
 				}
