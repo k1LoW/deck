@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.11.0](https://github.com/k1LoW/deck/compare/v0.10.4...v0.11.0) - 2025-03-20
+### New Features 🎉
+- feat: support applying both bold and italic by @k1LoW in https://github.com/k1LoW/deck/pull/50
+
 ## [v0.10.4](https://github.com/k1LoW/deck/compare/v0.10.3...v0.10.4) - 2025-03-20
 ### Fix bug 🐛
 - fix(deck): fix newline handling by @k1LoW in https://github.com/k1LoW/deck/pull/48
