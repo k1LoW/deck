@@ -780,7 +780,9 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 	// run and stop local server
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		authCode = r.URL.Query().Get("code")
+		if r.URL.Query().Get("code") != "" {
+			authCode = r.URL.Query().Get("code")
+		}
 		w.Write([]byte("Received code. You may now close this tab."))
 		done()
 	})
