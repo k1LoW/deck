@@ -1,0 +1,45 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "C",
+                "bold": true
+              },
+              {
+                "value": "",
+                "softLineBreak": true
+              },
+              {
+                "value": "D"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "A"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "B"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  }
+]

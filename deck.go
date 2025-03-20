@@ -460,7 +460,6 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		return bodies[i].y < bodies[j].y
 	})
 	var bulletStartIndex, bulletEndIndex int
-	currentBullet := md.BulletNone
 	bulletRanges := map[int]*bulletRange{}
 	for i, body := range page.Bodies {
 		if len(bodies) <= i {
@@ -471,7 +470,8 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		bulletStartIndex = 0 // reset per body
 		bulletEndIndex = 0   // reset per body
 		var styleReqs []*slides.Request
-		for _, paragraph := range body.Paragraphs {
+		currentBullet := md.BulletNone
+		for j, paragraph := range body.Paragraphs {
 			plen := 0
 			if paragraph.Bullet != md.BulletNone {
 				if paragraph.Nesting > 0 {
@@ -529,9 +529,16 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 					plen++
 				}
 			}
+
+			if len(body.Paragraphs) > j+1 {
+				nextParagraph := body.Paragraphs[j+1]
+				if paragraph.Bullet != nextParagraph.Bullet {
+					text += "\n"
+					plen++
+				}
+			}
+
 			if paragraph.Bullet != md.BulletNone {
-				text += "\n"
-				plen++
 				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
 					bulletStartIndex = count
 					bulletEndIndex = count
