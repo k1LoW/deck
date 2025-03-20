@@ -532,7 +532,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 
 			if len(body.Paragraphs) > j+1 {
 				nextParagraph := body.Paragraphs[j+1]
-				if paragraph.Bullet != nextParagraph.Bullet {
+				if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != md.BulletNone {
 					text += "\n"
 					plen++
 				}
