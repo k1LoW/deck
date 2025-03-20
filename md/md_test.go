@@ -18,6 +18,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/br.md"},
 		{"../testdata/list_and_paragraph.md"},
 		{"../testdata/paragraph_and_list.md"},
+		{"../testdata/bold_and_italic.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {

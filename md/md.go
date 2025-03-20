@@ -208,12 +208,14 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 			if err != nil {
 				return nil, err
 			}
-			frags = append(frags, &Fragment{
-				Value:         children[0].Value,
-				Bold:          (n.Level == 2),
-				Italic:        (n.Level == 1),
-				SoftLineBreak: children[0].SoftLineBreak,
-			})
+			for _, child := range children {
+				frags = append(frags, &Fragment{
+					Value:         child.Value,
+					Bold:          (n.Level == 2) || child.Bold,
+					Italic:        (n.Level == 1) || child.Italic,
+					SoftLineBreak: child.SoftLineBreak,
+				})
+			}
 		case *ast.Link:
 			children, err := toFragments(b, n)
 			if err != nil {

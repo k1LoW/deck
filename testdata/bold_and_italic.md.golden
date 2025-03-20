@@ -1,0 +1,42 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Bold Italic",
+                "bold": true,
+                "italic": true
+              },
+              {
+                "value": " and Italic",
+                "italic": true
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Bold Italic",
+                "bold": true,
+                "italic": true
+              },
+              {
+                "value": " and Bold",
+                "bold": true
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  }
+]
