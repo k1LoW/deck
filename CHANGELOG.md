@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.11.2](https://github.com/k1LoW/deck/compare/v0.11.1...v0.11.2) - 2025-03-20
+
 ## [v0.11.1](https://github.com/k1LoW/deck/compare/v0.11.0...v0.11.1) - 2025-03-20
 ### Fix bug 🐛
 - fix: handle missing auth code in getTokenFromWeb function by @k1LoW in https://github.com/k1LoW/deck/pull/52
