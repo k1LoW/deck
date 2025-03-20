@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.11.1](https://github.com/k1LoW/deck/compare/v0.11.0...v0.11.1) - 2025-03-20
+### Fix bug 🐛
+- fix: handle missing auth code in getTokenFromWeb function by @k1LoW in https://github.com/k1LoW/deck/pull/52
+
 ## [v0.11.0](https://github.com/k1LoW/deck/compare/v0.10.4...v0.11.0) - 2025-03-20
 ### New Features 🎉
 - feat: support applying both bold and italic by @k1LoW in https://github.com/k1LoW/deck/pull/50
