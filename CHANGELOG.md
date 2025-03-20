@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.10.3](https://github.com/k1LoW/deck/compare/v0.10.2...v0.10.3) - 2025-03-20
+### Fix bug 🐛
+- fix(deck): fix newline handling by @k1LoW in https://github.com/k1LoW/deck/pull/46
+
 ## [v0.10.2](https://github.com/k1LoW/deck/compare/v0.10.1...v0.10.2) - 2025-03-19
 ### Fix bug 🐛
 - fix: remove unnecessary newline by @k1LoW in https://github.com/k1LoW/deck/pull/43
