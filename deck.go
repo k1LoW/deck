@@ -398,6 +398,9 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			if element.Shape.Placeholder.Type == "BODY" {
 				speakerNotesID = element.ObjectId
+				if err := d.clearPlaceholder(speakerNotesID); err != nil {
+					return err
+				}
 			}
 		}
 	}
