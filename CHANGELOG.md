@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.11.3](https://github.com/k1LoW/deck/compare/v0.11.2...v0.11.3) - 2025-03-22
+### Fix bug 🐛
+- fix(deck): clear placeholder for speaker notes in applyPage function by @k1LoW in https://github.com/k1LoW/deck/pull/55
+
 ## [v0.11.2](https://github.com/k1LoW/deck/compare/v0.11.1...v0.11.2) - 2025-03-20
 
 ## [v0.11.1](https://github.com/k1LoW/deck/compare/v0.11.0...v0.11.1) - 2025-03-20
