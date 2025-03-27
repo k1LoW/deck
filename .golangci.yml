@@ -1,25 +1,38 @@
-run:
-  timeout: 2m
+version: "2"
 linters:
-  fast: false
   enable:
-    - misspell
-    - gosec
-    - godot
-    - revive
     - errorlint
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-  misspell:
-    locale: US
-    ignore-words: []
-  revive:
-    rules:
-      - name: unexported-return
-        disabled: true
-      - name: exported
-        disabled: false
-issues:
-  exclude-dirs:
-    - tmpmod
+    - godot
+    - gosec
+    - misspell
+    - revive
+  settings:
+    errcheck:
+      check-type-assertions: true
+    misspell:
+      locale: US
+    revive:
+      rules:
+        - name: unexported-return
+          disabled: true
+        - name: exported
+          disabled: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - tmpmod
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

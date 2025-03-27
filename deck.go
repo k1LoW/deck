@@ -787,15 +787,18 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 			return
 		}
 		authCode = r.URL.Query().Get("code")
-		w.Write([]byte("Received code. You may now close this tab."))
+		_, _ = w.Write([]byte("Received code. You may now close this tab."))
 		done()
 	})
-	srv := &http.Server{Handler: handler}
+	srv := &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	var listenErr error
 	go func() {
 		ln, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
-			listenErr = fmt.Errorf("Listen: %w", err)
+			listenErr = fmt.Errorf("listen: %w", err)
 			listening()
 			done()
 			return
@@ -847,11 +850,11 @@ func (d *Deck) tokenFromFile(file string) (*oauth2.Token, error) {
 func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return fmt.Errorf("Unable to cache oauth token: %w", err)
+		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	defer f.Close()
 	if err := json.NewEncoder(f).Encode(token); err != nil {
-		return fmt.Errorf("Unable to cache oauth token: %w", err)
+		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	return nil
 }

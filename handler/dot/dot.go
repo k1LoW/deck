@@ -33,11 +33,11 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 
 func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 	if strings.Contains(r.Message, "applied") {
-		h.stdout.Write([]byte(yellow(".")))
+		_, _ = h.stdout.Write([]byte(yellow(".")))
 		return nil
 	}
 	if strings.Contains(r.Message, "freeze") {
-		h.stdout.Write([]byte(cyan("*")))
+		_, _ = h.stdout.Write([]byte(cyan("*")))
 		return nil
 	}
 	return nil

@@ -67,7 +67,7 @@ func toBullet(m byte) Bullet {
 	}
 }
 
-// ParseFile
+// ParseFile parses a markdown file into slides.
 func ParseFile(f string) (Slides, error) {
 	b, err := os.ReadFile(f)
 	if err != nil {
@@ -76,7 +76,7 @@ func ParseFile(f string) (Slides, error) {
 	return Parse(b)
 }
 
-// Parse
+// Parse parses markdown bytes into slides.
 func Parse(b []byte) (Slides, error) {
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
 	pages := make(Slides, len(bpages))
@@ -234,11 +234,40 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 				SoftLineBreak: n.SoftLineBreak(),
 			})
 		default:
-			frags = append(frags, &Fragment{
-				Value:         convert(n.Text(b)),
-				Bold:          false,
-				SoftLineBreak: false,
-			})
+			// For line breaks and other special cases, we need to preserve the original behavior
+			// Check the node type by its name
+			switch typedNode := n.(type) {
+			case *ast.RawHTML:
+				// For RawHTML nodes (which include <br> tags), return a newline
+				frags = append(frags, &Fragment{
+					Value:         "\n",
+					Bold:          false,
+					SoftLineBreak: false,
+				})
+			case *ast.String:
+				// For String nodes, try to get their content
+				if typedNode.Value != nil {
+					frags = append(frags, &Fragment{
+						Value:         convert(typedNode.Value),
+						Bold:          false,
+						SoftLineBreak: false,
+					})
+				} else {
+					// Fallback for empty strings
+					frags = append(frags, &Fragment{
+						Value:         "",
+						Bold:          false,
+						SoftLineBreak: false,
+					})
+				}
+			default:
+				// For all other node types, return a newline to match original behavior
+				frags = append(frags, &Fragment{
+					Value:         "\n",
+					Bold:          false,
+					SoftLineBreak: false,
+				})
+			}
 		}
 	}
 	return frags, nil
