@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.12.0](https://github.com/k1LoW/deck/compare/v0.11.3...v0.12.0) - 2025-03-27
+### New Features 🎉
+- fix: support using refresh expired tokens by @k1LoW in https://github.com/k1LoW/deck/pull/58
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.226.0 to 0.227.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/57
+
 ## [v0.11.3](https://github.com/k1LoW/deck/compare/v0.11.2...v0.11.3) - 2025-03-22
 ### Fix bug 🐛
 - fix(deck): clear placeholder for speaker notes in applyPage function by @k1LoW in https://github.com/k1LoW/deck/pull/55
