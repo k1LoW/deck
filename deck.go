@@ -19,7 +19,7 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/k1LoW/deck/md"
-	"github.com/skratchdot/open-golang/open"
+	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -761,6 +761,39 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.
 		if err := d.saveToken(tokenPath, token); err != nil {
 			return nil, err
 		}
+	} else if token.Expiry.Before(time.Now()) {
+		// Token has expired, refresh it using the refresh token
+		d.logger.Info("token has expired, refreshing")
+		if token.RefreshToken != "" {
+			tokenSource := config.TokenSource(ctx, token)
+			newToken, err := tokenSource.Token()
+			if err != nil {
+				d.logger.Info("failed to refresh token, getting new token from web", slog.String("error", err.Error()))
+				// If refresh fails, get a new token from the web
+				newToken, err = d.getTokenFromWeb(ctx, config)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				d.logger.Info("token refreshed successfully")
+			}
+
+			// Save the new token
+			if err := d.saveToken(tokenPath, newToken); err != nil {
+				return nil, err
+			}
+			token = newToken
+		} else {
+			// No refresh token available, get a new token from the web
+			d.logger.Info("no refresh token available, getting new token from web")
+			token, err = d.getTokenFromWeb(ctx, config)
+			if err != nil {
+				return nil, err
+			}
+			if err := d.saveToken(tokenPath, token); err != nil {
+				return nil, err
+			}
+		}
 	}
 	client := config.Client(ctx, token)
 
@@ -818,7 +851,7 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 	config.RedirectURL = "http://" + srv.Addr + "/"
 
 	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
-	if err := open.Start(authURL); err != nil {
+	if err := browser.OpenURL(authURL); err != nil {
 		return nil, err
 	}
 
