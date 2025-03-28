@@ -1,3 +1,4 @@
+// Package md provides functionality for parsing markdown into slides.
 package md
 
 import (
@@ -11,13 +12,16 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
+// Slides represents a collection of slide pages.
 type Slides []*Page
 
+// Config represents the configuration for a slide.
 type Config struct {
 	Layout string `json:"layout,omitempty"` // layout name
 	Freeze bool   `json:"freeze,omitempty"` // freeze the page
 }
 
+// Page represents a single slide page.
 type Page struct {
 	Layout    string   `json:"layout"`
 	Freeze    bool     `json:"freeze,omitempty"`
@@ -27,16 +31,19 @@ type Page struct {
 	Comments  []string `json:"comments,omitempty"`
 }
 
+// Body represents the content body of a slide.
 type Body struct {
 	Paragraphs []*Paragraph `json:"paragraphs,omitempty"`
 }
 
+// Paragraph represents a paragraph within a slide body.
 type Paragraph struct {
 	Fragments []*Fragment `json:"fragments,omitempty"`
 	Bullet    Bullet      `json:"bullet,omitempty"`
 	Nesting   int         `json:"nesting,omitempty"`
 }
 
+// Fragment represents a text fragment within a paragraph.
 type Fragment struct {
 	Value         string `json:"value"`
 	Bold          bool   `json:"bold,omitempty"`
@@ -45,8 +52,10 @@ type Fragment struct {
 	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
 }
 
+// Bullet represents the type of bullet point for a paragraph.
 type Bullet string
 
+// Bullet constants for different bullet point types.
 const (
 	BulletNone   Bullet = ""
 	BulletDash   Bullet = "-"
@@ -54,6 +63,7 @@ const (
 	BulletAlpha  Bullet = "a"
 )
 
+// toBullet converts a marker byte to a Bullet type.
 func toBullet(m byte) Bullet {
 	switch m {
 	case '-', '+', '*':
@@ -77,6 +87,7 @@ func ParseFile(f string) (Slides, error) {
 }
 
 // Parse parses markdown bytes into slides.
+// It splits the input by "---" delimiters and parses each section as a separate page.
 func Parse(b []byte) (Slides, error) {
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
 	pages := make(Slides, len(bpages))
@@ -91,6 +102,8 @@ func Parse(b []byte) (Slides, error) {
 	return pages, nil
 }
 
+// ParsePage parses a single markdown page into a Page structure.
+// It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
 func ParsePage(b []byte) (*Page, error) {
 	md := goldmark.New()
 	reader := text.NewReader(b)
@@ -137,7 +150,12 @@ func ParsePage(b []byte) (*Page, error) {
 				if err != nil {
 					return ast.WalkStop, err
 				}
-				nesting := v.Offset/2 - 1 // FIXME
+				// Calculate nesting level based on indentation
+				// Assuming 2 spaces per indentation level and subtracting 1 for the base level
+				nesting := 0
+				if v.Offset >= 2 {
+					nesting = v.Offset/2 - 1
+				}
 
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
 					Fragments: frags,
@@ -199,6 +217,8 @@ func ParsePage(b []byte) (*Page, error) {
 	return page, nil
 }
 
+// toFragments converts an AST node to a slice of Fragment structures.
+// It handles emphasis, links, text, and other node types to create formatted text fragments.
 func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 	var frags []*Fragment
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
@@ -275,6 +295,7 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 
 var convertRep = strings.NewReplacer("<br>", "\n", "<br/>", "\n", "<br />", "\n")
 
+// convert transforms input bytes to a string, replacing HTML line break tags with newlines.
 func convert(in []byte) string {
 	return convertRep.Replace(string(in))
 }
