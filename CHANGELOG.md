@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.12.1](https://github.com/k1LoW/deck/compare/v0.12.0...v0.12.1) - 2025-03-28
+
 ## [v0.12.0](https://github.com/k1LoW/deck/compare/v0.11.3...v0.12.0) - 2025-03-27
 ### New Features 🎉
 - fix: support using refresh expired tokens by @k1LoW in https://github.com/k1LoW/deck/pull/58
