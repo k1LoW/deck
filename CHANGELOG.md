@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.13.1](https://github.com/k1LoW/deck/compare/v0.13.0...v0.13.1) - 2025-03-30
+
 ## [v0.13.0](https://github.com/k1LoW/deck/compare/v0.12.0...v0.13.0) - 2025-03-30
 ### Other Changes
 - fix: apply default layout only when creating a new one by @k1LoW in https://github.com/k1LoW/deck/pull/61
