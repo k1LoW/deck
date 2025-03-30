@@ -249,16 +249,6 @@ func (d *Deck) ListLayouts() []string {
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(slides md.Slides) error {
 	for i, page := range slides {
-		if page.Layout == "" {
-			switch {
-			case i == 0:
-				page.Layout = d.defaultTitleLayout
-			case len(page.Bodies) == 0:
-				page.Layout = d.defaultSectionLayout
-			default:
-				page.Layout = d.defaultLayout
-			}
-		}
 		if err := d.applyPage(i, page); err != nil {
 			return err
 		}
@@ -335,6 +325,17 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	}
 
 	if len(d.presentation.Slides) <= index {
+		// create new page
+		if page.Layout == "" {
+			switch {
+			case index == 0:
+				page.Layout = d.defaultTitleLayout
+			case len(page.Bodies) == 0:
+				page.Layout = d.defaultSectionLayout
+			default:
+				page.Layout = d.defaultLayout
+			}
+		}
 		if err := d.CreatePage(index, page); err != nil {
 			return err
 		}
