@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.13.0](https://github.com/k1LoW/deck/compare/v0.12.0...v0.13.0) - 2025-03-30
+### Other Changes
+- fix: apply default layout only when creating a new one by @k1LoW in https://github.com/k1LoW/deck/pull/61
+
 ## [v0.12.0](https://github.com/k1LoW/deck/compare/v0.11.3...v0.12.0) - 2025-03-27
 ### New Features 🎉
 - fix: support using refresh expired tokens by @k1LoW in https://github.com/k1LoW/deck/pull/58
