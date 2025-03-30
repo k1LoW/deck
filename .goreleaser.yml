@@ -68,7 +68,7 @@ nfpms:
       - deck-linux
     homepage: https://github.com/k1LoW/deck
     maintainer: Ken'ichiro Oyama <k1lowxb@gmail.com>
-    description: deck is a tool for creating deck using Google Slides.
+    description: deck is a tool for creating deck using Markdown and Google Slides.
     license: MIT
     formats:
       - deb

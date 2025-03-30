@@ -30,8 +30,8 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:          "deck",
-	Short:        "deck is a tool for creating deck using Google Slides",
-	Long:         `deck is a tool for creating deck using Google Slides.`,
+	Short:        "deck is a tool for creating deck using Markdown and Google Slides",
+	Long:         `deck is a tool for creating deck using Markdown and Google Slides.`,
 	SilenceUsage: true,
 	Version:      version.Version,
 }

@@ -4,7 +4,7 @@
 
 # deck
 
-`deck` is a tool for creating deck using Google Slides.
+`deck` is a tool for creating deck using Markdown and Google Slides.
 
 ## Key concept
 
