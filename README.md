@@ -17,7 +17,7 @@
 
 ### Setup
 
-#### Get and set your OAuth client ID credentials
+#### Get and set your OAuth client credentials
 
 - Create (or reuse) a developer project at https://console.cloud.google.com.
 - Enable `Google Slides API` and `Google Drive API` at [`API & Services` page](https://console.cloud.google.com/apis/dashboard).
