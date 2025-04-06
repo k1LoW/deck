@@ -1,6 +1,7 @@
 module github.com/k1LoW/deck
 
 go 1.23.7
+
 toolchain go1.24.1
 
 require (
@@ -12,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/tenntenn/golden v0.5.4
 	github.com/yuin/goldmark v1.7.8
-	golang.org/x/oauth2 v0.28.0
+	golang.org/x/oauth2 v0.29.0
 	google.golang.org/api v0.228.0
 )
 
