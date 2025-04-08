@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.13.2](https://github.com/k1LoW/deck/compare/v0.13.1...v0.13.2) - 2025-04-08
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.227.0 to 0.228.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/64
+- chore(deps): bump golang.org/x/oauth2 from 0.28.0 to 0.29.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/65
+
 ## [v0.13.1](https://github.com/k1LoW/deck/compare/v0.13.0...v0.13.1) - 2025-03-30
 
 ## [v0.13.0](https://github.com/k1LoW/deck/compare/v0.12.0...v0.13.0) - 2025-03-30
