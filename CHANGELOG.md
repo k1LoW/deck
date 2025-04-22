@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.13.4](https://github.com/k1LoW/deck/compare/v0.13.3...v0.13.4) - 2025-04-22
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/68
+
 ## [v0.13.3](https://github.com/k1LoW/deck/compare/v0.13.2...v0.13.3) - 2025-04-17
 ### Other Changes
 - chore(deps): bump golang.org/x/net from 0.37.0 to 0.38.0 by @dependabot in https://github.com/k1LoW/deck/pull/66
