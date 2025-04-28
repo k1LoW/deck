@@ -364,7 +364,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	for _, element := range currentSlide.PageElements {
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			switch element.Shape.Placeholder.Type {
-			case "CENTERED_TITLE":
+			case "CENTERED_TITLE", "TITLE":
 				titles = append(titles, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
