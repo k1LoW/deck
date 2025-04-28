@@ -62,6 +62,11 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		if title != "" {
+			if err := d.UpdateTitle(title); err != nil {
+				return err
+			}
+		}
 		pages, err := pageToPages(page, len(contents))
 		if err != nil {
 			return err
@@ -69,13 +74,7 @@ var applyCmd = &cobra.Command{
 		if err := d.ApplyPages(contents.ToSlides(), pages); err != nil {
 			return err
 		}
-
-		fmt.Println()
-		if title != "" {
-			if err := d.UpdateTitle(title); err != nil {
-				return err
-			}
-		}
+		logger.Info("apply completed", slog.String("presentation_id", id))
 		return nil
 	},
 }

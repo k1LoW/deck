@@ -15,7 +15,9 @@ var (
 	cyan   = color.New(color.FgCyan).SprintFunc()
 )
 
-func New(h slog.Handler) slog.Handler {
+var _ slog.Handler = (*dotHandler)(nil)
+
+func New(h slog.Handler) *dotHandler {
 	return &dotHandler{
 		handler: h,
 		stdout:  colorable.NewColorableStdout(),
@@ -38,6 +40,10 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	if strings.Contains(r.Message, "freeze") {
 		_, _ = h.stdout.Write([]byte(cyan("*")))
+		return nil
+	}
+	if strings.Contains(r.Message, "apply completed") {
+		_, _ = h.stdout.Write([]byte("\n"))
 		return nil
 	}
 	return nil
