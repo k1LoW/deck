@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -306,21 +305,21 @@ func (d *Deck) Apply(slides Slides) error {
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
 func (d *Deck) ApplyPages(slides Slides, pages []int) error {
-	for i, content := range slides {
+	for i, slide := range slides {
 		if !slices.Contains(pages, i+1) {
 			continue
 		}
-		if content.Layout == "" {
+		if slide.Layout == "" {
 			switch {
 			case i == 0:
-				content.Layout = d.defaultTitleLayout
-			case len(content.Bodies) == 0:
-				content.Layout = d.defaultSectionLayout
+				slide.Layout = d.defaultTitleLayout
+			case len(slide.Bodies) == 0:
+				slide.Layout = d.defaultSectionLayout
 			default:
-				content.Layout = d.defaultLayout
+				slide.Layout = d.defaultLayout
 			}
 		}
-		if err := d.applyPage(i, content); err != nil {
+		if err := d.applyPage(i, slide); err != nil {
 			return err
 		}
 	}
@@ -350,7 +349,7 @@ func (d *Deck) Export(w io.Writer) error {
 		return err
 	}
 	if err := req.Write(w); err != nil {
-		log.Fatalf("Unable to write PDF file: %v", err)
+		return fmt.Errorf("unable to create PDF file: %v", err)
 	}
 	return nil
 }
@@ -884,7 +883,9 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 		listening()
 		if err := srv.Serve(ln); err != nil {
 			if err != http.ErrServerClosed {
-				log.Fatalf("ListenAndServe: %v", err)
+				listenErr = fmt.Errorf("serve: %w", err)
+				done()
+				return
 			}
 		}
 	}()
