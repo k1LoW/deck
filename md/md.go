@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/k1LoW/deck"
@@ -283,4 +284,115 @@ var convertRep = strings.NewReplacer("<br>", "\n", "<br/>", "\n", "<br />", "\n"
 // convert transforms input bytes to a string, replacing HTML line break tags with newlines.
 func convert(in []byte) string {
 	return convertRep.Replace(string(in))
+}
+
+// DiffContents compares two Contents and returns the page numbers that have changed.
+// Page numbers are 1-indexed.
+func DiffContents(oldContents, newContents Contents) []int {
+	var changedPages []int
+
+	// Get the length of both Contents
+	oldLen := len(oldContents)
+	newLen := len(newContents)
+
+	// Get the maximum length
+	maxLen := oldLen
+	if newLen > maxLen {
+		maxLen = newLen
+	}
+
+	// Compare each page
+	for i := 0; i < maxLen; i++ {
+		// If a new page has been added
+		if i >= oldLen {
+			changedPages = append(changedPages, i+1) // 1-indexed
+			continue
+		}
+
+		// If a page has been deleted
+		if i >= newLen {
+			// No action needed for deleted pages as they don't need to be applied
+			continue
+		}
+
+		// Compare the content of the pages
+		if !contentEqual(oldContents[i], newContents[i]) {
+			if newContents[i].Freeze {
+				// The frozen page is considered unchanged
+				continue
+			}
+			changedPages = append(changedPages, i+1) // 1-indexed
+		}
+	}
+
+	return changedPages
+}
+
+// contentEqual compares two Content structs and returns true if they are equal.
+func contentEqual(old, new *Content) bool {
+	if old == nil && new == nil {
+		return true
+	}
+	if old == nil || new == nil {
+		return false
+	}
+
+	// Compare layout and freeze flag
+	if old.Layout != new.Layout || old.Freeze != new.Freeze {
+		return false
+	}
+
+	// Compare titles
+	if !reflect.DeepEqual(old.Titles, new.Titles) {
+		return false
+	}
+
+	// Compare subtitles
+	if !reflect.DeepEqual(old.Subtitles, new.Subtitles) {
+		return false
+	}
+
+	// Compare comments
+	if !reflect.DeepEqual(old.Comments, new.Comments) {
+		return false
+	}
+
+	// Compare bodies
+	if len(old.Bodies) != len(new.Bodies) {
+		return false
+	}
+
+	for i, oldBody := range old.Bodies {
+		newBody := new.Bodies[i]
+
+		if len(oldBody.Paragraphs) != len(newBody.Paragraphs) {
+			return false
+		}
+
+		for j, oldPara := range oldBody.Paragraphs {
+			newPara := newBody.Paragraphs[j]
+
+			if oldPara.Bullet != newPara.Bullet || oldPara.Nesting != newPara.Nesting {
+				return false
+			}
+
+			if len(oldPara.Fragments) != len(newPara.Fragments) {
+				return false
+			}
+
+			for k, oldFrag := range oldPara.Fragments {
+				newFrag := newPara.Fragments[k]
+
+				if oldFrag.Value != newFrag.Value ||
+					oldFrag.Bold != newFrag.Bold ||
+					oldFrag.Italic != newFrag.Italic ||
+					oldFrag.Link != newFrag.Link ||
+					oldFrag.SoftLineBreak != newFrag.SoftLineBreak {
+					return false
+				}
+			}
+		}
+	}
+
+	return true
 }

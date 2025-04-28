@@ -22,12 +22,16 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/handler/dot"
 	"github.com/k1LoW/deck/md"
@@ -35,15 +39,22 @@ import (
 )
 
 var (
-	title string
-	page  string
+	title  string
+	page   string
+	watch  bool
+	logger *slog.Logger
 )
 
 var applyCmd = &cobra.Command{
 	Use:   "apply [PRESENTATION_ID] [DECK_FILE]",
 	Short: "apply desk written in markdown to Google Slides presentation",
 	Long:  `apply desk written in markdown to Google Slides presentation.`,
-	Args:  cobra.ExactArgs(2),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if page != "" && watch {
+			return fmt.Errorf("cannot use --page and --watch together")
+		}
+		return cobra.ExactArgs(2)(cmd, args)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		f := args[1]
@@ -51,9 +62,15 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		logger := slog.New(
-			dot.New(slog.NewTextHandler(os.Stdout, nil)),
-		)
+		if watch {
+			logger = slog.New(
+				slog.NewTextHandler(os.Stdout, nil),
+			)
+		} else {
+			logger = slog.New(
+				dot.New(slog.NewTextHandler(os.Stdout, nil)),
+			)
+		}
 		opts := []deck.Option{
 			deck.WithPresentationID(id),
 			deck.WithLogger(logger),
@@ -67,14 +84,27 @@ var applyCmd = &cobra.Command{
 				return err
 			}
 		}
-		pages, err := pageToPages(page, len(contents))
-		if err != nil {
-			return err
+		if watch {
+			allPages := make([]int, len(contents))
+			for i := range len(contents) {
+				allPages[i] = i + 1
+			}
+			if err := d.ApplyPages(contents.ToSlides(), allPages); err != nil {
+				return err
+			}
+			logger.Info("initial apply completed", slog.String("presentation_id", id))
+
+			return watchFile(cmd.Context(), f, contents, d)
+		} else {
+			pages, err := pageToPages(page, len(contents))
+			if err != nil {
+				return err
+			}
+			if err := d.ApplyPages(contents.ToSlides(), pages); err != nil {
+				return err
+			}
+			logger.Info("apply completed", slog.String("presentation_id", id))
 		}
-		if err := d.ApplyPages(contents.ToSlides(), pages); err != nil {
-			return err
-		}
-		logger.Info("apply completed", slog.String("presentation_id", id))
 		return nil
 	},
 }
@@ -83,6 +113,7 @@ func init() {
 	rootCmd.AddCommand(applyCmd)
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
+	applyCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch for changes")
 }
 
 func pageToPages(page string, total int) ([]int, error) {
@@ -161,4 +192,95 @@ func pageToPages(page string, total int) ([]int, error) {
 	}
 
 	return result, nil
+}
+
+// watchFile watches for changes in the file and applies them to the presentation.
+func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d *deck.Deck) error {
+	// Get the absolute path of the file
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(absPath)
+	fileName := filepath.Base(absPath)
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer watcher.Close()
+
+	if err := watcher.Add(dir); err != nil {
+		return err
+	}
+
+	logger.Info("watching for changes", slog.String("file", absPath))
+
+	for {
+		select {
+		case event, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+
+			if filepath.Base(event.Name) != fileName {
+				continue
+			}
+
+			if event.Op&fsnotify.Write != fsnotify.Write {
+				continue
+			}
+
+			logger.Info("file modified", slog.String("file", event.Name))
+
+			var newContents md.Contents
+			var parseErr error
+
+			for retry := 0; retry < 3; retry++ {
+				newContents, parseErr = md.ParseFile(filePath)
+				if parseErr == nil {
+					break
+				}
+
+				logger.Warn("failed to parse file, retrying...",
+					slog.String("error", parseErr.Error()),
+					slog.Int("retry", retry+1))
+
+				time.Sleep(100 * time.Millisecond)
+			}
+
+			if parseErr != nil {
+				logger.Error("failed to parse file after retries", slog.String("error", parseErr.Error()))
+				continue
+			}
+
+			changedPages := md.DiffContents(oldContents, newContents)
+
+			if len(changedPages) == 0 {
+				logger.Info("no changes detected")
+				continue
+			}
+
+			logger.Info("detected changes", slog.Any("pages", changedPages))
+
+			if err := d.ApplyPages(newContents.ToSlides(), changedPages); err != nil {
+				logger.Error("failed to apply changes", slog.String("error", err.Error()))
+				continue
+			}
+
+			logger.Info("applied changes", slog.Any("pages", changedPages))
+
+			oldContents = newContents
+
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			logger.Error("watcher error", slog.String("error", err.Error()))
+
+		case <-ctx.Done():
+			return nil
+		}
+	}
 }
