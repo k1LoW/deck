@@ -66,7 +66,7 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err := d.ApplyPages(contents, pages); err != nil {
+		if err := d.ApplyPages(contents.ToSlides(), pages); err != nil {
 			return err
 		}
 

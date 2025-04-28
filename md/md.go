@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/k1LoW/deck"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
@@ -23,57 +24,25 @@ type Config struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout    string   `json:"layout"`
-	Freeze    bool     `json:"freeze,omitempty"`
-	Titles    []string `json:"titles,omitempty"`
-	Subtitles []string `json:"subtitles,omitempty"`
-	Bodies    []*Body  `json:"bodies,omitempty"`
-	Comments  []string `json:"comments,omitempty"`
+	Layout    string       `json:"layout"`
+	Freeze    bool         `json:"freeze,omitempty"`
+	Titles    []string     `json:"titles,omitempty"`
+	Subtitles []string     `json:"subtitles,omitempty"`
+	Bodies    []*deck.Body `json:"bodies,omitempty"`
+	Comments  []string     `json:"comments,omitempty"`
 }
-
-// Body represents the content body of a slide.
-type Body struct {
-	Paragraphs []*Paragraph `json:"paragraphs,omitempty"`
-}
-
-// Paragraph represents a paragraph within a slide body.
-type Paragraph struct {
-	Fragments []*Fragment `json:"fragments,omitempty"`
-	Bullet    Bullet      `json:"bullet,omitempty"`
-	Nesting   int         `json:"nesting,omitempty"`
-}
-
-// Fragment represents a text fragment within a paragraph.
-type Fragment struct {
-	Value         string `json:"value"`
-	Bold          bool   `json:"bold,omitempty"`
-	Italic        bool   `json:"italic,omitempty"`
-	Link          string `json:"link,omitempty"`
-	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
-}
-
-// Bullet represents the type of bullet point for a paragraph.
-type Bullet string
-
-// Bullet constants for different bullet point types.
-const (
-	BulletNone   Bullet = ""
-	BulletDash   Bullet = "-"
-	BulletNumber Bullet = "1"
-	BulletAlpha  Bullet = "a"
-)
 
 // toBullet converts a marker byte to a Bullet type.
-func toBullet(m byte) Bullet {
+func toBullet(m byte) deck.Bullet {
 	switch m {
 	case '-', '+', '*':
-		return BulletDash
+		return deck.BulletDash
 	case '.', ')':
-		return BulletNumber
+		return deck.BulletNumber
 	case 'a':
-		return BulletAlpha
+		return deck.BulletAlpha
 	default:
-		return BulletNone
+		return deck.BulletNone
 	}
 }
 
@@ -109,9 +78,9 @@ func ParseContent(b []byte) (*Content, error) {
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 	content := &Content{}
-	currentBody := &Body{}
+	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
-	currentListMarker := BulletNone
+	currentListMarker := deck.BulletNone
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
 			switch v := n.(type) {
@@ -120,25 +89,25 @@ func ParseContent(b []byte) (*Content, error) {
 				case 1:
 					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
-						currentBody = &Body{}
+						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case 2:
 					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
-						currentBody = &Body{}
+						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				default:
-					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
-						Fragments: []*Fragment{
+					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
+						Fragments: []*deck.Fragment{
 							{
 								Value:         convert(v.Lines().Value(b)),
 								Bold:          false,
 								SoftLineBreak: false,
 							},
 						},
-						Bullet:  BulletNone,
+						Bullet:  deck.BulletNone,
 						Nesting: 0,
 					})
 				}
@@ -157,7 +126,7 @@ func ParseContent(b []byte) (*Content, error) {
 					nesting = v.Offset/2 - 1
 				}
 
-				currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
+				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 					Fragments: frags,
 					Bullet:    currentListMarker,
 					Nesting:   nesting,
@@ -167,9 +136,9 @@ func ParseContent(b []byte) (*Content, error) {
 				if err != nil {
 					return ast.WalkStop, err
 				}
-				currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
+				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 					Fragments: frags,
-					Bullet:    BulletNone,
+					Bullet:    deck.BulletNone,
 					Nesting:   0,
 				})
 			case *ast.HTMLBlock:
@@ -183,15 +152,15 @@ func ParseContent(b []byte) (*Content, error) {
 					}
 					content.Comments = append(content.Comments, block)
 				} else {
-					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
-						Fragments: []*Fragment{
+					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
+						Fragments: []*deck.Fragment{
 							{
 								Value:         convert(bytes.Trim(v.Lines().Value(b), " \n")),
 								Bold:          false,
 								SoftLineBreak: false,
 							},
 						},
-						Bullet:  BulletNone,
+						Bullet:  deck.BulletNone,
 						Nesting: 0,
 					})
 				}
@@ -217,10 +186,26 @@ func ParseContent(b []byte) (*Content, error) {
 	return content, nil
 }
 
+// ToSlides converts the contents to a slice of deck.Slide structures.
+func (contents Contents) ToSlides() deck.Slides {
+	slides := make([]*deck.Slide, len(contents))
+	for i, content := range contents {
+		slides[i] = &deck.Slide{
+			Layout:      content.Layout,
+			Freeze:      content.Freeze,
+			Titles:      content.Titles,
+			Subtitles:   content.Subtitles,
+			Bodies:      content.Bodies,
+			SpeakerNote: strings.Join(content.Comments, "\n\n"),
+		}
+	}
+	return slides
+}
+
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
-	var frags []*Fragment
+func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
+	var frags []*deck.Fragment
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch n := c.(type) {
 		case *ast.Emphasis:
@@ -229,7 +214,7 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 				return nil, err
 			}
 			for _, child := range children {
-				frags = append(frags, &Fragment{
+				frags = append(frags, &deck.Fragment{
 					Value:         child.Value,
 					Bold:          (n.Level == 2) || child.Bold,
 					Italic:        (n.Level == 1) || child.Italic,
@@ -241,14 +226,14 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 			if err != nil {
 				return nil, err
 			}
-			frags = append(frags, &Fragment{
+			frags = append(frags, &deck.Fragment{
 				Value:         children[0].Value,
 				Link:          convert(n.Destination),
 				Bold:          children[0].Bold,
 				SoftLineBreak: children[0].SoftLineBreak,
 			})
 		case *ast.Text:
-			frags = append(frags, &Fragment{
+			frags = append(frags, &deck.Fragment{
 				Value:         convert(n.Segment.Value(b)),
 				Bold:          false,
 				SoftLineBreak: n.SoftLineBreak(),
@@ -259,7 +244,7 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 			switch typedNode := n.(type) {
 			case *ast.RawHTML:
 				// For RawHTML nodes (which include <br> tags), return a newline
-				frags = append(frags, &Fragment{
+				frags = append(frags, &deck.Fragment{
 					Value:         "\n",
 					Bold:          false,
 					SoftLineBreak: false,
@@ -267,14 +252,14 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 			case *ast.String:
 				// For String nodes, try to get their content
 				if typedNode.Value != nil {
-					frags = append(frags, &Fragment{
+					frags = append(frags, &deck.Fragment{
 						Value:         convert(typedNode.Value),
 						Bold:          false,
 						SoftLineBreak: false,
 					})
 				} else {
 					// Fallback for empty strings
-					frags = append(frags, &Fragment{
+					frags = append(frags, &deck.Fragment{
 						Value:         "",
 						Bold:          false,
 						SoftLineBreak: false,
@@ -282,7 +267,7 @@ func toFragments(b []byte, n ast.Node) ([]*Fragment, error) {
 				}
 			default:
 				// For all other node types, return a newline to match original behavior
-				frags = append(frags, &Fragment{
+				frags = append(frags, &deck.Fragment{
 					Value:         "\n",
 					Bold:          false,
 					SoftLineBreak: false,
