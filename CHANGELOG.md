@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.15.0](https://github.com/k1LoW/deck/compare/v0.14.0...v0.15.0) - 2025-04-28
+### New Features 🎉
+- feat: support `--watch` for watching update file. by @k1LoW in https://github.com/k1LoW/deck/pull/76
+
 ## [v0.14.0](https://github.com/k1LoW/deck/compare/v0.13.5...v0.14.0) - 2025-04-28
 ### Other Changes
 - refactor: Introduce a new `deck.Slide` type by @k1LoW in https://github.com/k1LoW/deck/pull/73
