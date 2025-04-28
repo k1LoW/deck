@@ -64,7 +64,7 @@ $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 
 `deck` inserts values according to the following rules regardless of the slide layout.
 
-- Heading1 (`#`) is inserted into the title placeholder ( `CENTERED_TITLE` ) in order.
+- Heading1 (`#`) is inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
 - Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
 
