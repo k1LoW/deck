@@ -18,13 +18,55 @@ import (
 	"unicode/utf8"
 
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/k1LoW/deck/md"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/slides/v1"
+)
+
+type Slides []*Slide
+
+type Slide struct {
+	Layout      string   `json:"layout"`
+	Freeze      bool     `json:"freeze,omitempty"`
+	Titles      []string `json:"titles,omitempty"`
+	Subtitles   []string `json:"subtitles,omitempty"`
+	Bodies      []*Body  `json:"bodies,omitempty"`
+	SpeakerNote string   `json:"speakerNote,omitempty"`
+}
+
+// Body represents the content body of a slide.
+type Body struct {
+	Paragraphs []*Paragraph `json:"paragraphs,omitempty"`
+}
+
+// Paragraph represents a paragraph within a slide body.
+type Paragraph struct {
+	Fragments []*Fragment `json:"fragments,omitempty"`
+	Bullet    Bullet      `json:"bullet,omitempty"`
+	Nesting   int         `json:"nesting,omitempty"`
+}
+
+// Fragment represents a text fragment within a paragraph.
+type Fragment struct {
+	Value         string `json:"value"`
+	Bold          bool   `json:"bold,omitempty"`
+	Italic        bool   `json:"italic,omitempty"`
+	Link          string `json:"link,omitempty"`
+	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
+}
+
+// Bullet represents the type of bullet point for a paragraph.
+type Bullet string
+
+// Bullet constants for different bullet point types.
+const (
+	BulletNone   Bullet = ""
+	BulletDash   Bullet = "-"
+	BulletNumber Bullet = "1"
+	BulletAlpha  Bullet = "a"
 )
 
 type Deck struct {
@@ -63,12 +105,13 @@ type placeholder struct {
 }
 
 type bulletRange struct {
-	bullet md.Bullet
+	bullet Bullet
 	start  int
 	end    int
 }
 
-type Slide struct {
+// Presentation represents a Google Slides presentation.
+type Presentation struct {
 	ID    string
 	Title string
 }
@@ -136,7 +179,7 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 		return nil, err
 	}
 	// create first slide
-	if err := d.CreatePage(0, &md.Page{
+	if err := d.CreatePage(0, &Slide{
 		Layout: d.defaultTitleLayout,
 	}); err != nil {
 		return nil, err
@@ -145,12 +188,12 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 }
 
 // List Google Slides presentations.
-func List(ctx context.Context) ([]*Slide, error) {
+func List(ctx context.Context) ([]*Presentation, error) {
 	d, err := initialize(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	var slides []*Slide
+	var presentations []*Presentation
 
 	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
 	if err != nil {
@@ -158,13 +201,13 @@ func List(ctx context.Context) ([]*Slide, error) {
 	}
 
 	for _, f := range r.Files {
-		slides = append(slides, &Slide{
+		presentations = append(presentations, &Presentation{
 			ID:    f.Id,
 			Title: f.Name,
 		})
 	}
 
-	return slides, nil
+	return presentations, nil
 }
 
 func initialize(ctx context.Context) (*Deck, error) {
@@ -219,8 +262,8 @@ func (d *Deck) ID() string {
 }
 
 // List Google Slides presentations.
-func (d *Deck) List() ([]*Slide, error) {
-	var slides []*Slide
+func (d *Deck) List() ([]*Presentation, error) {
+	var presentations []*Presentation
 
 	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
 	if err != nil {
@@ -228,13 +271,13 @@ func (d *Deck) List() ([]*Slide, error) {
 	}
 
 	for _, f := range r.Files {
-		slides = append(slides, &Slide{
+		presentations = append(presentations, &Presentation{
 			ID:    f.Id,
 			Title: f.Name,
 		})
 	}
 
-	return slides, nil
+	return presentations, nil
 }
 
 // ListLayouts lists layouts of the presentation.
@@ -247,9 +290,9 @@ func (d *Deck) ListLayouts() []string {
 }
 
 // Apply the markdown slides to the presentation.
-func (d *Deck) Apply(slides md.Slides) error {
-	for i, page := range slides {
-		if err := d.applyPage(i, page); err != nil {
+func (d *Deck) Apply(slides Slides) error {
+	for i, slide := range slides {
+		if err := d.applyPage(i, slide); err != nil {
 			return err
 		}
 	}
@@ -262,22 +305,22 @@ func (d *Deck) Apply(slides md.Slides) error {
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(slides md.Slides, pages []int) error {
-	for i, page := range slides {
+func (d *Deck) ApplyPages(slides Slides, pages []int) error {
+	for i, content := range slides {
 		if !slices.Contains(pages, i+1) {
 			continue
 		}
-		if page.Layout == "" {
+		if content.Layout == "" {
 			switch {
 			case i == 0:
-				page.Layout = d.defaultTitleLayout
-			case len(page.Bodies) == 0:
-				page.Layout = d.defaultSectionLayout
+				content.Layout = d.defaultTitleLayout
+			case len(content.Bodies) == 0:
+				content.Layout = d.defaultSectionLayout
 			default:
-				page.Layout = d.defaultLayout
+				content.Layout = d.defaultLayout
 			}
 		}
-		if err := d.applyPage(i, page); err != nil {
+		if err := d.applyPage(i, content); err != nil {
 			return err
 		}
 	}
@@ -312,42 +355,42 @@ func (d *Deck) Export(w io.Writer) error {
 	return nil
 }
 
-func (d *Deck) applyPage(index int, page *md.Page) error {
+func (d *Deck) applyPage(index int, slide *Slide) error {
 	d.logger.Info("appling page", slog.Int("index", index))
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
 	}
 
-	layout, ok := layoutMap[page.Layout]
+	layout, ok := layoutMap[slide.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %s", page.Layout)
+		return fmt.Errorf("layout not found: %s", slide.Layout)
 	}
 
 	if len(d.presentation.Slides) <= index {
 		// create new page
-		if page.Layout == "" {
+		if slide.Layout == "" {
 			switch {
 			case index == 0:
-				page.Layout = d.defaultTitleLayout
-			case len(page.Bodies) == 0:
-				page.Layout = d.defaultSectionLayout
+				slide.Layout = d.defaultTitleLayout
+			case len(slide.Bodies) == 0:
+				slide.Layout = d.defaultSectionLayout
 			default:
-				page.Layout = d.defaultLayout
+				slide.Layout = d.defaultLayout
 			}
 		}
-		if err := d.CreatePage(index, page); err != nil {
+		if err := d.CreatePage(index, slide); err != nil {
 			return err
 		}
 	}
-	if page.Freeze {
+	if slide.Freeze {
 		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
 		return nil
 	}
 	currentSlide := d.presentation.Slides[index]
 	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
 		// create new page
-		if err := d.CreatePage(index+1, page); err != nil {
+		if err := d.CreatePage(index+1, slide); err != nil {
 			return err
 		}
 		if err := d.DeletePage(index); err != nil {
@@ -417,7 +460,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		}
 		return titles[i].y < titles[j].y
 	})
-	for i, title := range page.Titles {
+	for i, title := range slide.Titles {
 		if len(titles) <= i {
 			continue
 		}
@@ -436,7 +479,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		}
 		return subtitles[i].y < subtitles[j].y
 	})
-	for i, subtitle := range page.Subtitles {
+	for i, subtitle := range slide.Subtitles {
 		if len(subtitles) <= i {
 			continue
 		}
@@ -452,7 +495,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	req.Requests = append(req.Requests, &slides.Request{
 		InsertText: &slides.InsertTextRequest{
 			ObjectId: speakerNotesID,
-			Text:     strings.Join(page.Comments, "\n\n"),
+			Text:     slide.SpeakerNote,
 		},
 	})
 
@@ -465,7 +508,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	})
 	var bulletStartIndex, bulletEndIndex int
 	bulletRanges := map[int]*bulletRange{}
-	for i, body := range page.Bodies {
+	for i, body := range slide.Bodies {
 		if len(bodies) <= i {
 			continue
 		}
@@ -474,10 +517,10 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		bulletStartIndex = 0 // reset per body
 		bulletEndIndex = 0   // reset per body
 		var styleReqs []*slides.Request
-		currentBullet := md.BulletNone
+		currentBullet := BulletNone
 		for j, paragraph := range body.Paragraphs {
 			plen := 0
-			if paragraph.Bullet != md.BulletNone {
+			if paragraph.Bullet != BulletNone {
 				if paragraph.Nesting > 0 {
 					text += "\t"
 					plen++
@@ -537,13 +580,13 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 
 			if len(body.Paragraphs) > j+1 {
 				nextParagraph := body.Paragraphs[j+1]
-				if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != md.BulletNone {
+				if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
 					text += "\n"
 					plen++
 				}
 			}
 
-			if paragraph.Bullet != md.BulletNone {
+			if paragraph.Bullet != BulletNone {
 				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
 					bulletStartIndex = count
 					bulletEndIndex = count
@@ -600,15 +643,15 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	return nil
 }
 
-func (d *Deck) CreatePage(index int, page *md.Page) error {
+func (d *Deck) CreatePage(index int, slide *Slide) error {
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
 	}
 
-	layout, ok := layoutMap[page.Layout]
+	layout, ok := layoutMap[slide.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %s", page.Layout)
+		return fmt.Errorf("layout not found: %s", slide.Layout)
 	}
 
 	// create new page
@@ -897,13 +940,13 @@ func ptrInt64(i int64) *int64 {
 	return &i
 }
 
-func convertBullet(b md.Bullet) string {
+func convertBullet(b Bullet) string {
 	switch b {
-	case md.BulletDash:
+	case BulletDash:
 		return "BULLET_DISC_CIRCLE_SQUARE"
-	case md.BulletNumber:
+	case BulletNumber:
 		return "NUMBERED_DIGIT_ALPHA_ROMAN"
-	case md.BulletAlpha:
+	case BulletAlpha:
 		return "NUMBERED_DIGIT_ALPHA_ROMAN"
 	default:
 		return "UNRECOGNIZED"
