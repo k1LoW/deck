@@ -47,7 +47,7 @@ var applyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		f := args[1]
-		slides, err := md.ParseFile(f)
+		contents, err := md.ParseFile(f)
 		if err != nil {
 			return err
 		}
@@ -62,11 +62,11 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		pages, err := pageToPages(page, len(slides))
+		pages, err := pageToPages(page, len(contents))
 		if err != nil {
 			return err
 		}
-		if err := d.ApplyPages(slides, pages); err != nil {
+		if err := d.ApplyPages(contents, pages); err != nil {
 			return err
 		}
 

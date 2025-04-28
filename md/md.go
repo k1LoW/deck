@@ -12,8 +12,8 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-// Slides represents a collection of slide pages.
-type Slides []*Page
+// Contents represents a collection of slide contents.
+type Contents []*Content
 
 // Config represents the configuration for a slide.
 type Config struct {
@@ -21,8 +21,8 @@ type Config struct {
 	Freeze bool   `json:"freeze,omitempty"` // freeze the page
 }
 
-// Page represents a single slide page.
-type Page struct {
+// Content represents a single slide content.
+type Content struct {
 	Layout    string   `json:"layout"`
 	Freeze    bool     `json:"freeze,omitempty"`
 	Titles    []string `json:"titles,omitempty"`
@@ -77,8 +77,8 @@ func toBullet(m byte) Bullet {
 	}
 }
 
-// ParseFile parses a markdown file into slides.
-func ParseFile(f string) (Slides, error) {
+// ParseFile parses a markdown file into contents.
+func ParseFile(f string) (Contents, error) {
 	b, err := os.ReadFile(f)
 	if err != nil {
 		return nil, err
@@ -86,31 +86,31 @@ func ParseFile(f string) (Slides, error) {
 	return Parse(b)
 }
 
-// Parse parses markdown bytes into slides.
-// It splits the input by "---" delimiters and parses each section as a separate page.
-func Parse(b []byte) (Slides, error) {
+// Parse parses markdown bytes into contents.
+// It splits the input by "---" delimiters and parses each section as a separate content.
+func Parse(b []byte) (Contents, error) {
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
-	pages := make(Slides, len(bpages))
+	contents := make(Contents, len(bpages))
 	for i, bpage := range bpages {
-		page, err := ParsePage(bpage)
+		content, err := ParseContent(bpage)
 		if err != nil {
 			return nil, err
 		}
-		pages[i] = page
+		contents[i] = content
 	}
 
-	return pages, nil
+	return contents, nil
 }
 
-// ParsePage parses a single markdown page into a Page structure.
+// ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParsePage(b []byte) (*Page, error) {
+func ParseContent(b []byte) (*Content, error) {
 	md := goldmark.New()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
-	page := &Page{}
+	content := &Content{}
 	currentBody := &Body{}
-	page.Bodies = append(page.Bodies, currentBody)
+	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := BulletNone
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
@@ -118,16 +118,16 @@ func ParsePage(b []byte) (*Page, error) {
 			case *ast.Heading:
 				switch v.Level {
 				case 1:
-					page.Titles = append(page.Titles, convert(v.Lines().Value(b)))
+					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &Body{}
-						page.Bodies = append(page.Bodies, currentBody)
+						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case 2:
-					page.Subtitles = append(page.Subtitles, convert(v.Lines().Value(b)))
+					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &Body{}
-						page.Bodies = append(page.Bodies, currentBody)
+						content.Bodies = append(content.Bodies, currentBody)
 					}
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
@@ -177,11 +177,11 @@ func ParsePage(b []byte) (*Page, error) {
 					block := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(convert(v.Lines().Value(b))), "<!--"), "-->"))
 					config := &Config{}
 					if err := json.Unmarshal([]byte(block), config); err == nil {
-						page.Layout = config.Layout
-						page.Freeze = config.Freeze
+						content.Layout = config.Layout
+						content.Freeze = config.Freeze
 						return ast.WalkContinue, nil
 					}
-					page.Comments = append(page.Comments, block)
+					content.Comments = append(content.Comments, block)
 				} else {
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &Paragraph{
 						Fragments: []*Fragment{
@@ -204,17 +204,17 @@ func ParsePage(b []byte) (*Page, error) {
 
 	// remove empty bodies
 	notEmpty := false
-	for _, body := range page.Bodies {
+	for _, body := range content.Bodies {
 		if len(body.Paragraphs) > 0 {
 			notEmpty = true
 			break
 		}
 	}
 	if !notEmpty {
-		page.Bodies = nil
+		content.Bodies = nil
 	}
 
-	return page, nil
+	return content, nil
 }
 
 // toFragments converts an AST node to a slice of Fragment structures.

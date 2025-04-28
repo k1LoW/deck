@@ -136,7 +136,7 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 		return nil, err
 	}
 	// create first slide
-	if err := d.CreatePage(0, &md.Page{
+	if err := d.CreatePage(0, &md.Content{
 		Layout: d.defaultTitleLayout,
 	}); err != nil {
 		return nil, err
@@ -247,9 +247,9 @@ func (d *Deck) ListLayouts() []string {
 }
 
 // Apply the markdown slides to the presentation.
-func (d *Deck) Apply(slides md.Slides) error {
-	for i, page := range slides {
-		if err := d.applyPage(i, page); err != nil {
+func (d *Deck) Apply(slides md.Contents) error {
+	for i, content := range slides {
+		if err := d.applyPage(i, content); err != nil {
 			return err
 		}
 	}
@@ -262,22 +262,22 @@ func (d *Deck) Apply(slides md.Slides) error {
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(slides md.Slides, pages []int) error {
-	for i, page := range slides {
+func (d *Deck) ApplyPages(slides md.Contents, pages []int) error {
+	for i, content := range slides {
 		if !slices.Contains(pages, i+1) {
 			continue
 		}
-		if page.Layout == "" {
+		if content.Layout == "" {
 			switch {
 			case i == 0:
-				page.Layout = d.defaultTitleLayout
-			case len(page.Bodies) == 0:
-				page.Layout = d.defaultSectionLayout
+				content.Layout = d.defaultTitleLayout
+			case len(content.Bodies) == 0:
+				content.Layout = d.defaultSectionLayout
 			default:
-				page.Layout = d.defaultLayout
+				content.Layout = d.defaultLayout
 			}
 		}
-		if err := d.applyPage(i, page); err != nil {
+		if err := d.applyPage(i, content); err != nil {
 			return err
 		}
 	}
@@ -312,42 +312,42 @@ func (d *Deck) Export(w io.Writer) error {
 	return nil
 }
 
-func (d *Deck) applyPage(index int, page *md.Page) error {
+func (d *Deck) applyPage(index int, content *md.Content) error {
 	d.logger.Info("appling page", slog.Int("index", index))
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
 	}
 
-	layout, ok := layoutMap[page.Layout]
+	layout, ok := layoutMap[content.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %s", page.Layout)
+		return fmt.Errorf("layout not found: %s", content.Layout)
 	}
 
 	if len(d.presentation.Slides) <= index {
 		// create new page
-		if page.Layout == "" {
+		if content.Layout == "" {
 			switch {
 			case index == 0:
-				page.Layout = d.defaultTitleLayout
-			case len(page.Bodies) == 0:
-				page.Layout = d.defaultSectionLayout
+				content.Layout = d.defaultTitleLayout
+			case len(content.Bodies) == 0:
+				content.Layout = d.defaultSectionLayout
 			default:
-				page.Layout = d.defaultLayout
+				content.Layout = d.defaultLayout
 			}
 		}
-		if err := d.CreatePage(index, page); err != nil {
+		if err := d.CreatePage(index, content); err != nil {
 			return err
 		}
 	}
-	if page.Freeze {
+	if content.Freeze {
 		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
 		return nil
 	}
 	currentSlide := d.presentation.Slides[index]
 	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
 		// create new page
-		if err := d.CreatePage(index+1, page); err != nil {
+		if err := d.CreatePage(index+1, content); err != nil {
 			return err
 		}
 		if err := d.DeletePage(index); err != nil {
@@ -417,7 +417,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		}
 		return titles[i].y < titles[j].y
 	})
-	for i, title := range page.Titles {
+	for i, title := range content.Titles {
 		if len(titles) <= i {
 			continue
 		}
@@ -436,7 +436,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 		}
 		return subtitles[i].y < subtitles[j].y
 	})
-	for i, subtitle := range page.Subtitles {
+	for i, subtitle := range content.Subtitles {
 		if len(subtitles) <= i {
 			continue
 		}
@@ -452,7 +452,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	req.Requests = append(req.Requests, &slides.Request{
 		InsertText: &slides.InsertTextRequest{
 			ObjectId: speakerNotesID,
-			Text:     strings.Join(page.Comments, "\n\n"),
+			Text:     strings.Join(content.Comments, "\n\n"),
 		},
 	})
 
@@ -465,7 +465,7 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	})
 	var bulletStartIndex, bulletEndIndex int
 	bulletRanges := map[int]*bulletRange{}
-	for i, body := range page.Bodies {
+	for i, body := range content.Bodies {
 		if len(bodies) <= i {
 			continue
 		}
@@ -600,15 +600,15 @@ func (d *Deck) applyPage(index int, page *md.Page) error {
 	return nil
 }
 
-func (d *Deck) CreatePage(index int, page *md.Page) error {
+func (d *Deck) CreatePage(index int, content *md.Content) error {
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
 	}
 
-	layout, ok := layoutMap[page.Layout]
+	layout, ok := layoutMap[content.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %s", page.Layout)
+		return fmt.Errorf("layout not found: %s", content.Layout)
 	}
 
 	// create new page
