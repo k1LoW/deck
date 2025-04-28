@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"net"
 	"net/http"
@@ -350,7 +349,7 @@ func (d *Deck) Export(w io.Writer) error {
 		return err
 	}
 	if err := req.Write(w); err != nil {
-		log.Fatalf("Unable to write PDF file: %v", err)
+		return fmt.Errorf("unable to create PDF file: %v", err)
 	}
 	return nil
 }
@@ -884,7 +883,9 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 		listening()
 		if err := srv.Serve(ln); err != nil {
 			if err != http.ErrServerClosed {
-				log.Fatalf("ListenAndServe: %v", err)
+				listenErr = fmt.Errorf("serve: %w", err)
+				done()
+				return
 			}
 		}
 	}()
