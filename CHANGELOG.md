@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.14.0](https://github.com/k1LoW/deck/compare/v0.13.5...v0.14.0) - 2025-04-28
+### Other Changes
+- refactor: Introduce a new `deck.Slide` type by @k1LoW in https://github.com/k1LoW/deck/pull/73
+
 ## [v0.13.5](https://github.com/k1LoW/deck/compare/v0.13.4...v0.13.5) - 2025-04-28
 ### Fix bug 🐛
 - fix(deck): support additional title placeholder type by @k1LoW in https://github.com/k1LoW/deck/pull/72
