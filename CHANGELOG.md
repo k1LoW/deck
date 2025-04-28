@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.13.5](https://github.com/k1LoW/deck/compare/v0.13.4...v0.13.5) - 2025-04-28
+### Fix bug 🐛
+- fix(deck): support additional title placeholder type by @k1LoW in https://github.com/k1LoW/deck/pull/72
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/70
+
 ## [v0.13.4](https://github.com/k1LoW/deck/compare/v0.13.3...v0.13.4) - 2025-04-22
 ### Other Changes
 - chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/68
