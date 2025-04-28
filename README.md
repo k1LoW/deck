@@ -58,6 +58,19 @@ The slide pages are represented by dividing them with horizontal lines `---`.
 $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
+#### Watch mode
+
+You can use the `--watch` flag to continuously monitor changes to your markdown file and automatically apply them to the presentation:
+
+```console
+$ deck apply --watch xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
+This is useful during the content creation process as it allows you to see your changes reflected in the presentation in real-time as you edit the markdown file.
+
+> [!NOTE]
+> The `--watch` flag cannot be used together with the `--page` flag.
+
 ## Support markdown rules
 
 ### Insertion rule
