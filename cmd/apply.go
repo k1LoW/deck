@@ -86,11 +86,7 @@ var applyCmd = &cobra.Command{
 			}
 		}
 		if watch {
-			allPages := make([]int, len(contents))
-			for i := range len(contents) {
-				allPages[i] = i + 1
-			}
-			if err := d.ApplyPages(contents.ToSlides(), allPages); err != nil {
+			if err := d.Apply(contents.ToSlides()); err != nil {
 				return err
 			}
 			logger.Info("initial apply completed", slog.String("presentation_id", id))
