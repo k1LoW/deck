@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.16.0](https://github.com/k1LoW/deck/compare/v0.15.0...v0.16.0) - 2025-04-29
+### New Features 🎉
+- feat: add verbose flag and improve log message handling by @k1LoW in https://github.com/k1LoW/deck/pull/77
+### Other Changes
+- fix: use context.Context by @k1LoW in https://github.com/k1LoW/deck/pull/79
+
 ## [v0.15.0](https://github.com/k1LoW/deck/compare/v0.14.0...v0.15.0) - 2025-04-28
 ### New Features 🎉
 - feat: support `--watch` for watching update file. by @k1LoW in https://github.com/k1LoW/deck/pull/76
