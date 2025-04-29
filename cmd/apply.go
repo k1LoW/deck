@@ -57,6 +57,7 @@ var applyCmd = &cobra.Command{
 		return cobra.ExactArgs(2)(cmd, args)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 		id := args[0]
 		f := args[1]
 		contents, err := md.ParseFile(f)
@@ -76,17 +77,17 @@ var applyCmd = &cobra.Command{
 			deck.WithPresentationID(id),
 			deck.WithLogger(logger),
 		}
-		d, err := deck.New(cmd.Context(), opts...)
+		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			return err
 		}
 		if title != "" {
-			if err := d.UpdateTitle(title); err != nil {
+			if err := d.UpdateTitle(ctx, title); err != nil {
 				return err
 			}
 		}
 		if watch {
-			if err := d.Apply(contents.ToSlides()); err != nil {
+			if err := d.Apply(ctx, contents.ToSlides()); err != nil {
 				return err
 			}
 			logger.Info("initial apply completed", slog.String("presentation_id", id))
@@ -97,7 +98,7 @@ var applyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			if err := d.ApplyPages(contents.ToSlides(), pages); err != nil {
+			if err := d.ApplyPages(ctx, contents.ToSlides(), pages); err != nil {
 				return err
 			}
 			logger.Info("apply completed", slog.String("presentation_id", id))
@@ -262,7 +263,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
 
-			if err := d.ApplyPages(newContents.ToSlides(), changedPages); err != nil {
+			if err := d.ApplyPages(ctx, newContents.ToSlides(), changedPages); err != nil {
 				logger.Error("failed to apply changes", slog.String("error", err.Error()))
 				continue
 			}

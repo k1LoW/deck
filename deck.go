@@ -126,7 +126,7 @@ func New(ctx context.Context, opts ...Option) (*Deck, error) {
 			return nil, err
 		}
 	}
-	if err := d.refresh(); err != nil {
+	if err := d.refresh(ctx); err != nil {
 		return nil, err
 	}
 	return d, nil
@@ -148,7 +148,7 @@ func Create(ctx context.Context) (*Deck, error) {
 		return nil, err
 	}
 	d.id = f.Id
-	if err := d.refresh(); err != nil {
+	if err := d.refresh(ctx); err != nil {
 		return nil, err
 	}
 	return d, nil
@@ -170,15 +170,15 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 		return nil, err
 	}
 	d.id = f.Id
-	if err := d.refresh(); err != nil {
+	if err := d.refresh(ctx); err != nil {
 		return nil, err
 	}
 	// delete all slides
-	if err := d.DeletePageAfter(-1); err != nil {
+	if err := d.DeletePageAfter(ctx, -1); err != nil {
 		return nil, err
 	}
 	// create first slide
-	if err := d.CreatePage(0, &Slide{
+	if err := d.CreatePage(ctx, 0, &Slide{
 		Layout: d.defaultTitleLayout,
 	}); err != nil {
 		return nil, err
@@ -289,14 +289,14 @@ func (d *Deck) ListLayouts() []string {
 }
 
 // Apply the markdown slides to the presentation.
-func (d *Deck) Apply(slides Slides) error {
+func (d *Deck) Apply(ctx context.Context, slides Slides) error {
 	for i, slide := range slides {
-		if err := d.applyPage(i, slide); err != nil {
+		if err := d.applyPage(ctx, i, slide); err != nil {
 			return err
 		}
 	}
 
-	if err := d.DeletePageAfter(len(slides) - 1); err != nil {
+	if err := d.DeletePageAfter(ctx, len(slides)-1); err != nil {
 		return err
 	}
 
@@ -304,7 +304,7 @@ func (d *Deck) Apply(slides Slides) error {
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(slides Slides, pages []int) error {
+func (d *Deck) ApplyPages(ctx context.Context, slides Slides, pages []int) error {
 	for i, slide := range slides {
 		if !slices.Contains(pages, i+1) {
 			continue
@@ -319,12 +319,12 @@ func (d *Deck) ApplyPages(slides Slides, pages []int) error {
 				slide.Layout = d.defaultLayout
 			}
 		}
-		if err := d.applyPage(i, slide); err != nil {
+		if err := d.applyPage(ctx, i, slide); err != nil {
 			return err
 		}
 	}
 
-	if err := d.DeletePageAfter(len(slides) - 1); err != nil {
+	if err := d.DeletePageAfter(ctx, len(slides)-1); err != nil {
 		return err
 	}
 
@@ -332,19 +332,19 @@ func (d *Deck) ApplyPages(slides Slides, pages []int) error {
 }
 
 // UpdateTitle updates the title of the presentation.
-func (d *Deck) UpdateTitle(title string) error {
+func (d *Deck) UpdateTitle(ctx context.Context, title string) error {
 	file := &drive.File{
 		Name: title,
 	}
-	if _, err := d.driveSrv.Files.Update(d.id, file).Do(); err != nil {
+	if _, err := d.driveSrv.Files.Update(d.id, file).Context(ctx).Do(); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Export the presentation as PDF.
-func (d *Deck) Export(w io.Writer) error {
-	req, err := d.driveSrv.Files.Export(d.id, "application/pdf").Download()
+func (d *Deck) Export(ctx context.Context, w io.Writer) error {
+	req, err := d.driveSrv.Files.Export(d.id, "application/pdf").Context(ctx).Download()
 	if err != nil {
 		return err
 	}
@@ -354,7 +354,7 @@ func (d *Deck) Export(w io.Writer) error {
 	return nil
 }
 
-func (d *Deck) applyPage(index int, slide *Slide) error {
+func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	d.logger.Info("appling page", slog.Int("index", index))
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
@@ -378,7 +378,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 				slide.Layout = d.defaultLayout
 			}
 		}
-		if err := d.CreatePage(index, slide); err != nil {
+		if err := d.CreatePage(ctx, index, slide); err != nil {
 			return err
 		}
 	}
@@ -389,10 +389,10 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 	currentSlide := d.presentation.Slides[index]
 	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
 		// create new page
-		if err := d.CreatePage(index+1, slide); err != nil {
+		if err := d.CreatePage(ctx, index+1, slide); err != nil {
 			return err
 		}
-		if err := d.DeletePage(index); err != nil {
+		if err := d.DeletePage(ctx, index); err != nil {
 			return err
 		}
 	}
@@ -412,7 +412,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(element.ObjectId); err != nil {
+				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
 					return err
 				}
 			case "SUBTITLE":
@@ -421,7 +421,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(element.ObjectId); err != nil {
+				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
 					return err
 				}
 			case "BODY":
@@ -430,7 +430,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(element.ObjectId); err != nil {
+				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
 					return err
 				}
 			}
@@ -441,7 +441,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			if element.Shape.Placeholder.Type == "BODY" {
 				speakerNotesID = element.ObjectId
-				if err := d.clearPlaceholder(speakerNotesID); err != nil {
+				if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
 					return err
 				}
 			}
@@ -633,7 +633,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 		}
 	}
 	if len(req.Requests) > 0 {
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 			return err
 		}
 	}
@@ -642,7 +642,7 @@ func (d *Deck) applyPage(index int, slide *Slide) error {
 	return nil
 }
 
-func (d *Deck) CreatePage(index int, slide *Slide) error {
+func (d *Deck) CreatePage(ctx context.Context, index int, slide *Slide) error {
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
@@ -667,18 +667,18 @@ func (d *Deck) CreatePage(index int, slide *Slide) error {
 		},
 	}
 
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 		return err
 	}
 
-	if err := d.refresh(); err != nil {
+	if err := d.refresh(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (d *Deck) DeletePage(index int) error {
+func (d *Deck) DeletePage(ctx context.Context, index int) error {
 	if len(d.presentation.Slides) <= index {
 		return nil
 	}
@@ -692,16 +692,16 @@ func (d *Deck) DeletePage(index int) error {
 			},
 		},
 	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 		return err
 	}
-	if err := d.refresh(); err != nil {
+	if err := d.refresh(ctx); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *Deck) DeletePageAfter(index int) error {
+func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
 	if len(d.presentation.Slides) <= index {
 		return nil
 	}
@@ -716,17 +716,17 @@ func (d *Deck) DeletePageAfter(index int) error {
 	if len(req.Requests) == 0 {
 		return nil
 	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Do(); err != nil {
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 		return err
 	}
-	if err := d.refresh(); err != nil {
+	if err := d.refresh(ctx); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (d *Deck) refresh() error {
-	presentation, err := d.srv.Presentations.Get(d.id).Do()
+func (d *Deck) refresh(ctx context.Context) error {
+	presentation, err := d.srv.Presentations.Get(d.id).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
@@ -754,7 +754,7 @@ func (d *Deck) refresh() error {
 	return nil
 }
 
-func (d *Deck) clearPlaceholder(placeholderID string) error {
+func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) error {
 	req := &slides.BatchUpdatePresentationRequest{
 		Requests: []*slides.Request{
 			{
@@ -789,7 +789,7 @@ func (d *Deck) clearPlaceholder(placeholderID string) error {
 		},
 	}
 
-	_, _ = d.srv.Presentations.BatchUpdate(d.id, req).Do()
+	_, _ = d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do()
 	return nil
 }
 

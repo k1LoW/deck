@@ -35,23 +35,24 @@ var newCmd = &cobra.Command{
 	Short: "create new presentation",
 	Long:  `create new presentation.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 		var (
 			d   *deck.Deck
 			err error
 		)
 		if from != "" {
-			d, err = deck.CreateFrom(cmd.Context(), from)
+			d, err = deck.CreateFrom(ctx, from)
 			if err != nil {
 				return err
 			}
 		} else {
-			d, err = deck.Create(cmd.Context())
+			d, err = deck.Create(ctx)
 			if err != nil {
 				return err
 			}
 		}
 		if title != "" {
-			if err := d.UpdateTitle(title); err != nil {
+			if err := d.UpdateTitle(ctx, title); err != nil {
 				return err
 			}
 		}
