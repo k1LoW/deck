@@ -36,8 +36,9 @@ var exportCmd = &cobra.Command{
 	Long:  `export deck.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 		id := args[0]
-		d, err := deck.New(cmd.Context(), deck.WithPresentationID(id))
+		d, err := deck.New(ctx, deck.WithPresentationID(id))
 		if err != nil {
 			return err
 		}
@@ -46,7 +47,7 @@ var exportCmd = &cobra.Command{
 			return err
 		}
 		defer f.Close()
-		if err := d.Export(f); err != nil {
+		if err := d.Export(ctx, f); err != nil {
 			return err
 		}
 		return nil
