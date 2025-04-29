@@ -34,15 +34,15 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
-	if strings.Contains(r.Message, "applied") {
+	if r.Message == "applied page" {
 		_, _ = h.stdout.Write([]byte(yellow(".")))
 		return nil
 	}
-	if strings.Contains(r.Message, "freeze") {
+	if strings.Contains(r.Message, "because freeze:true") {
 		_, _ = h.stdout.Write([]byte(cyan("*")))
 		return nil
 	}
-	if strings.Contains(r.Message, "apply completed") {
+	if r.Message == "apply completed" {
 		_, _ = h.stdout.Write([]byte("\n"))
 		return nil
 	}
