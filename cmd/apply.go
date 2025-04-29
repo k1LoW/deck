@@ -39,10 +39,11 @@ import (
 )
 
 var (
-	title  string
-	page   string
-	watch  bool
-	logger *slog.Logger
+	title   string
+	page    string
+	watch   bool
+	verbose bool
+	logger  *slog.Logger
 )
 
 var applyCmd = &cobra.Command{
@@ -62,7 +63,7 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if watch {
+		if verbose {
 			logger = slog.New(
 				slog.NewTextHandler(os.Stdout, nil),
 			)
@@ -114,6 +115,7 @@ func init() {
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
 	applyCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch for changes")
+	applyCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 }
 
 func pageToPages(page string, total int) ([]int, error) {
