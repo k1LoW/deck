@@ -170,6 +170,10 @@ It is possible to skip the operation of the target page.
 <!-- {"freeze": true} -->
 ```
 
+## Integration
+
+- [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Creating deck using Markdown and Google Slides.
+
 ## Install
 
 **homebrew tap:**
