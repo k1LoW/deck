@@ -1,0 +1,71 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "subtitles": [
+      "Subtitle"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "👉"
+              },
+              {
+                "value": "here",
+                "link": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "here"
+              },
+              {
+                "value": "👉",
+                "link": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "➡️"
+              },
+              {
+                "value": "here",
+                "link": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "👍🏼"
+              },
+              {
+                "value": "here",
+                "link": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  }
+]

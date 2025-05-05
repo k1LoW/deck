@@ -14,10 +14,11 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"unicode/utf8"
 
+	"github.com/forPelevin/gomoji"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/browser"
+	"github.com/rivo/uniseg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -526,7 +527,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 				}
 			}
 			for _, fragment := range paragraph.Fragments {
-				flen := utf8.RuneCountInString(fragment.Value)
+				flen := countString(fragment.Value)
 				if fragment.Bold || fragment.Italic {
 					var fields []string
 					if fragment.Bold {
@@ -935,6 +936,19 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	return nil
+}
+
+func countString(s string) int {
+	count := 0
+	gr := uniseg.NewGraphemes(s)
+	for gr.Next() {
+		if gomoji.ContainsEmoji(gr.Str()) {
+			count += 2
+			continue
+		}
+		count++
+	}
+	return count
 }
 
 func ptrInt64(i int64) *int64 {
