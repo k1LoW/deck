@@ -6,13 +6,11 @@ toolchain go1.24.1
 
 require (
 	github.com/fatih/color v1.18.0
-	github.com/forPelevin/gomoji v1.3.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/mattn/go-colorable v0.1.14
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
-	github.com/rivo/uniseg v0.4.7
 	github.com/spf13/cobra v1.9.1
 	github.com/tenntenn/golden v0.5.4
 	github.com/yuin/goldmark v1.7.11
