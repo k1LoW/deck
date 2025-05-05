@@ -12,9 +12,7 @@ func TestCountString(t *testing.T) {
 		{"", 0},
 		{"👉", 2},
 		{"➡️", 2},
-
-		// FIXME: In Google Slides, the characters represented by ligatures may need to be counted as 2 * the number of component characters.
-		// {"👍🏼", 4},
+		{"👍🏼", 4},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {

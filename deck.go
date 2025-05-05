@@ -15,10 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/forPelevin/gomoji"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/browser"
-	"github.com/rivo/uniseg"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -938,17 +936,18 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 	return nil
 }
 
+// countString counts the number of characters in a string, considering UTF-16 surrogate pairs.
+// This is because Google Slides' character count is derived from JavaScript.
 func countString(s string) int {
-	count := 0
-	gr := uniseg.NewGraphemes(s)
-	for gr.Next() {
-		if gomoji.ContainsEmoji(gr.Str()) {
-			count += 2
-			continue
+	length := 0
+	for _, r := range s {
+		if r <= 0xFFFF && !(r >= 0xD800 && r <= 0xDFFF) {
+			length++
+		} else {
+			length += 2
 		}
-		count++
 	}
-	return count
+	return length
 }
 
 func ptrInt64(i int64) *int64 {
