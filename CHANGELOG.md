@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.16.1](https://github.com/k1LoW/deck/compare/v0.16.0...v0.16.1) - 2025-05-05
+### Fix bug 🐛
+- feat(deck): add emoji-aware string counting ( does not support ligature ) by @k1LoW in https://github.com/k1LoW/deck/pull/83
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.230.0 to 0.231.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/81
+
 ## [v0.16.0](https://github.com/k1LoW/deck/compare/v0.15.0...v0.16.0) - 2025-04-29
 ### New Features 🎉
 - feat: add verbose flag and improve log message handling by @k1LoW in https://github.com/k1LoW/deck/pull/77
