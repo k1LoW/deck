@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.16.2](https://github.com/k1LoW/deck/compare/v0.16.1...v0.16.2) - 2025-05-05
+### Fix bug 🐛
+- fix(deck): count string as UTF-16 by @k1LoW in https://github.com/k1LoW/deck/pull/84
+
 ## [v0.16.1](https://github.com/k1LoW/deck/compare/v0.16.0...v0.16.1) - 2025-05-05
 ### Fix bug 🐛
 - feat(deck): add emoji-aware string counting ( does not support ligature ) by @k1LoW in https://github.com/k1LoW/deck/pull/83
