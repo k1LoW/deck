@@ -53,6 +53,7 @@ type Fragment struct {
 	Bold          bool   `json:"bold,omitempty"`
 	Italic        bool   `json:"italic,omitempty"`
 	Link          string `json:"link,omitempty"`
+	Code          bool   `json:"code,omitempty"`
 	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
 }
 

@@ -1,0 +1,55 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Inline Code"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Title `with code`"
+    ],
+    "subtitles": [
+      "Hello `code`"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Hello "
+              },
+              {
+                "value": "code",
+                "code": true
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "code",
+                "code": true
+              },
+              {
+                "value": " world"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "code",
+                "code": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
