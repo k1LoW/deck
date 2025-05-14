@@ -231,6 +231,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				Value:         children[0].Value,
 				Link:          convert(n.Destination),
 				Bold:          children[0].Bold,
+				Italic:        children[0].Italic,
 				SoftLineBreak: children[0].SoftLineBreak,
 			})
 		case *ast.Text:
@@ -266,6 +267,18 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 						SoftLineBreak: false,
 					})
 				}
+			case *ast.CodeSpan:
+				children, err := toFragments(b, typedNode)
+				if err != nil {
+					return nil, err
+				}
+				frags = append(frags, &deck.Fragment{
+					Value:         children[0].Value,
+					Bold:          children[0].Bold,
+					Italic:        children[0].Italic,
+					Code:          true,
+					SoftLineBreak: children[0].SoftLineBreak,
+				})
 			default:
 				// For all other node types, return a newline to match original behavior
 				frags = append(frags, &deck.Fragment{
