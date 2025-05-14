@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.16.3](https://github.com/k1LoW/deck/compare/v0.16.2...v0.16.3) - 2025-05-14
+### Other Changes
+- feat(md): add support for inline code fragments ( parse only ) by @k1LoW in https://github.com/k1LoW/deck/pull/88
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/86
+
 ## [v0.16.2](https://github.com/k1LoW/deck/compare/v0.16.1...v0.16.2) - 2025-05-05
 ### Fix bug 🐛
 - fix(deck): count string as UTF-16 by @k1LoW in https://github.com/k1LoW/deck/pull/84
