@@ -134,7 +134,7 @@ func New(ctx context.Context, opts ...Option) (*Deck, error) {
 
 // Create Google Slides presentation.
 func Create(ctx context.Context) (*Deck, error) {
-	d, err := initialize(context.Background())
+	d, err := initialize(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func Create(ctx context.Context) (*Deck, error) {
 
 // CreateFrom creates a new Deck from the presentation ID.
 func CreateFrom(ctx context.Context, id string) (*Deck, error) {
-	d, err := initialize(context.Background())
+	d, err := initialize(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 
 // List Google Slides presentations.
 func List(ctx context.Context) ([]*Presentation, error) {
-	d, err := initialize(context.Background())
+	d, err := initialize(ctx)
 	if err != nil {
 		return nil, err
 	}
