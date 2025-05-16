@@ -24,6 +24,11 @@ import (
 	"google.golang.org/api/slides/v1"
 )
 
+const (
+	layoutNameForStyle = "style"
+	styleCode          = "code"
+)
+
 type Slides []*Slide
 
 type Slide struct {
@@ -78,6 +83,7 @@ type Deck struct {
 	defaultTitleLayout   string
 	defaultSectionLayout string
 	defaultLayout        string
+	styles               map[string]*slides.TextStyle
 	logger               *slog.Logger
 }
 
@@ -212,6 +218,7 @@ func List(ctx context.Context) ([]*Presentation, error) {
 func initialize(ctx context.Context) (*Deck, error) {
 	d := &Deck{
 		logger: slog.New(slog.NewJSONHandler(io.Discard, nil)),
+		styles: map[string]*slides.TextStyle{},
 	}
 	if os.Getenv("XDG_DATA_HOME") != "" {
 		d.dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
@@ -535,6 +542,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 					if fragment.Italic {
 						fields = append(fields, "italic")
 					}
+					if fragment.Code {
+						fields = append(fields, "foregroundColor,fontFamily,backgroundColor")
+					}
 					styleReqs = append(styleReqs, &slides.Request{
 						UpdateTextStyle: &slides.UpdateTextStyleRequest{
 							ObjectId: bodies[i].objectID,
@@ -548,6 +558,25 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 								EndIndex:   ptrInt64(int64(count + plen + flen)),
 							},
 							Fields: strings.Join(fields, ","),
+						},
+					})
+				}
+				_, ok := d.styles[styleCode]
+				if ok && fragment.Code {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: bodies[i].objectID,
+							Style: &slides.TextStyle{
+								ForegroundColor: d.styles[styleCode].ForegroundColor,
+								FontFamily:      d.styles[styleCode].FontFamily,
+								BackgroundColor: d.styles[styleCode].BackgroundColor,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: ptrInt64(int64(count + plen)),
+								EndIndex:   ptrInt64(int64(count + plen + flen)),
+							},
+							Fields: "foregroundColor,fontFamily,backgroundColor",
 						},
 					})
 				}
@@ -732,7 +761,7 @@ func (d *Deck) refresh(ctx context.Context) error {
 	}
 	d.presentation = presentation
 
-	// set default layouts
+	// set default layouts and detect style
 	for _, l := range d.presentation.Layouts {
 		layout := l.LayoutProperties.Name
 		switch {
@@ -747,6 +776,23 @@ func (d *Deck) refresh(ctx context.Context) error {
 		case strings.HasPrefix(layout, "SECTION_HEADER"):
 			if d.defaultSectionLayout == "" {
 				d.defaultSectionLayout = l.LayoutProperties.DisplayName
+			}
+		}
+
+		if l.LayoutProperties.DisplayName == layoutNameForStyle {
+			for _, e := range l.PageElements {
+				if e.Shape == nil || e.Shape.Text == nil {
+					continue
+				}
+				for _, t := range e.Shape.Text.TextElements {
+					if t.TextRun == nil {
+						continue
+					}
+					// inline code
+					if strings.Contains(t.TextRun.Content, styleCode) {
+						d.styles[styleCode] = t.TextRun.Style
+					}
+				}
 			}
 		}
 	}

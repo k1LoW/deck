@@ -119,7 +119,14 @@ The system continues to operate despite an arbitrary number of messages being dr
 - List ( `-` `*` )
 - Ordered list ( `1.` `1)` )
 - Link ( `[Link](https://example.com)`
+- Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
+
+#### Style for code syntax
+
+Create a layout named `style`, add a `Text box` and type `code`. That style will be the style of Markdown's `code` syntax.
+
+![img](img/style.png)
 
 ### Comment
 
