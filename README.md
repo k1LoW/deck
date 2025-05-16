@@ -122,9 +122,9 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
 
-#### Style for code syntax
+#### Style for code span syntax
 
-Create a layout named `style`, add a `Text box` and type `code`. That style will be the style of Markdown's `code` syntax.
+Create a layout named `style` and add a `Text box` and type `code`. That style ( `backgroundColor`, `foregroundColor`, `fontFamily` ) will be the style of Markdown's `code` syntax.
 
 ![img](img/style.png)
 
