@@ -207,6 +207,9 @@ func (contents Contents) ToSlides() deck.Slides {
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
 func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 	var frags []*deck.Fragment
+	if n == nil {
+		return frags, nil
+	}
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch n := c.(type) {
 		case *ast.Emphasis:
