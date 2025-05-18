@@ -22,6 +22,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/emoji.md"},
 		{"../testdata/code.md"},
 		{"../testdata/empty_list.md"},
+		{"../testdata/empty_link.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
