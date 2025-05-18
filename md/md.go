@@ -230,6 +230,9 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			if err != nil {
 				return nil, err
 			}
+			if len(children) == 0 {
+				continue
+			}
 			frags = append(frags, &deck.Fragment{
 				Value:         children[0].Value,
 				Link:          convert(n.Destination),
