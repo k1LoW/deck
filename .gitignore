@@ -3,3 +3,4 @@ deck
 *.json
 *~lock~*
 .DS_Store
+md/testdata/fuzz

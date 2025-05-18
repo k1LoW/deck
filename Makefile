@@ -20,6 +20,9 @@ build:
 lint:
 	golangci-lint run ./...
 
+fuzz:
+	go test -fuzz=FuzzParse -fuzztime=5m ./md/.
+
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
 	go install github.com/Songmu/gocredits/cmd/gocredits@latest
