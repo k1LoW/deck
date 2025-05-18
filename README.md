@@ -199,7 +199,13 @@ $ go install github.com/k1LoW/deck/cmd/deck@latest
 
 Download binary from [releases page](https://github.com/k1LoW/deck/releases)
 
-## References
+## Alternatives
 
 - [googleworkspace/md2googleslides](https://github.com/googleworkspace/md2googleslides): Generate Google Slides from markdown
 
+## License
+
+- [MIT License](LICENSE)
+    - Include logo as well as source code.
+    - Only logo license can be selected [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+    - Also, if there is no alteration to the logo and it is used for technical information about deck, I would not say anything if the copyright notice is omitted.
