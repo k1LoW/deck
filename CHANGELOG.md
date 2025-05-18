@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.17.2](https://github.com/k1LoW/deck/compare/v0.17.1...v0.17.2) - 2025-05-18
+### Fix bug 🐛
+- fix: empty link item causes panic by @k1LoW in https://github.com/k1LoW/deck/pull/97
+### Other Changes
+- test: add fuzzing test by @k1LoW in https://github.com/k1LoW/deck/pull/95
+
 ## [v0.17.1](https://github.com/k1LoW/deck/compare/v0.17.0...v0.17.1) - 2025-05-18
 ### Fix bug 🐛
 - fix: empty list item causes panic by @k1LoW in https://github.com/k1LoW/deck/pull/94
