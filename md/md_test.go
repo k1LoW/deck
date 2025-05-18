@@ -47,3 +47,42 @@ func TestParse(t *testing.T) {
 		})
 	}
 }
+
+func FuzzParse(f *testing.F) {
+	f.Add([]byte(`# Title
+
+- A
+- B
+
+<br><br>
+
+**C**
+D
+E<br>*F*
+
+---
+
+# Title
+
+## Subtitle
+
+- aA
+- b**B**
+- cC
+    - dD
+- *e*E
+    - fF
+        - gG
+1. h**H**
+  2. **i**I
+
+ref: [deck repo](https://github.com/k1LoW/deck)
+
+---
+
+# Title
+`))
+	f.Fuzz(func(t *testing.T, in []byte) {
+		_, _ = Parse(in)
+	})
+}
