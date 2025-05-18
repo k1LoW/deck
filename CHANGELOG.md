@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.17.1](https://github.com/k1LoW/deck/compare/v0.17.0...v0.17.1) - 2025-05-18
+### Fix bug 🐛
+- fix: empty list item causes panic by @k1LoW in https://github.com/k1LoW/deck/pull/94
+
 ## [v0.17.0](https://github.com/k1LoW/deck/compare/v0.16.3...v0.17.0) - 2025-05-16
 ### New Features 🎉
 - feat(deck): add support for custom code span styles in slides by @k1LoW in https://github.com/k1LoW/deck/pull/91
