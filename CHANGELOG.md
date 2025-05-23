@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.18.0](https://github.com/k1LoW/deck/compare/v0.17.2...v0.18.0) - 2025-05-23
+### New Features 🎉
+- feat(oauth): implement PKCE for enhanced security in OAuth flow by @k1LoW in https://github.com/k1LoW/deck/pull/100
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/99
+
 ## [v0.17.2](https://github.com/k1LoW/deck/compare/v0.17.1...v0.17.2) - 2025-05-18
 ### Fix bug 🐛
 - fix: empty link item causes panic by @k1LoW in https://github.com/k1LoW/deck/pull/97
