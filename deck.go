@@ -2,6 +2,9 @@ package deck
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -236,15 +239,18 @@ func initialize(ctx context.Context) (*Deck, error) {
 	if err := os.MkdirAll(d.stateHomePath, 0700); err != nil {
 		return nil, err
 	}
+
 	creds := filepath.Join(d.dataHomePath, "credentials.json")
 	b, err := os.ReadFile(creds)
 	if err != nil {
 		return nil, err
 	}
+
 	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
 	if err != nil {
 		return nil, err
 	}
+
 	client, err := d.getHTTPClient(ctx, config)
 	if err != nil {
 		return nil, err
@@ -497,7 +503,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 		})
 	}
 
-	// set speacker notes
+	// set speaker notes
 	req.Requests = append(req.Requests, &slides.Request{
 		InsertText: &slides.InsertTextRequest{
 			ObjectId: speakerNotesID,
@@ -897,14 +903,31 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.
 }
 
 func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {
-	var (
-		authCode string
-	)
+	// Generate code verifier and challenge for PKCE
+	codeVerifier, err := generateCodeVerifier()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate code verifier: %w", err)
+	}
+	codeChallenge := generateCodeChallenge(codeVerifier)
+
+	var authCode string
+
+	// Generate random state for CSRF protection
+	stateBytes := make([]byte, 16)
+	if _, err := rand.Read(stateBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate state: %w", err)
+	}
+	state := base64.RawURLEncoding.EncodeToString(stateBytes)
 	listenCtx, listening := context.WithCancel(ctx)
 	doneCtx, done := context.WithCancel(ctx)
 	// run and stop local server
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("state") != state {
+			http.Error(w, "Invalid state parameter", http.StatusBadRequest)
+			return
+		}
+
 		if r.URL.Query().Get("code") == "" {
 			return
 		}
@@ -941,7 +964,12 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 	}
 	config.RedirectURL = "http://" + srv.Addr + "/"
 
-	authURL := config.AuthCodeURL("state-token", oauth2.AccessTypeOffline)
+	// Add PKCE parameters to the authorization URL
+	authURL := config.AuthCodeURL(state,
+		oauth2.AccessTypeOffline,
+		oauth2.SetAuthURLParam("code_challenge", codeChallenge),
+		oauth2.SetAuthURLParam("code_challenge_method", "S256"))
+
 	if err := browser.OpenURL(authURL); err != nil {
 		return nil, err
 	}
@@ -951,7 +979,9 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 		return nil, err
 	}
 
-	token, err := config.Exchange(ctx, authCode)
+	// Send code verifier during token exchange
+	token, err := config.Exchange(ctx, authCode,
+		oauth2.SetAuthURLParam("code_verifier", codeVerifier))
 	if err != nil {
 		return nil, err
 	}
@@ -981,6 +1011,25 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	return nil
+}
+
+// generateCodeVerifier generates a code verifier for PKCE
+// Generates a random string of 43-128 characters in compliance with RFC7636
+func generateCodeVerifier() (string, error) {
+	// Generate 64 bytes (512 bits) of random data
+	b := make([]byte, 64)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.RawURLEncoding.EncodeToString(b), nil
+}
+
+// generateCodeChallenge generates a code challenge from the code verifier
+// Calculates SHA-256 hash and applies Base64 URL encoding
+func generateCodeChallenge(verifier string) string {
+	h := sha256.New()
+	h.Write([]byte(verifier))
+	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))
 }
 
 // countString counts the number of characters in a string, considering UTF-16 surrogate pairs.
