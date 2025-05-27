@@ -279,9 +279,9 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			matches := classRe.FindStringSubmatch(htmlContent)
 			if len(matches) > 1 {
 				if matches[1] != "" {
-					className = matches[1] // ダブルクォートの場合
+					className = matches[1] // For double quotes
 				} else if len(matches) > 2 && matches[2] != "" {
-					className = matches[2] // シングルクォートの場合
+					className = matches[2] // For single quotes
 				}
 			}
 		case *ast.String:
