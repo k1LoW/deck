@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/k1LoW/deck"
@@ -210,23 +211,25 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 	if n == nil {
 		return frags, nil
 	}
+	var className string
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
-		switch n := c.(type) {
+		switch childNode := c.(type) {
 		case *ast.Emphasis:
-			children, err := toFragments(b, n)
+			children, err := toFragments(b, childNode)
 			if err != nil {
 				return nil, err
 			}
 			for _, child := range children {
 				frags = append(frags, &deck.Fragment{
 					Value:         child.Value,
-					Bold:          (n.Level == 2) || child.Bold,
-					Italic:        (n.Level == 1) || child.Italic,
+					Bold:          (childNode.Level == 2) || child.Bold,
+					Italic:        (childNode.Level == 1) || child.Italic,
 					SoftLineBreak: child.SoftLineBreak,
+					ClassName:     className,
 				})
 			}
 		case *ast.Link:
-			children, err := toFragments(b, n)
+			children, err := toFragments(b, childNode)
 			if err != nil {
 				return nil, err
 			}
@@ -235,68 +238,96 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			}
 			frags = append(frags, &deck.Fragment{
 				Value:         children[0].Value,
-				Link:          convert(n.Destination),
+				Link:          convert(childNode.Destination),
 				Bold:          children[0].Bold,
 				Italic:        children[0].Italic,
 				SoftLineBreak: children[0].SoftLineBreak,
+				ClassName:     className,
 			})
 		case *ast.Text:
 			frags = append(frags, &deck.Fragment{
-				Value:         convert(n.Segment.Value(b)),
+				Value:         convert(childNode.Segment.Value(b)),
 				Bold:          false,
-				SoftLineBreak: n.SoftLineBreak(),
+				SoftLineBreak: childNode.SoftLineBreak(),
+				ClassName:     className,
 			})
-		default:
-			// For line breaks and other special cases, we need to preserve the original behavior
-			// Check the node type by its name
-			switch typedNode := n.(type) {
-			case *ast.RawHTML:
-				// For RawHTML nodes (which include <br> tags), return a newline
+		case *ast.RawHTML:
+			// Get the raw HTML content
+			htmlContent := string(childNode.Segments.Value(b))
+
+			if !strings.HasPrefix(htmlContent, "<") {
+				continue // Skip if it doesn't look like HTML
+			}
+
+			// <br> tag
+			if strings.HasPrefix(htmlContent, "<br") {
 				frags = append(frags, &deck.Fragment{
 					Value:         "\n",
 					Bold:          false,
 					SoftLineBreak: false,
 				})
-			case *ast.String:
-				// For String nodes, try to get their content
-				if typedNode.Value != nil {
-					frags = append(frags, &deck.Fragment{
-						Value:         convert(typedNode.Value),
-						Bold:          false,
-						SoftLineBreak: false,
-					})
-				} else {
-					// Fallback for empty strings
-					frags = append(frags, &deck.Fragment{
-						Value:         "",
-						Bold:          false,
-						SoftLineBreak: false,
-					})
+				continue
+			}
+
+			// Check if it's a closing tag
+			if strings.HasPrefix(htmlContent, "</") && strings.HasSuffix(htmlContent, ">") {
+				className = "" // Reset class attribute for closing tags
+				continue
+			}
+
+			// Extract class attribute if present
+			matches := classRe.FindStringSubmatch(htmlContent)
+			if len(matches) > 1 {
+				if matches[1] != "" {
+					className = matches[1] // ダブルクォートの場合
+				} else if len(matches) > 2 && matches[2] != "" {
+					className = matches[2] // シングルクォートの場合
 				}
-			case *ast.CodeSpan:
-				children, err := toFragments(b, typedNode)
-				if err != nil {
-					return nil, err
-				}
+			}
+		case *ast.String:
+			// For String nodes, try to get their content
+			if childNode.Value != nil {
 				frags = append(frags, &deck.Fragment{
-					Value:         children[0].Value,
-					Bold:          children[0].Bold,
-					Italic:        children[0].Italic,
-					Code:          true,
-					SoftLineBreak: children[0].SoftLineBreak,
+					Value:         convert(childNode.Value),
+					Bold:          false,
+					SoftLineBreak: false,
+					ClassName:     className,
 				})
-			default:
-				// For all other node types, return a newline to match original behavior
+			} else {
+				// Fallback for empty strings
 				frags = append(frags, &deck.Fragment{
-					Value:         "\n",
+					Value:         "",
 					Bold:          false,
 					SoftLineBreak: false,
 				})
 			}
+		case *ast.CodeSpan:
+			children, err := toFragments(b, childNode)
+			if err != nil {
+				return nil, err
+			}
+			frags = append(frags, &deck.Fragment{
+				Value:         children[0].Value,
+				Bold:          children[0].Bold,
+				Italic:        children[0].Italic,
+				Code:          true,
+				SoftLineBreak: children[0].SoftLineBreak,
+				ClassName:     className,
+			})
+		default:
+			// For all other node types, return a newline to match original behavior
+			frags = append(frags, &deck.Fragment{
+				Value:         "\n",
+				Bold:          false,
+				SoftLineBreak: false,
+			})
 		}
 	}
 	return frags, nil
 }
+
+// classRe is a regular expression to extract class attribute from HTML tags.
+var classRe = regexp.MustCompile(`class="\s*([^"]*)\s*"|class='\s*([^']*)\s*'`)
 
 var convertRep = strings.NewReplacer("<br>", "\n", "<br/>", "\n", "<br />", "\n")
 
