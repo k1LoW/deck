@@ -1,0 +1,58 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Inline Style"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "subtitles": [
+      "Hello style"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Hello "
+              },
+              {
+                "value": "green",
+                "className": "green"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "blue",
+                "className": "blue"
+              },
+              {
+                "value": " world"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "red",
+                "className": "red"
+              },
+              {
+                "value": " world"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

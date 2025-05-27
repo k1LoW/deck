@@ -63,6 +63,7 @@ type Fragment struct {
 	Link          string `json:"link,omitempty"`
 	Code          bool   `json:"code,omitempty"`
 	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
+	ClassName     string `json:"className,omitempty"`
 }
 
 // Bullet represents the type of bullet point for a paragraph.

@@ -21,6 +21,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/bold_and_italic.md"},
 		{"../testdata/emoji.md"},
 		{"../testdata/code.md"},
+		{"../testdata/class.md"},
 		{"../testdata/empty_list.md"},
 		{"../testdata/empty_link.md"},
 	}
