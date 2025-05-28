@@ -1,0 +1,103 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Inline Style"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "subtitles": [
+      "Hello style"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Bold Italic",
+                "bold": true,
+                "italic": true
+              },
+              {
+                "value": " and Italic",
+                "italic": true
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Bold Italic",
+                "bold": true,
+                "italic": true
+              },
+              {
+                "value": " and Bold",
+                "bold": true
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "code",
+                "code": true
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "code bold",
+                "bold": true,
+                "code": true
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Hello "
+              },
+              {
+                "value": "green",
+                "className": "green"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "blue",
+                "className": "blue"
+              },
+              {
+                "value": " world"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "red",
+                "className": "red"
+              },
+              {
+                "value": " world"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
