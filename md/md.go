@@ -258,11 +258,13 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			htmlContent := string(childNode.Segments.Value(b))
 
 			if !strings.HasPrefix(htmlContent, "<") {
-				continue // Skip if it doesn't look like HTML
+				className = "" // Reset class attribute for closing tags
+				continue       // Skip if it doesn't look like HTML
 			}
 
 			// <br> tag
 			if strings.HasPrefix(htmlContent, "<br") {
+				className = "" // Reset class attribute for closing tags
 				frags = append(frags, &deck.Fragment{
 					Value: "\n",
 				})
