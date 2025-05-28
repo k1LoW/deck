@@ -15,6 +15,12 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
+var allowedInlineHTMLElements = []string{
+	"<a", "<abbr", "<b", "<cite", "<code", "<data", "<dfn", "<em", "<i", "<kbd",
+	"<mark", "<q", "<rp", "<rt", "<ruby", "<s", "<samp", "<small", "<span",
+	"<strong", "<sub", "<sup", "<time", "<u", "<var",
+}
+
 // Contents represents a collection of slide contents.
 type Contents []*Content
 
@@ -262,6 +268,12 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				continue       // Skip if it doesn't look like HTML
 			}
 
+			// Check if it's a closing tag
+			if strings.HasPrefix(htmlContent, "</") && strings.HasSuffix(htmlContent, ">") {
+				className = "" // Reset class attribute for closing tags
+				continue
+			}
+
 			// <br> tag
 			if strings.HasPrefix(htmlContent, "<br") {
 				className = "" // Reset class attribute for closing tags
@@ -271,10 +283,17 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				continue
 			}
 
-			// Check if it's a closing tag
-			if strings.HasPrefix(htmlContent, "</") && strings.HasSuffix(htmlContent, ">") {
-				className = "" // Reset class attribute for closing tags
-				continue
+			// Check if the HTML content is an allowed inline element
+			isAllowed := false
+			for _, elem := range allowedInlineHTMLElements {
+				if strings.HasPrefix(htmlContent, elem) {
+					isAllowed = true
+					break
+				}
+			}
+			if !isAllowed {
+				className = "" // Reset class attribute for disallowed elements
+				continue       // Skip disallowed inline HTML elements
 			}
 
 			// Extract class attribute if present

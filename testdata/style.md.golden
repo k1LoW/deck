@@ -88,8 +88,8 @@
           {
             "fragments": [
               {
-                "value": "unknown'",
-                "className": "unknown'"
+                "value": "unknown",
+                "className": "unknown"
               },
               {
                 "value": " world"
