@@ -134,7 +134,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
-| (other word) | style for content of elements with matching class name |
+| (other word) | style for content of elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
 ### Comment
 
