@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.19.1](https://github.com/k1LoW/deck/compare/v0.19.0...v0.19.1) - 2025-05-28
+### Other Changes
+- fix(md): handle allowed inline HTML elements by @k1LoW in https://github.com/k1LoW/deck/pull/107
+
 ## [v0.19.0](https://github.com/k1LoW/deck/compare/v0.18.0...v0.19.0) - 2025-05-28
 ### New Features 🎉
 - feat(md): add support for class attributes in fragments by @k1LoW in https://github.com/k1LoW/deck/pull/102
