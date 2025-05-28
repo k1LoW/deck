@@ -30,6 +30,9 @@ import (
 const (
 	layoutNameForStyle = "style"
 	styleCode          = "code"
+	styleBold          = "bold"
+	styleItalic        = "italic"
+	styleLink          = "link"
 )
 
 type Slides []*Slide
@@ -541,69 +544,194 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			}
 			for _, fragment := range paragraph.Fragments {
 				flen := countString(fragment.Value)
-				if fragment.Bold || fragment.Italic {
-					var fields []string
-					if fragment.Bold {
-						fields = append(fields, "bold")
-					}
-					if fragment.Italic {
-						fields = append(fields, "italic")
-					}
-					if fragment.Code {
-						fields = append(fields, "foregroundColor,fontFamily,backgroundColor")
-					}
-					styleReqs = append(styleReqs, &slides.Request{
-						UpdateTextStyle: &slides.UpdateTextStyleRequest{
-							ObjectId: bodies[i].objectID,
-							Style: &slides.TextStyle{
-								Bold:   fragment.Bold,
-								Italic: fragment.Italic,
-							},
-							TextRange: &slides.Range{
-								Type:       "FIXED_RANGE",
-								StartIndex: ptrInt64(int64(count + plen)),
-								EndIndex:   ptrInt64(int64(count + plen + flen)),
-							},
-							Fields: strings.Join(fields, ","),
-						},
-					})
-				}
-				_, ok := d.styles[styleCode]
-				if ok && fragment.Code {
-					styleReqs = append(styleReqs, &slides.Request{
-						UpdateTextStyle: &slides.UpdateTextStyleRequest{
-							ObjectId: bodies[i].objectID,
-							Style: &slides.TextStyle{
-								ForegroundColor: d.styles[styleCode].ForegroundColor,
-								FontFamily:      d.styles[styleCode].FontFamily,
-								BackgroundColor: d.styles[styleCode].BackgroundColor,
-							},
-							TextRange: &slides.Range{
-								Type:       "FIXED_RANGE",
-								StartIndex: ptrInt64(int64(count + plen)),
-								EndIndex:   ptrInt64(int64(count + plen + flen)),
-							},
-							Fields: "foregroundColor,fontFamily,backgroundColor",
-						},
-					})
-				}
-				if fragment.Link != "" {
-					styleReqs = append(styleReqs, &slides.Request{
-						UpdateTextStyle: &slides.UpdateTextStyleRequest{
-							ObjectId: bodies[i].objectID,
-							Style: &slides.TextStyle{
-								Link: &slides.Link{
-									Url: fragment.Link,
+				startIndex := ptrInt64(int64(count + plen))
+				endIndex := ptrInt64(int64(count + plen + flen))
+
+				// code
+				if fragment.Code {
+					_, ok := d.styles[styleCode]
+					if ok {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold:            d.styles[styleCode].Bold,
+									Italic:          d.styles[styleCode].Italic,
+									Underline:       d.styles[styleCode].Underline,
+									ForegroundColor: d.styles[styleCode].ForegroundColor,
+									FontFamily:      d.styles[styleCode].FontFamily,
+									BackgroundColor: d.styles[styleCode].BackgroundColor,
 								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
 							},
-							TextRange: &slides.Range{
-								Type:       "FIXED_RANGE",
-								StartIndex: ptrInt64(int64(count + plen)),
-								EndIndex:   ptrInt64(int64(count + plen + flen)),
+						})
+					} else {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									ForegroundColor: &slides.OptionalColor{
+										OpaqueColor: &slides.OpaqueColor{
+											RgbColor: &slides.RgbColor{
+												Red:   0.0,
+												Green: 0.0,
+												Blue:  0.0,
+											},
+										},
+									},
+									FontFamily: "Noto Sans Mono",
+									BackgroundColor: &slides.OptionalColor{
+										OpaqueColor: &slides.OpaqueColor{
+											RgbColor: &slides.RgbColor{
+												Red:   0.95,
+												Green: 0.95,
+												Blue:  0.95,
+											},
+										},
+									},
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "foregroundColor,fontFamily,backgroundColor",
 							},
-							Fields: "link",
-						},
-					})
+						})
+					}
+				}
+
+				// bold
+				if fragment.Bold {
+					_, ok := d.styles[styleBold]
+					if ok {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold:            d.styles[styleBold].Bold,
+									Italic:          d.styles[styleBold].Italic,
+									Underline:       d.styles[styleBold].Underline,
+									ForegroundColor: d.styles[styleBold].ForegroundColor,
+									FontFamily:      d.styles[styleBold].FontFamily,
+									BackgroundColor: d.styles[styleBold].BackgroundColor,
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+							},
+						})
+					} else {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold: true,
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "bold",
+							},
+						})
+					}
+				}
+
+				// italic
+				if fragment.Italic {
+					_, ok := d.styles[styleItalic]
+					if ok {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold:            d.styles[styleItalic].Bold,
+									Italic:          d.styles[styleItalic].Italic,
+									Underline:       d.styles[styleItalic].Underline,
+									ForegroundColor: d.styles[styleItalic].ForegroundColor,
+									FontFamily:      d.styles[styleItalic].FontFamily,
+									BackgroundColor: d.styles[styleItalic].BackgroundColor,
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+							},
+						})
+					} else {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Italic: true,
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "italic",
+							},
+						})
+					}
+				}
+
+				// link
+				if fragment.Link != "" {
+					_, ok := d.styles[styleLink]
+					if ok {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold:            d.styles[styleLink].Bold,
+									Italic:          d.styles[styleLink].Italic,
+									Underline:       d.styles[styleLink].Underline,
+									ForegroundColor: d.styles[styleLink].ForegroundColor,
+									FontFamily:      d.styles[styleLink].FontFamily,
+									BackgroundColor: d.styles[styleLink].BackgroundColor,
+									Link: &slides.Link{
+										Url: fragment.Link,
+									},
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+							},
+						})
+					} else {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Link: &slides.Link{
+										Url: fragment.Link,
+									},
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "link",
+							},
+						})
+					}
 				}
 				plen += flen
 				text += fragment.Value
@@ -795,10 +923,11 @@ func (d *Deck) refresh(ctx context.Context) error {
 					if t.TextRun == nil {
 						continue
 					}
-					// inline code
-					if strings.Contains(t.TextRun.Content, styleCode) {
-						d.styles[styleCode] = t.TextRun.Style
+					className := strings.Trim(t.TextRun.Content, " \n")
+					if className == "" {
+						continue
 					}
+					d.styles[className] = t.TextRun.Style
 				}
 			}
 		}
@@ -820,7 +949,7 @@ func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) error
 					TextRange: &slides.Range{
 						Type: "ALL",
 					},
-					Fields: "bold,italic",
+					Fields: "*",
 				},
 			},
 			{

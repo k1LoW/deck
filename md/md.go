@@ -222,8 +222,10 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			for _, child := range children {
 				frags = append(frags, &deck.Fragment{
 					Value:         child.Value,
+					Link:          child.Link,
 					Bold:          (childNode.Level == 2) || child.Bold,
 					Italic:        (childNode.Level == 1) || child.Italic,
+					Code:          child.Code,
 					SoftLineBreak: child.SoftLineBreak,
 					ClassName:     className,
 				})
@@ -241,13 +243,13 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				Link:          convert(childNode.Destination),
 				Bold:          children[0].Bold,
 				Italic:        children[0].Italic,
+				Code:          children[0].Code,
 				SoftLineBreak: children[0].SoftLineBreak,
 				ClassName:     className,
 			})
 		case *ast.Text:
 			frags = append(frags, &deck.Fragment{
 				Value:         convert(childNode.Segment.Value(b)),
-				Bold:          false,
 				SoftLineBreak: childNode.SoftLineBreak(),
 				ClassName:     className,
 			})
@@ -262,9 +264,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			// <br> tag
 			if strings.HasPrefix(htmlContent, "<br") {
 				frags = append(frags, &deck.Fragment{
-					Value:         "\n",
-					Bold:          false,
-					SoftLineBreak: false,
+					Value: "\n",
 				})
 				continue
 			}
@@ -288,17 +288,13 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
 				frags = append(frags, &deck.Fragment{
-					Value:         convert(childNode.Value),
-					Bold:          false,
-					SoftLineBreak: false,
-					ClassName:     className,
+					Value:     convert(childNode.Value),
+					ClassName: className,
 				})
 			} else {
 				// Fallback for empty strings
 				frags = append(frags, &deck.Fragment{
-					Value:         "",
-					Bold:          false,
-					SoftLineBreak: false,
+					Value: "",
 				})
 			}
 		case *ast.CodeSpan:
@@ -308,6 +304,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			}
 			frags = append(frags, &deck.Fragment{
 				Value:         children[0].Value,
+				Link:          children[0].Link,
 				Bold:          children[0].Bold,
 				Italic:        children[0].Italic,
 				Code:          true,
