@@ -549,18 +549,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 
 				// code
 				if fragment.Code {
-					_, ok := d.styles[styleCode]
+					s, ok := d.styles[styleCode]
 					if ok {
 						styleReqs = append(styleReqs, &slides.Request{
 							UpdateTextStyle: &slides.UpdateTextStyleRequest{
 								ObjectId: bodies[i].objectID,
 								Style: &slides.TextStyle{
-									Bold:            d.styles[styleCode].Bold,
-									Italic:          d.styles[styleCode].Italic,
-									Underline:       d.styles[styleCode].Underline,
-									ForegroundColor: d.styles[styleCode].ForegroundColor,
-									FontFamily:      d.styles[styleCode].FontFamily,
-									BackgroundColor: d.styles[styleCode].BackgroundColor,
+									Bold:            s.Bold,
+									Italic:          s.Italic,
+									Underline:       s.Underline,
+									ForegroundColor: s.ForegroundColor,
+									FontFamily:      s.FontFamily,
+									BackgroundColor: s.BackgroundColor,
 								},
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
@@ -608,18 +608,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 
 				// bold
 				if fragment.Bold {
-					_, ok := d.styles[styleBold]
+					s, ok := d.styles[styleBold]
 					if ok {
 						styleReqs = append(styleReqs, &slides.Request{
 							UpdateTextStyle: &slides.UpdateTextStyleRequest{
 								ObjectId: bodies[i].objectID,
 								Style: &slides.TextStyle{
-									Bold:            d.styles[styleBold].Bold,
-									Italic:          d.styles[styleBold].Italic,
-									Underline:       d.styles[styleBold].Underline,
-									ForegroundColor: d.styles[styleBold].ForegroundColor,
-									FontFamily:      d.styles[styleBold].FontFamily,
-									BackgroundColor: d.styles[styleBold].BackgroundColor,
+									Bold:            s.Bold,
+									Italic:          s.Italic,
+									Underline:       s.Underline,
+									ForegroundColor: s.ForegroundColor,
+									FontFamily:      s.FontFamily,
+									BackgroundColor: s.BackgroundColor,
 								},
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
@@ -649,18 +649,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 
 				// italic
 				if fragment.Italic {
-					_, ok := d.styles[styleItalic]
+					s, ok := d.styles[styleItalic]
 					if ok {
 						styleReqs = append(styleReqs, &slides.Request{
 							UpdateTextStyle: &slides.UpdateTextStyleRequest{
 								ObjectId: bodies[i].objectID,
 								Style: &slides.TextStyle{
-									Bold:            d.styles[styleItalic].Bold,
-									Italic:          d.styles[styleItalic].Italic,
-									Underline:       d.styles[styleItalic].Underline,
-									ForegroundColor: d.styles[styleItalic].ForegroundColor,
-									FontFamily:      d.styles[styleItalic].FontFamily,
-									BackgroundColor: d.styles[styleItalic].BackgroundColor,
+									Bold:            s.Bold,
+									Italic:          s.Italic,
+									Underline:       s.Underline,
+									ForegroundColor: s.ForegroundColor,
+									FontFamily:      s.FontFamily,
+									BackgroundColor: s.BackgroundColor,
 								},
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
@@ -690,18 +690,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 
 				// link
 				if fragment.Link != "" {
-					_, ok := d.styles[styleLink]
+					s, ok := d.styles[styleLink]
 					if ok {
 						styleReqs = append(styleReqs, &slides.Request{
 							UpdateTextStyle: &slides.UpdateTextStyleRequest{
 								ObjectId: bodies[i].objectID,
 								Style: &slides.TextStyle{
-									Bold:            d.styles[styleLink].Bold,
-									Italic:          d.styles[styleLink].Italic,
-									Underline:       d.styles[styleLink].Underline,
-									ForegroundColor: d.styles[styleLink].ForegroundColor,
-									FontFamily:      d.styles[styleLink].FontFamily,
-									BackgroundColor: d.styles[styleLink].BackgroundColor,
+									Bold:            s.Bold,
+									Italic:          s.Italic,
+									Underline:       s.Underline,
+									ForegroundColor: s.ForegroundColor,
+									FontFamily:      s.FontFamily,
+									BackgroundColor: s.BackgroundColor,
 									Link: &slides.Link{
 										Url: fragment.Link,
 									},
