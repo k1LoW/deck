@@ -124,7 +124,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 
 #### Style for syntax
 
-Create a layout named `style` and add a `Text box` to enter specific word. The styles (`bold`, `italic`, `backgroundColor`, `foregroundColor`, `fontFamily`) will be applied as the style for each Markdown syntax.
+Create a layout named `style` and add a `Text box` to enter specific word. The styles (`bold`, `italic`, `underline`, `backgroundColor`, `foregroundColor`, `fontFamily`) will be applied as the style for each Markdown syntax.
 
 ![img](img/style.png)
 
