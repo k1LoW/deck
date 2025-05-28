@@ -9,7 +9,7 @@
 - _**Bold Italic** and Italic_
 - __*Bold Italic* and Bold__
 - `code` and **`code bold`**
-- Hello <span class="green" >green</span>
-- <span  class='blue'>blue</span> world
+- Hello <span class="notice" >notice</span>
+- <span  class='unknown'>unknown</span> world
 
-<span class=" red">red</span> world
+<span class=" unknown'">unknown'</span> world

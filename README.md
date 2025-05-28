@@ -122,7 +122,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
 
-#### Style for syntax
+#### Style for inline syntax
 
 Create a layout named `style` and add a `Text box` to enter specific word. The styles (`bold`, `italic`, `underline`, `backgroundColor`, `foregroundColor`, `fontFamily`) will be applied as the style for each Markdown syntax.
 
@@ -134,6 +134,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
+| (other word) | style for content of elements with matching class name |
 
 ### Comment
 
