@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.19.0](https://github.com/k1LoW/deck/compare/v0.18.0...v0.19.0) - 2025-05-28
+### New Features 🎉
+- feat(md): add support for class attributes in fragments by @k1LoW in https://github.com/k1LoW/deck/pull/102
+- feat: support specifying styles for inline syntax in Markdown. by @k1LoW in https://github.com/k1LoW/deck/pull/104
+- feat: add support for applying styles based on class names by @k1LoW in https://github.com/k1LoW/deck/pull/105
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.233.0 to 0.234.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/101
+
 ## [v0.18.0](https://github.com/k1LoW/deck/compare/v0.17.2...v0.18.0) - 2025-05-23
 ### New Features 🎉
 - feat(oauth): implement PKCE for enhanced security in OAuth flow by @k1LoW in https://github.com/k1LoW/deck/pull/100
