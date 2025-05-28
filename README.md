@@ -133,7 +133,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `bold` | style for **bold**. |
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
-| `code` | style for <code>\`code\`</code>. |
+| `code` | style for `code`. |
 
 ### Comment
 
