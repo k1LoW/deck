@@ -733,6 +733,32 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 						})
 					}
 				}
+
+				if fragment.ClassName != "" {
+					s, ok := d.styles[fragment.ClassName]
+					if ok {
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: bodies[i].objectID,
+								Style: &slides.TextStyle{
+									Bold:            s.Bold,
+									Italic:          s.Italic,
+									Underline:       s.Underline,
+									ForegroundColor: s.ForegroundColor,
+									FontFamily:      s.FontFamily,
+									BackgroundColor: s.BackgroundColor,
+								},
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: startIndex,
+									EndIndex:   endIndex,
+								},
+								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+							},
+						})
+					}
+				}
+
 				plen += flen
 				text += fragment.Value
 				if fragment.SoftLineBreak {

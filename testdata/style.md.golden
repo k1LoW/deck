@@ -67,8 +67,8 @@
                 "value": "Hello "
               },
               {
-                "value": "green",
-                "className": "green"
+                "value": "notice",
+                "className": "notice"
               }
             ],
             "bullet": "-"
@@ -76,8 +76,8 @@
           {
             "fragments": [
               {
-                "value": "blue",
-                "className": "blue"
+                "value": "unknown",
+                "className": "unknown"
               },
               {
                 "value": " world"
@@ -88,8 +88,8 @@
           {
             "fragments": [
               {
-                "value": "red",
-                "className": "red"
+                "value": "unknown'",
+                "className": "unknown'"
               },
               {
                 "value": " world"
