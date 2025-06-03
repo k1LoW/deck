@@ -15,7 +15,7 @@ require (
 	github.com/tenntenn/golden v0.5.4
 	github.com/yuin/goldmark v1.7.12
 	golang.org/x/oauth2 v0.30.0
-	google.golang.org/api v0.234.0
+	google.golang.org/api v0.235.0
 )
 
 require (
