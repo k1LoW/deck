@@ -1169,8 +1169,8 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 	return nil
 }
 
-// generateCodeVerifier generates a code verifier for PKCE
-// Generates a random string of 43-128 characters in compliance with RFC7636
+// generateCodeVerifier generates a code verifier for PKCE.
+// Generates a random string of 43-128 characters in compliance with RFC7636.
 func generateCodeVerifier() (string, error) {
 	// Generate 64 bytes (512 bits) of random data
 	b := make([]byte, 64)
@@ -1180,8 +1180,8 @@ func generateCodeVerifier() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-// generateCodeChallenge generates a code challenge from the code verifier
-// Calculates SHA-256 hash and applies Base64 URL encoding
+// generateCodeChallenge generates a code challenge from the code verifier.
+// Calculates SHA-256 hash and applies Base64 URL encoding.
 func generateCodeChallenge(verifier string) string {
 	h := sha256.New()
 	h.Write([]byte(verifier))
