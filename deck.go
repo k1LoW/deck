@@ -28,11 +28,12 @@ import (
 )
 
 const (
-	layoutNameForStyle = "style"
-	styleCode          = "code"
-	styleBold          = "bold"
-	styleItalic        = "italic"
-	styleLink          = "link"
+	layoutNameForStyle    = "style"
+	styleCode             = "code"
+	styleBold             = "bold"
+	styleItalic           = "italic"
+	styleLink             = "link"
+	defaultCodeFontFamily = "Noto Sans Mono"
 )
 
 type Slides []*Slide
@@ -584,7 +585,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 											},
 										},
 									},
-									FontFamily: "Noto Sans Mono",
+									FontFamily: defaultCodeFontFamily,
 									BackgroundColor: &slides.OptionalColor{
 										OpaqueColor: &slides.OpaqueColor{
 											RgbColor: &slides.RgbColor{
