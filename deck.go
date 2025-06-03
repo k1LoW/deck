@@ -367,7 +367,7 @@ func (d *Deck) Export(ctx context.Context, w io.Writer) error {
 		return err
 	}
 	if err := req.Write(w); err != nil {
-		return fmt.Errorf("unable to create PDF file: %v", err)
+		return fmt.Errorf("unable to create PDF file: %w", err)
 	}
 	return nil
 }
@@ -1194,7 +1194,7 @@ func generateCodeChallenge(verifier string) string {
 func countString(s string) int {
 	length := 0
 	for _, r := range s {
-		if r <= 0xFFFF && !(r >= 0xD800 && r <= 0xDFFF) {
+		if r <= 0xFFFF && (r < 0xD800 || r > 0xDFFF) {
 			length++
 		} else {
 			length += 2
