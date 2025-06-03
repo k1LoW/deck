@@ -1218,3 +1218,170 @@ func convertBullet(b Bullet) string {
 		return "UNRECOGNIZED"
 	}
 }
+
+func convertToSlide(p *slides.Page) *Slide {
+	slide := &Slide{
+		Layout: "",
+		Freeze: false,
+	}
+	if p.LayoutProperties != nil {
+		slide.Layout = p.LayoutProperties.DisplayName
+	}
+
+	var titles []string
+	var subtitles []string
+	var bodies []*Body
+
+	// Extract titles, subtitles, and bodies from page elements
+	for _, element := range p.PageElements {
+		if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+			switch element.Shape.Placeholder.Type {
+			case "CENTERED_TITLE", "TITLE":
+				text := extractText(element.Shape.Text)
+				if text != "" {
+					titles = append(titles, text)
+				}
+			case "SUBTITLE":
+				text := extractText(element.Shape.Text)
+				if text != "" {
+					subtitles = append(subtitles, text)
+				}
+			case "BODY":
+				body := convertToBody(element.Shape.Text)
+				if body != nil {
+					bodies = append(bodies, body)
+				}
+			}
+		}
+	}
+
+	slide.Titles = titles
+	slide.Subtitles = subtitles
+	slide.Bodies = bodies
+
+	// Extract speaker notes
+	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {
+		for _, element := range p.SlideProperties.NotesPage.PageElements {
+			if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+				if element.Shape.Placeholder.Type == "BODY" {
+					slide.SpeakerNote = extractText(element.Shape.Text)
+					break
+				}
+			}
+		}
+	}
+
+	return slide
+}
+
+// extractText extracts plain text from Shape.Text.
+func extractText(text *slides.TextContent) string {
+	if text == nil || len(text.TextElements) == 0 {
+		return ""
+	}
+
+	var result strings.Builder
+	for _, element := range text.TextElements {
+		if element.TextRun != nil {
+			result.WriteString(element.TextRun.Content)
+		}
+	}
+	return strings.TrimSpace(result.String())
+}
+
+// convertToBody generates a Body struct from Shape.Text.
+func convertToBody(text *slides.TextContent) *Body {
+	if text == nil || len(text.TextElements) == 0 {
+		return nil
+	}
+
+	body := &Body{
+		Paragraphs: []*Paragraph{},
+	}
+
+	var currentParagraph *Paragraph
+	var currentBullet Bullet
+
+	for _, element := range text.TextElements {
+		if element.ParagraphMarker != nil {
+			// Start of a new paragraph
+			if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
+				body.Paragraphs = append(body.Paragraphs, currentParagraph)
+			}
+
+			currentParagraph = &Paragraph{
+				Fragments: []*Fragment{},
+				Nesting:   0,
+			}
+
+			// Process bullet points
+			if element.ParagraphMarker.Bullet != nil {
+				// Determine the type of bullet points
+				if element.ParagraphMarker.Bullet.Glyph != "" {
+					if strings.Contains(element.ParagraphMarker.Bullet.Glyph, "•") {
+						currentBullet = BulletDash
+					} else if strings.Contains(element.ParagraphMarker.Bullet.Glyph, "1") {
+						currentBullet = BulletNumber
+					} else if strings.Contains(element.ParagraphMarker.Bullet.Glyph, "a") {
+						currentBullet = BulletAlpha
+					} else {
+						currentBullet = BulletDash
+					}
+				} else {
+					currentBullet = BulletDash
+				}
+				currentParagraph.Bullet = currentBullet
+
+				// Set nesting level
+				currentParagraph.Nesting = int(element.ParagraphMarker.Bullet.NestingLevel)
+			} else {
+				currentBullet = BulletNone
+				currentParagraph.Bullet = currentBullet
+			}
+		}
+
+		if element.TextRun != nil && currentParagraph != nil {
+			// Process text content
+			fragment := &Fragment{
+				Value:     element.TextRun.Content,
+				ClassName: "",
+			}
+
+			// Process styles
+			if element.TextRun.Style != nil {
+				if element.TextRun.Style.Bold {
+					fragment.Bold = true
+				}
+				if element.TextRun.Style.Italic {
+					fragment.Italic = true
+				}
+				if element.TextRun.Style.Link != nil && element.TextRun.Style.Link.Url != "" {
+					fragment.Link = element.TextRun.Style.Link.Url
+				}
+
+				// Detect code style (based on font family and background color)
+				if element.TextRun.Style.FontFamily == defaultCodeFontFamily ||
+					(element.TextRun.Style.BackgroundColor != nil &&
+						element.TextRun.Style.BackgroundColor.OpaqueColor != nil &&
+						element.TextRun.Style.BackgroundColor.OpaqueColor.RgbColor != nil) {
+					fragment.Code = true
+				}
+			}
+
+			// Process line breaks
+			if strings.HasSuffix(fragment.Value, "\n") {
+				fragment.SoftLineBreak = true
+				fragment.Value = strings.TrimSuffix(fragment.Value, "\n")
+			}
+
+			currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
+		}
+	}
+
+	// Add the last paragraph
+	if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
+		body.Paragraphs = append(body.Paragraphs, currentParagraph)
+	}
+
+	return body
+}
