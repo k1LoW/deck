@@ -804,14 +804,19 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			return bulletRangeSlice[i].start > bulletRangeSlice[j].start
 		})
 		for _, r := range bulletRangeSlice {
+			startIndex := int64(r.start)
+			endIndex := int64(r.end - 1)
+			if startIndex == endIndex {
+				endIndex++
+			}
 			req.Requests = append(req.Requests, &slides.Request{
 				CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
 					ObjectId:     bodies[i].objectID,
 					BulletPreset: convertBullet(r.bullet),
 					TextRange: &slides.Range{
 						Type:       "FIXED_RANGE",
-						StartIndex: ptrInt64(int64(r.start)),
-						EndIndex:   ptrInt64(int64(r.end - 1)),
+						StartIndex: ptrInt64(startIndex),
+						EndIndex:   ptrInt64(endIndex),
 					},
 				},
 			})
