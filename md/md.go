@@ -133,7 +133,9 @@ func ParseContent(b []byte) (*Content, error) {
 				if v.Offset >= 2 {
 					nesting = v.Offset/2 - 1
 				}
-
+				if len(frags) == 0 {
+					return ast.WalkContinue, nil
+				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 					Fragments: frags,
 					Bullet:    currentListMarker,
