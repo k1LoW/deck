@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.19.2](https://github.com/k1LoW/deck/compare/v0.19.1...v0.19.2) - 2025-06-05
+### Fix bug 🐛
+- feat(deck): handle single-item bullet lists correctly by @k1LoW in https://github.com/k1LoW/deck/pull/111
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.234.0 to 0.235.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/108
+- fix(deck): add integration test by @k1LoW in https://github.com/k1LoW/deck/pull/110
+
 ## [v0.19.1](https://github.com/k1LoW/deck/compare/v0.19.0...v0.19.1) - 2025-05-28
 ### Other Changes
 - fix(md): handle allowed inline HTML elements by @k1LoW in https://github.com/k1LoW/deck/pull/107
