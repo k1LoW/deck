@@ -25,7 +25,7 @@ fuzz:
 
 export TEST_PRESENTATION_ID=1_QRwonGFKTcsakL0QFCUNvNKWMedDS-C5KRMqMTwz6E
 integration:
-	go test -v -test.failfast -tags integration ./...
+	go test -v -test.failfast -tags integration .
 
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
