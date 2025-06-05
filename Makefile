@@ -23,6 +23,10 @@ lint:
 fuzz:
 	go test -fuzz=FuzzParse -fuzztime=5m ./md/.
 
+export TEST_PRESENTATION_ID=1_QRwonGFKTcsakL0QFCUNvNKWMedDS-C5KRMqMTwz6E
+integration:
+	go test -v -test.failfast -tags integration ./...
+
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
 	go install github.com/Songmu/gocredits/cmd/gocredits@latest

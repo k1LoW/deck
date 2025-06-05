@@ -308,17 +308,11 @@ func (d *Deck) ListLayouts() []string {
 
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(ctx context.Context, slides Slides) error {
-	for i, slide := range slides {
-		if err := d.applyPage(ctx, i, slide); err != nil {
-			return err
-		}
+	pages := make([]int, 0, len(slides))
+	for i := range slides {
+		pages = append(pages, i+1)
 	}
-
-	if err := d.DeletePageAfter(ctx, len(slides)-1); err != nil {
-		return err
-	}
-
-	return nil
+	return d.ApplyPages(ctx, slides, pages)
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
