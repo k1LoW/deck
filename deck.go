@@ -360,7 +360,11 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 
 	for _, action := range actions {
 		switch action.actionType {
-		case actionTypeAdd, actionTypeUpdate:
+		case actionTypeAppend, actionTypeInsert:
+			if err := d.CreatePage(ctx, action.index, action.slide); err != nil {
+				return fmt.Errorf("failed to create page: %w", err)
+			}
+		case actionTypeUpdate:
 			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}

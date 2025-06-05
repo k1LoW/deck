@@ -29,7 +29,7 @@ func TestDiffSlides(t *testing.T) {
 			},
 			expected: []*action{
 				{
-					actionType:    actionTypeAdd,
+					actionType:    actionTypeAppend,
 					index:         0,
 					originalIndex: -1,
 					slide: &Slide{

@@ -7,15 +7,18 @@ import (
 type actionType int
 
 const (
-	actionTypeAdd actionType = iota
-	actionTypeUpdate
-	actionTypeMove
+	actionTypeAppend actionType = iota // Append slide to the end
+	actionTypeInsert                   // Insert slide at a specific index
+	actionTypeUpdate                   // Update existing slide at a specific index
+	actionTypeMove                     // Move existing slide to a new index
 )
 
 func (at actionType) String() string {
 	switch at {
-	case actionTypeAdd:
-		return "add"
+	case actionTypeAppend:
+		return "append"
+	case actionTypeInsert:
+		return "insert"
 	case actionTypeUpdate:
 		return "update"
 	case actionTypeMove:
@@ -142,7 +145,7 @@ func diffSlides(before, after Slides) ([]*action, error) {
 
 		// Only add new slides when we exceed the original page count
 		actions = append(actions, &action{
-			actionType:    actionTypeAdd,
+			actionType:    actionTypeAppend,
 			index:         i,
 			originalIndex: -1, // No original index for new slides
 			slide:         afterSlide,
@@ -179,7 +182,7 @@ func adjustActionsForSequentialExecution(actions []*action, originalLength int) 
 			moveActions = append(moveActions, action)
 		case actionTypeUpdate:
 			updateActions = append(updateActions, action)
-		case actionTypeAdd:
+		case actionTypeAppend, actionTypeInsert:
 			addActions = append(addActions, action)
 		}
 	}
