@@ -274,12 +274,15 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				continue
 			}
 
-			// <br> tag
+			// <br> tag - add a newline fragment
 			if strings.HasPrefix(htmlContent, "<br") {
-				className = "" // Reset class attribute for closing tags
 				frags = append(frags, &deck.Fragment{
-					Value: "\n",
+					Value:         "\n",
+					Bold:          false,
+					SoftLineBreak: false,
+					ClassName:     className,
 				})
+				className = "" // Reset class attribute
 				continue
 			}
 

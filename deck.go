@@ -316,8 +316,22 @@ func (d *Deck) Apply(ctx context.Context, slides Slides) error {
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(ctx context.Context, slides Slides, pages []int) error {
-	for i, slide := range slides {
+func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
+	layoutObjectIdMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutObjectIdMap[l.ObjectId] = l
+	}
+
+	before := make(Slides, 0, len(d.presentation.Slides))
+	var after Slides
+	for _, p := range d.presentation.Slides {
+		slide := convertToSlide(p, layoutObjectIdMap)
+		before = append(before, slide)
+		after = append(after, slide)
+	}
+
+	fmt.Println(pages)
+	for i, slide := range ss {
 		if !slices.Contains(pages, i+1) {
 			continue
 		}
@@ -331,12 +345,37 @@ func (d *Deck) ApplyPages(ctx context.Context, slides Slides, pages []int) error
 				slide.Layout = d.defaultLayout
 			}
 		}
-		if err := d.applyPage(ctx, i, slide); err != nil {
-			return err
+		if len(after) < i {
+			after[i] = slide
+		} else if len(after) == i {
+			after = append(after, slide)
+		} else {
+			after[i] = slide
 		}
 	}
 
-	if err := d.DeletePageAfter(ctx, len(slides)-1); err != nil {
+	actions, err := diffSlides(before, after)
+	if err != nil {
+		return fmt.Errorf("failed to diff slides: %w", err)
+	}
+	for _, action := range actions {
+		fmt.Println(action.actionType, action.index, action.originalIndex, action.slide.Layout)
+	}
+
+	for _, action := range actions {
+		switch action.actionType {
+		case actionTypeAdd, actionTypeUpdate:
+			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+				return fmt.Errorf("failed to apply page: %w", err)
+			}
+		case actionTypeMove:
+			if err := d.movePage(ctx, action.originalIndex, action.index); err != nil {
+				return fmt.Errorf("failed to move page: %w", err)
+			}
+		}
+	}
+
+	if err := d.DeletePageAfter(ctx, len(ss)-1); err != nil {
 		return err
 	}
 
@@ -364,6 +403,25 @@ func (d *Deck) Export(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("unable to create PDF file: %w", err)
 	}
 	return nil
+}
+
+func (d *Deck) DumpSlides(ctx context.Context) (Slides, error) {
+	if err := d.refresh(ctx); err != nil {
+		return nil, fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if d.presentation == nil {
+		return nil, fmt.Errorf("presentation is not loaded")
+	}
+	layoutObjectIdMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutObjectIdMap[l.ObjectId] = l
+	}
+	slides := make(Slides, 0, len(d.presentation.Slides))
+	for _, p := range d.presentation.Slides {
+		slide := convertToSlide(p, layoutObjectIdMap)
+		slides = append(slides, slide)
+	}
+	return slides, nil
 }
 
 func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
@@ -915,6 +973,32 @@ func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
 	return nil
 }
 
+func (d *Deck) movePage(ctx context.Context, fromIndex, toIndex int) error {
+	if fromIndex == toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= len(d.presentation.Slides) || toIndex >= len(d.presentation.Slides) {
+		return nil
+	}
+
+	currentSlide := d.presentation.Slides[fromIndex]
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{
+			{
+				UpdateSlidesPosition: &slides.UpdateSlidesPositionRequest{
+					SlideObjectIds: []string{currentSlide.ObjectId},
+					InsertionIndex: int64(toIndex),
+				},
+			},
+		},
+	}
+
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		return err
+	}
+	if err := d.refresh(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (d *Deck) refresh(ctx context.Context) error {
 	presentation, err := d.srv.Presentations.Get(d.id).Context(ctx).Do()
 	if err != nil {
@@ -1219,13 +1303,16 @@ func convertBullet(b Bullet) string {
 	}
 }
 
-func convertToSlide(p *slides.Page) *Slide {
+func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *Slide {
 	slide := &Slide{
 		Layout: "",
 		Freeze: false,
 	}
-	if p.LayoutProperties != nil {
-		slide.Layout = p.LayoutProperties.DisplayName
+	if p.SlideProperties != nil {
+		page, ok := layoutObjectIdMap[p.SlideProperties.LayoutObjectId]
+		if ok {
+			slide.Layout = page.LayoutProperties.DisplayName
+		}
 	}
 
 	var titles []string
@@ -1306,28 +1393,46 @@ func convertToBody(text *slides.TextContent) *Body {
 		if element.ParagraphMarker != nil {
 			// Start of a new paragraph
 			if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
-				body.Paragraphs = append(body.Paragraphs, currentParagraph)
-			}
-
-			currentParagraph = &Paragraph{
-				Fragments: []*Fragment{},
-				Nesting:   0,
+				// Check if this is a continuation of a non-bullet paragraph
+				// If the previous paragraph had no bullet and this one also has no bullet,
+				// merge them with a newline fragment
+				if currentParagraph.Bullet == BulletNone &&
+					(element.ParagraphMarker.Bullet == nil) {
+					// Add newline fragment to continue the paragraph
+					currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
+						Value: "\n",
+					})
+					// Don't create a new paragraph, continue with the current one
+				} else {
+					body.Paragraphs = append(body.Paragraphs, currentParagraph)
+					currentParagraph = &Paragraph{
+						Fragments: []*Fragment{},
+						Nesting:   0,
+					}
+				}
+			} else {
+				currentParagraph = &Paragraph{
+					Fragments: []*Fragment{},
+					Nesting:   0,
+				}
 			}
 
 			// Process bullet points
 			if element.ParagraphMarker.Bullet != nil {
-				// Determine the type of bullet points
+				// Determine the type of bullet points based on glyph content
 				if element.ParagraphMarker.Bullet.Glyph != "" {
-					if strings.Contains(element.ParagraphMarker.Bullet.Glyph, "•") {
-						currentBullet = BulletDash
-					} else if strings.Contains(element.ParagraphMarker.Bullet.Glyph, "1") {
+					glyph := element.ParagraphMarker.Bullet.Glyph
+					// Check for numbered bullets (1, 2, 3, etc.)
+					if strings.Contains(glyph, "1") || strings.Contains(glyph, "2") || strings.Contains(glyph, "3") ||
+						strings.Contains(glyph, "4") || strings.Contains(glyph, "5") || strings.Contains(glyph, "6") ||
+						strings.Contains(glyph, "7") || strings.Contains(glyph, "8") || strings.Contains(glyph, "9") ||
+						strings.Contains(glyph, "0") {
 						currentBullet = BulletNumber
-					} else if strings.Contains(element.ParagraphMarker.Bullet.Glyph, "a") {
-						currentBullet = BulletAlpha
 					} else {
 						currentBullet = BulletDash
 					}
 				} else {
+					// If no glyph, assume it's a dash bullet
 					currentBullet = BulletDash
 				}
 				currentParagraph.Bullet = currentBullet
@@ -1342,21 +1447,44 @@ func convertToBody(text *slides.TextContent) *Body {
 
 		if element.TextRun != nil && currentParagraph != nil {
 			// Process text content
-			fragment := &Fragment{
-				Value:     element.TextRun.Content,
-				ClassName: "",
+			content := element.TextRun.Content
+
+			// Check if this is an empty content that should be treated as SoftLineBreak
+			if content == "" {
+				fragment := &Fragment{
+					Value:         "",
+					SoftLineBreak: true,
+					ClassName:     "",
+				}
+				currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
+				continue
 			}
 
-			// Process styles
+			// Handle special case where content is just a newline
+			if content == "\n" {
+				// Check if the previous fragment exists and can be marked with SoftLineBreak
+				if len(currentParagraph.Fragments) > 0 {
+					lastFragment := currentParagraph.Fragments[len(currentParagraph.Fragments)-1]
+					if lastFragment.Value != "" && !lastFragment.SoftLineBreak {
+						lastFragment.SoftLineBreak = true
+						continue
+					}
+				}
+				// If no previous fragment or it already has SoftLineBreak, add as newline fragment
+				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
+					Value: "\n",
+				})
+				continue
+			}
+
+			// Get styles from TextRun
+			var bold, italic, code bool
+			var link string
 			if element.TextRun.Style != nil {
-				if element.TextRun.Style.Bold {
-					fragment.Bold = true
-				}
-				if element.TextRun.Style.Italic {
-					fragment.Italic = true
-				}
+				bold = element.TextRun.Style.Bold
+				italic = element.TextRun.Style.Italic
 				if element.TextRun.Style.Link != nil && element.TextRun.Style.Link.Url != "" {
-					fragment.Link = element.TextRun.Style.Link.Url
+					link = element.TextRun.Style.Link.Url
 				}
 
 				// Detect code style (based on font family and background color)
@@ -1364,17 +1492,32 @@ func convertToBody(text *slides.TextContent) *Body {
 					(element.TextRun.Style.BackgroundColor != nil &&
 						element.TextRun.Style.BackgroundColor.OpaqueColor != nil &&
 						element.TextRun.Style.BackgroundColor.OpaqueColor.RgbColor != nil) {
-					fragment.Code = true
+					code = true
 				}
 			}
 
 			// Process line breaks
-			if strings.HasSuffix(fragment.Value, "\n") {
-				fragment.SoftLineBreak = true
-				fragment.Value = strings.TrimSuffix(fragment.Value, "\n")
+			softLineBreak := false
+			if strings.HasSuffix(content, "\n") {
+				content = strings.TrimSuffix(content, "\n")
+				softLineBreak = true
 			}
 
-			currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
+			fragments := []*Fragment{{
+				Value:         content,
+				Bold:          bold,
+				Italic:        italic,
+				Code:          code,
+				Link:          link,
+				SoftLineBreak: softLineBreak,
+			}}
+
+			for _, fragment := range fragments {
+				// Only add non-empty fragments
+				if fragment.Value != "" {
+					currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
+				}
+			}
 		}
 	}
 
