@@ -184,7 +184,7 @@ func ParseContent(b []byte) (*Content, error) {
 	// remove empty bodies
 	notEmpty := false
 	for _, body := range content.Bodies {
-		if len(body.Paragraphs) > 0 {
+		if len(body.Paragraphs) > 0 && len(body.Paragraphs[0].Fragments) > 0 {
 			notEmpty = true
 			break
 		}
@@ -256,6 +256,14 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				ClassName:     className,
 			})
 		case *ast.Text:
+			v := convert(childNode.Segment.Value(b))
+			if v == "" {
+				if len(frags) > 0 {
+					frags[len(frags)-1].SoftLineBreak = childNode.SoftLineBreak()
+				}
+				continue // Skip empty text fragments
+			}
+
 			frags = append(frags, &deck.Fragment{
 				Value:         convert(childNode.Segment.Value(b)),
 				SoftLineBreak: childNode.SoftLineBreak(),

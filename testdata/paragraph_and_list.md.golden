@@ -11,10 +11,7 @@
             "fragments": [
               {
                 "value": "C",
-                "bold": true
-              },
-              {
-                "value": "",
+                "bold": true,
                 "softLineBreak": true
               },
               {

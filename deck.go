@@ -330,7 +330,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		after = append(after, slide)
 	}
 
-	fmt.Println(pages)
 	for i, slide := range ss {
 		if !slices.Contains(pages, i+1) {
 			continue
@@ -357,9 +356,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 	actions, err := diffSlides(before, after)
 	if err != nil {
 		return fmt.Errorf("failed to diff slides: %w", err)
-	}
-	for _, action := range actions {
-		fmt.Println(action.actionType, action.index, action.originalIndex, action.slide.Layout)
 	}
 
 	for _, action := range actions {
@@ -880,6 +876,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			})
 		}
 	}
+
 	if len(req.Requests) > 0 {
 		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 			return err
