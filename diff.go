@@ -1,7 +1,8 @@
 package deck
 
 import (
-	"strings"
+	"encoding/json"
+	"time"
 )
 
 type actionType int
@@ -404,49 +405,11 @@ func optimizeMoveActions(moveActions []*action, originalLength int) []*action {
 
 // generateSlideKey creates a unique key for a slide based on its content
 func generateSlideKey(slide *Slide) string {
-	if slide == nil {
-		return ""
+	b, err := json.Marshal(slide)
+	if err != nil {
+		return time.Now().String() // Fallback to current time if JSON marshalling fails
 	}
-
-	var key strings.Builder
-	key.WriteString(slide.Layout)
-
-	for _, title := range slide.Titles {
-		key.WriteString("|T:")
-		key.WriteString(title)
-	}
-
-	for _, subtitle := range slide.Subtitles {
-		key.WriteString("|S:")
-		key.WriteString(subtitle)
-	}
-
-	for _, body := range slide.Bodies {
-		key.WriteString("|B:")
-		for _, paragraph := range body.Paragraphs {
-			key.WriteString(string(paragraph.Bullet))
-			for _, fragment := range paragraph.Fragments {
-				key.WriteString(fragment.Value)
-				if fragment.Bold {
-					key.WriteString("|BOLD")
-				}
-				if fragment.Italic {
-					key.WriteString("|ITALIC")
-				}
-				if fragment.Link != "" {
-					key.WriteString("|LINK:")
-					key.WriteString(fragment.Link)
-				}
-				if fragment.Code {
-					key.WriteString("|CODE")
-				}
-			}
-		}
-	}
-
-	key.WriteString("|N:")
-	key.WriteString(slide.SpeakerNote)
-	return key.String()
+	return string(b)
 }
 
 // slidesHaveSimilarContent checks if two slides have similar content (for update detection)
