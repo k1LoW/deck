@@ -12,7 +12,7 @@ default: test
 ci: depsdev test
 
 test:
-	go test ./... -coverprofile=coverage.out -covermode=count
+	go test ./... -coverprofile=coverage.out -covermode=count -count=1
 
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)" -o deck cmd/deck/main.go

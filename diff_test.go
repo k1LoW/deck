@@ -29,9 +29,9 @@ func TestDiffSlides(t *testing.T) {
 			},
 			expected: []*action{
 				{
-					actionType:    actionTypeAppend,
-					index:         0,
-					originalIndex: -1,
+					actionType:  actionTypeAppend,
+					index:       0,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New Slide"},
@@ -47,9 +47,17 @@ func TestDiffSlides(t *testing.T) {
 					Titles: []string{"Old Slide"},
 				},
 			},
-			after:    Slides{},
+			after: Slides{},
 			expected: []*action{
-				// No actions expected as deletion is handled separately
+				{
+					actionType:  actionTypeDelete,
+					index:       0,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Old Slide"},
+					},
+				},
 			},
 		},
 		{
@@ -76,12 +84,12 @@ func TestDiffSlides(t *testing.T) {
 			},
 			expected: []*action{
 				{
-					actionType:    actionTypeMove,
-					index:         0,
-					originalIndex: 1,
+					actionType:  actionTypeMove,
+					index:       0,
+					moveToIndex: 1,
 					slide: &Slide{
 						Layout: "TITLE",
-						Titles: []string{"Slide B"},
+						Titles: []string{"Slide A"},
 					},
 				},
 				// Second move is optimized away as it's automatically handled by the first move
@@ -104,9 +112,9 @@ func TestDiffSlides(t *testing.T) {
 			},
 			expected: []*action{
 				{
-					actionType:    actionTypeUpdate,
-					index:         0,
-					originalIndex: 0,
+					actionType:  actionTypeUpdate,
+					index:       0,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout:    "TITLE",
 						Titles:    []string{"Original Title"},
@@ -149,9 +157,9 @@ func TestDiffSlides(t *testing.T) {
 			expected: []*action{
 				// Move actions first
 				{
-					actionType:    actionTypeMove,
-					index:         0,
-					originalIndex: 1,
+					actionType:  actionTypeMove,
+					index:       1,
+					moveToIndex: 0,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"Slide 2"},
@@ -159,9 +167,9 @@ func TestDiffSlides(t *testing.T) {
 				},
 				// Update actions (New Slide replaces existing slide at lowest available index)
 				{
-					actionType:    actionTypeUpdate,
-					index:         1,
-					originalIndex: 0,
+					actionType:  actionTypeUpdate,
+					index:       1,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New Slide"},
@@ -169,9 +177,9 @@ func TestDiffSlides(t *testing.T) {
 				},
 				// Update actions (Slide 1 with subtitles is detected as update)
 				{
-					actionType:    actionTypeUpdate,
-					index:         2,
-					originalIndex: 2,
+					actionType:  actionTypeUpdate,
+					index:       2,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout:    "TITLE",
 						Titles:    []string{"Slide 1"},
@@ -225,21 +233,31 @@ func TestDiffSlides(t *testing.T) {
 			expected: []*action{
 				// Update actions (replace existing slides, using lowest available indices)
 				{
-					actionType:    actionTypeUpdate,
-					index:         0,
-					originalIndex: 0,
+					actionType:  actionTypeUpdate,
+					index:       0,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New Slide A"},
 					},
 				},
 				{
-					actionType:    actionTypeUpdate,
-					index:         2,
-					originalIndex: 2,
+					actionType:  actionTypeUpdate,
+					index:       2,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New Slide B"},
+					},
+				},
+				// Delete actions for unused slides
+				{
+					actionType:  actionTypeDelete,
+					index:       4,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Slide 5"},
 					},
 				},
 			},
@@ -279,23 +297,33 @@ func TestDiffSlides(t *testing.T) {
 				},
 			},
 			expected: []*action{
-				// Move actions (no deletion handling)
+				// Move actions
 				{
-					actionType:    actionTypeMove,
-					index:         0,
-					originalIndex: 3, // D moved from original index 3
+					actionType:  actionTypeMove,
+					index:       3,
+					moveToIndex: 0, // D moved from original index 3
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"D"},
 					},
 				},
 				{
-					actionType:    actionTypeMove,
-					index:         2,
-					originalIndex: 0, // A moved
+					actionType:  actionTypeMove,
+					index:       0,
+					moveToIndex: 2, // A moved
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"A"},
+					},
+				},
+				// Delete action for unused slide
+				{
+					actionType:  actionTypeDelete,
+					index:       2,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"C"},
 					},
 				},
 			},
@@ -332,9 +360,9 @@ func TestDiffSlides(t *testing.T) {
 			},
 			expected: []*action{
 				{
-					actionType:    actionTypeUpdate,
-					index:         0,
-					originalIndex: 0,
+					actionType:  actionTypeUpdate,
+					index:       0,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New First Page"},
@@ -375,9 +403,9 @@ func TestDiffSlides(t *testing.T) {
 			expected: []*action{
 				// Move Third Page
 				{
-					actionType:    actionTypeMove,
-					index:         0,
-					originalIndex: 2,
+					actionType:  actionTypeMove,
+					index:       2,
+					moveToIndex: 0,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"Third Page"},
@@ -385,9 +413,9 @@ func TestDiffSlides(t *testing.T) {
 				},
 				// Update existing page at index 2
 				{
-					actionType:    actionTypeUpdate,
-					index:         2,
-					originalIndex: 0,
+					actionType:  actionTypeUpdate,
+					index:       2,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New Page"},
@@ -432,18 +460,18 @@ func TestDiffSlides(t *testing.T) {
 			expected: []*action{
 				// Move actions
 				{
-					actionType:    actionTypeMove,
-					index:         0,
-					originalIndex: 3, // Keep Me B
+					actionType:  actionTypeMove,
+					index:       3,
+					moveToIndex: 0, // Keep Me B
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"Keep Me B"},
 					},
 				},
 				{
-					actionType:    actionTypeMove,
-					index:         1,
-					originalIndex: 2, // Keep Me A
+					actionType:  actionTypeMove,
+					index:       2,
+					moveToIndex: 1, // Keep Me A
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"Keep Me A"},
@@ -451,12 +479,353 @@ func TestDiffSlides(t *testing.T) {
 				},
 				// Update existing page at index 2
 				{
-					actionType:    actionTypeUpdate,
-					index:         2,
-					originalIndex: 0,
+					actionType:  actionTypeUpdate,
+					index:       2,
+					moveToIndex: -1,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"New Page"},
+					},
+				},
+				// Delete action for unused slide
+				{
+					actionType:  actionTypeDelete,
+					index:       1,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Delete Me 2"},
+					},
+				},
+			},
+		},
+		{
+			name: "reuse slide with same layout and title after move",
+			before: Slides{
+				{
+					Layout: "TITLE",
+					Titles: []string{"Same Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Bullet: BulletNone,
+									Fragments: []*Fragment{
+										{Value: "Original content"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Layout: "TITLE_AND_BODY",
+					Titles: []string{"Different Title"},
+				},
+				{
+					Layout: "TITLE",
+					Titles: []string{"Another Title"},
+				},
+			},
+			after: Slides{
+				{
+					Layout: "TITLE_AND_BODY",
+					Titles: []string{"Different Title"},
+				},
+				{
+					Layout: "TITLE",
+					Titles: []string{"Same Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Bullet: BulletNone,
+									Fragments: []*Fragment{
+										{Value: "Updated content"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []*action{
+				// Move "Same Title" to index 1
+				{
+					actionType:  actionTypeMove,
+					index:       0,
+					moveToIndex: 1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Same Title"},
+						Bodies: []*Body{
+							{
+								Paragraphs: []*Paragraph{
+									{
+										Bullet: BulletNone,
+										Fragments: []*Fragment{
+											{Value: "Original content"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				// Update "Same Title" slide (reuse existing slide with same layout and title)
+				{
+					actionType:  actionTypeUpdate,
+					index:       1,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Same Title"},
+						Bodies: []*Body{
+							{
+								Paragraphs: []*Paragraph{
+									{
+										Bullet: BulletNone,
+										Fragments: []*Fragment{
+											{Value: "Updated content"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				// Delete action for unused slide
+				{
+					actionType:  actionTypeDelete,
+					index:       2,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Another Title"},
+					},
+				},
+			},
+		},
+		{
+			name: "prioritize exact layout and title match for reuse",
+			before: Slides{
+				{
+					Layout:    "TITLE",
+					Titles:    []string{"Target Title"},
+					Subtitles: []string{"Old subtitle"},
+				},
+				{
+					Layout: "TITLE_AND_BODY",
+					Titles: []string{"Target Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Bullet: BulletNone,
+									Fragments: []*Fragment{
+										{Value: "Body content"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Layout: "TITLE",
+					Titles: []string{"Other Title"},
+				},
+			},
+			after: Slides{
+				{
+					Layout:    "TITLE",
+					Titles:    []string{"Target Title"},
+					Subtitles: []string{"New subtitle"},
+				},
+				{
+					Layout: "TITLE_AND_BODY",
+					Titles: []string{"Target Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Bullet: BulletNone,
+									Fragments: []*Fragment{
+										{Value: "Updated body content"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: []*action{
+				// Update first slide (exact layout and title match)
+				{
+					actionType:  actionTypeUpdate,
+					index:       0,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout:    "TITLE",
+						Titles:    []string{"Target Title"},
+						Subtitles: []string{"New subtitle"},
+					},
+				},
+				// Update second slide (exact layout and title match)
+				{
+					actionType:  actionTypeUpdate,
+					index:       1,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE_AND_BODY",
+						Titles: []string{"Target Title"},
+						Bodies: []*Body{
+							{
+								Paragraphs: []*Paragraph{
+									{
+										Bullet: BulletNone,
+										Fragments: []*Fragment{
+											{Value: "Updated body content"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				// Delete action for unused slide
+				{
+					actionType:  actionTypeDelete,
+					index:       2,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Other Title"},
+					},
+				},
+			},
+		},
+		{
+			name: "prefer exact layout and title match over index order",
+			before: Slides{
+				{
+					Layout: "TITLE_AND_BODY",
+					Titles: []string{"Different Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Bullet: BulletNone,
+									Fragments: []*Fragment{
+										{Value: "Some content"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Layout:    "TITLE",
+					Titles:    []string{"Target Title"},
+					Subtitles: []string{"Old subtitle"},
+				},
+				{
+					Layout: "TITLE",
+					Titles: []string{"Another Title"},
+				},
+			},
+			after: Slides{
+				{
+					Layout:    "TITLE",
+					Titles:    []string{"Target Title"},
+					Subtitles: []string{"New subtitle"},
+				},
+			},
+			expected: []*action{
+				// Should move slide at index 1 (exact layout and title match) to index 0
+				// then update the content
+				{
+					actionType:  actionTypeMove,
+					index:       1,
+					moveToIndex: 0,
+					slide: &Slide{
+						Layout:    "TITLE",
+						Titles:    []string{"Target Title"},
+						Subtitles: []string{"Old subtitle"},
+					},
+				},
+				{
+					actionType:  actionTypeUpdate,
+					index:       0,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout:    "TITLE",
+						Titles:    []string{"Target Title"},
+						Subtitles: []string{"New subtitle"},
+					},
+				},
+				// Delete actions for unused slides
+				{
+					actionType:  actionTypeDelete,
+					index:       2,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Another Title"},
+					},
+				},
+			},
+		},
+		{
+			name: "update and multiple delete",
+			before: Slides{
+				{
+					Layout:    "TITLE",
+					Titles:    []string{"Title"},
+					Subtitles: []string{"subtitle"},
+				},
+				{
+					Layout: "TITLE",
+					Titles: []string{"Title 2"},
+				},
+				{
+					Layout: "TITLE",
+					Titles: []string{"Title 3"},
+				},
+			},
+			after: Slides{
+				{
+					Layout:    "TITLE_AND_BODY",
+					Titles:    []string{"Target Title"},
+					Subtitles: []string{"subtitle"},
+				},
+			},
+			expected: []*action{
+				{
+					actionType:  actionTypeUpdate,
+					index:       0,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout:    "TITLE_AND_BODY",
+						Titles:    []string{"Target Title"},
+						Subtitles: []string{"subtitle"},
+					},
+				},
+				{
+					actionType:  actionTypeDelete,
+					index:       2,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Title 3"},
+					},
+				},
+				{
+					actionType:  actionTypeDelete,
+					index:       1,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Title 2"},
 					},
 				},
 			},
@@ -465,26 +834,16 @@ func TestDiffSlides(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actions, err := diffSlides(tt.before, tt.after)
+			var actions []*action
+			var err error
+
+			actions, err = diffSlides(tt.before, tt.after)
+
 			if err != nil {
 				t.Fatalf("diffSlides() error = %v", err)
 			}
 
 			if len(actions) != len(tt.expected) {
-				if tt.name == "remove first page with moves and adds" {
-					t.Logf("Actual actions for %s:", tt.name)
-					for i, action := range actions {
-						t.Logf("  [%d] Type: %s, Index: %d, OriginalIndex: %d, Slide: %v",
-							i, action.actionType.String(), action.index, action.originalIndex,
-							action.slide.Titles)
-					}
-					t.Logf("Expected actions:")
-					for i, expected := range tt.expected {
-						t.Logf("  [%d] Type: %s, Index: %d, OriginalIndex: %d, Slide: %v",
-							i, expected.actionType.String(), expected.index, expected.originalIndex,
-							expected.slide.Titles)
-					}
-				}
 				t.Fatalf("diffSlides() returned %d actions, expected %d", len(actions), len(tt.expected))
 			}
 
@@ -694,6 +1053,282 @@ func TestSlidesHaveSimilarContent(t *testing.T) {
 	}
 }
 
+func TestGetSimilarityPriority(t *testing.T) {
+	tests := []struct {
+		name     string
+		slide1   *Slide
+		slide2   *Slide
+		expected int
+	}{
+		{
+			name:     "nil slides",
+			slide1:   nil,
+			slide2:   nil,
+			expected: 6,
+		},
+		{
+			name:   "one nil slide",
+			slide1: nil,
+			slide2: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Test"},
+			},
+			expected: 6,
+		},
+		{
+			name: "exact layout and title match",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Same Title"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Same Title"},
+			},
+			expected: 2,
+		},
+		{
+			name: "title match only",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Same Title"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE_AND_BODY",
+				Titles: []string{"Same Title"},
+			},
+			expected: 4,
+		},
+		{
+			name: "layout match only",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title 1"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title 2"},
+			},
+			expected: 5,
+		},
+		{
+			name: "no match",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title 1"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE_AND_BODY",
+				Titles: []string{"Title 2"},
+			},
+			expected: 7, // No match
+		},
+		{
+			name: "layout match with no titles",
+			slide1: &Slide{
+				Layout: "TITLE",
+			},
+			slide2: &Slide{
+				Layout: "TITLE",
+			},
+			expected: 2, // Layout and title match (both have empty titles)
+		},
+		{
+			name: "subtitle match only",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 1"},
+				Subtitles: []string{"Same Subtitle"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE_AND_BODY",
+				Titles:    []string{"Title 2"},
+				Subtitles: []string{"Same Subtitle"},
+			},
+			expected: 6, // Subtitle match only
+		},
+		{
+			name: "layout and subtitle match",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 1"},
+				Subtitles: []string{"Same Subtitle"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 2"},
+				Subtitles: []string{"Same Subtitle"},
+			},
+			expected: 3, // Layout and subtitle match
+		},
+		{
+			name: "multiple titles - exact match",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title A", "Title B"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE_AND_BODY",
+				Titles: []string{"Title A", "Title B"},
+			},
+			expected: 4, // Title match only (all titles match exactly)
+		},
+		{
+			name: "multiple titles - partial match",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Same Title", "Different Title"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE_AND_BODY",
+				Titles: []string{"Same Title", "Another Title"},
+			},
+			expected: 7, // No match (not all titles match)
+		},
+		{
+			name: "multiple titles - different order",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title A", "Title B"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE_AND_BODY",
+				Titles: []string{"Title B", "Title A"},
+			},
+			expected: 7, // No match (order matters for exact match)
+		},
+		{
+			name: "multiple subtitles - exact match",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 1"},
+				Subtitles: []string{"Subtitle A", "Subtitle B"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE_AND_BODY",
+				Titles:    []string{"Title 2"},
+				Subtitles: []string{"Subtitle A", "Subtitle B"},
+			},
+			expected: 6, // Subtitle match only (all subtitles match exactly)
+		},
+		{
+			name: "multiple subtitles - partial match",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 1"},
+				Subtitles: []string{"Same Subtitle", "Different Subtitle"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE_AND_BODY",
+				Titles:    []string{"Title 2"},
+				Subtitles: []string{"Same Subtitle", "Another Subtitle"},
+			},
+			expected: 7, // No match (not all subtitles match)
+		},
+		{
+			name: "multiple subtitles - different order",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 1"},
+				Subtitles: []string{"Subtitle A", "Subtitle B"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE_AND_BODY",
+				Titles:    []string{"Title 2"},
+				Subtitles: []string{"Subtitle B", "Subtitle A"},
+			},
+			expected: 7, // No match (order matters for exact match)
+		},
+		{
+			name: "layout and multiple titles exact match",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title A", "Title B"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Title A", "Title B"},
+			},
+			expected: 2, // High priority: both layout and all titles match exactly
+		},
+		{
+			name: "layout match but titles don't match exactly",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Different Title", "Same Title"},
+			},
+			slide2: &Slide{
+				Layout: "TITLE",
+				Titles: []string{"Same Title", "Another Title"},
+			},
+			expected: 5, // Layout match only (titles don't match exactly)
+		},
+		{
+			name: "no title or subtitle match with multiple values",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title A", "Title B"},
+				Subtitles: []string{"Subtitle A", "Subtitle B"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE_AND_BODY",
+				Titles:    []string{"Title C", "Title D"},
+				Subtitles: []string{"Subtitle C", "Subtitle D"},
+			},
+			expected: 7,
+		},
+		{
+			name: "empty titles match",
+			slide1: &Slide{
+				Layout: "TITLE",
+				Titles: []string{},
+			},
+			slide2: &Slide{
+				Layout: "TITLE_AND_BODY",
+				Titles: []string{},
+			},
+			expected: 4, // Title match (both have empty titles)
+		},
+		{
+			name: "empty subtitles match",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Title 1"},
+				Subtitles: []string{},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE_AND_BODY",
+				Titles:    []string{"Title 2"},
+				Subtitles: []string{},
+			},
+			expected: 7, // No match (both have empty subtitles, but no actual subtitle content)
+		},
+		{
+			name: "layout, title, and subtitle all match",
+			slide1: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Same Title"},
+				Subtitles: []string{"Same Subtitle"},
+			},
+			slide2: &Slide{
+				Layout:    "TITLE",
+				Titles:    []string{"Same Title"},
+				Subtitles: []string{"Same Subtitle"},
+			},
+			expected: 1, // Highest priority: layout, title, and subtitle all match
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := getSimilarityPriority(tt.slide1, tt.slide2)
+			if result != tt.expected {
+				t.Errorf("getSimilarityPriority() = %v, expected %v", result, tt.expected)
+			}
+		})
+	}
+}
+
 // Helper functions for testing
 
 func createActionKey(action action) string {
@@ -713,7 +1348,7 @@ func compareActions(actual, expected action) bool {
 	if actual.index != expected.index {
 		return false
 	}
-	if actual.originalIndex != expected.originalIndex {
+	if actual.moveToIndex != expected.moveToIndex {
 		return false
 	}
 

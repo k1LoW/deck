@@ -364,17 +364,26 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 			if err := d.CreatePage(ctx, action.index, action.slide); err != nil {
 				return fmt.Errorf("failed to create page: %w", err)
 			}
+			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+				return fmt.Errorf("failed to apply page: %w", err)
+			}
 		case actionTypeUpdate:
 			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}
 		case actionTypeMove:
-			if err := d.movePage(ctx, action.originalIndex, action.index); err != nil {
+			if err := d.movePage(ctx, action.index, action.moveToIndex); err != nil {
 				return fmt.Errorf("failed to move page: %w", err)
+			}
+		case actionTypeDelete:
+			if err := d.DeletePage(ctx, action.index); err != nil {
+				return fmt.Errorf("failed to delete page: %w", err)
 			}
 		}
 	}
 
+	// Note: DeletePageAfter is still needed to handle cases where slides are reduced
+	// but not explicitly deleted through diff actions (e.g., when the new slide count is less)
 	if err := d.DeletePageAfter(ctx, len(ss)-1); err != nil {
 		return err
 	}

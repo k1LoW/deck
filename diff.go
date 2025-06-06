@@ -11,6 +11,7 @@ const (
 	actionTypeInsert                   // Insert slide at a specific index
 	actionTypeUpdate                   // Update existing slide at a specific index
 	actionTypeMove                     // Move existing slide to a new index
+	actionTypeDelete                   // Delete slide at a specific index (not used in this diff)
 )
 
 func (at actionType) String() string {
@@ -23,16 +24,18 @@ func (at actionType) String() string {
 		return "update"
 	case actionTypeMove:
 		return "move"
+	case actionTypeDelete:
+		return "delete"
 	default:
 		return "unknown"
 	}
 }
 
 type action struct {
-	actionType    actionType
-	index         int
-	originalIndex int
-	slide         *Slide
+	actionType  actionType
+	index       int
+	moveToIndex int
+	slide       *Slide
 }
 
 func diffSlides(before, after Slides) ([]*action, error) {
@@ -60,6 +63,8 @@ func diffSlides(before, after Slides) ([]*action, error) {
 	// Track processed slides
 	processedBefore := make(map[string]bool)
 	processedAfter := make(map[string]bool)
+	// Track positions that have been updated (to avoid deleting slides at those positions)
+	updatedPositions := make(map[int]bool)
 
 	// Process slides up to the minimum of before and after lengths
 	// Use move and update for existing page positions
@@ -77,63 +82,106 @@ func diffSlides(before, after Slides) ([]*action, error) {
 			// Exact match found - check if moved
 			if originalIndex != i {
 				actions = append(actions, &action{
-					actionType:    actionTypeMove,
-					index:         i,
-					originalIndex: originalIndex,
-					slide:         afterSlide,
+					actionType:  actionTypeMove,
+					index:       originalIndex,
+					moveToIndex: i,
+					slide:       afterSlide,
 				})
 			}
 			processedBefore[key] = true
 			processedAfter[key] = true
 		} else {
-			// No exact match - look for similar content to update
-			updated := false
-			for beforeKey, beforeSlide := range beforeSlides {
-				if processedBefore[beforeKey] {
-					continue
-				}
+			// No exact match - look for similar content to update with priority
 
-				// Simple heuristic: if slides have similar content, consider it an update
-				if slidesHaveSimilarContent(beforeSlide, afterSlide) {
-					originalIndex := beforeMap[beforeKey]
-					actions = append(actions, &action{
-						actionType:    actionTypeUpdate,
-						index:         i,
-						originalIndex: originalIndex,
-						slide:         afterSlide,
+			// Find slides with best similarity match based on priority
+			var bestMatch struct {
+				key           string
+				slide         *Slide
+				originalIndex int
+				priority      int // 1=layout+title+subtitle, 2=layout+title, 3=layout+subtitle, 4=title only, 5=layout only, 6=subtitle only, 7=no match
+			}
+			bestMatch.priority = 8 // Initialize with lowest priority
+
+			// Create a sorted list of before slides by index to ensure deterministic behavior
+			type beforeSlideInfo struct {
+				key           string
+				slide         *Slide
+				originalIndex int
+			}
+			var sortedBeforeSlides []beforeSlideInfo
+			for beforeKey, beforeSlide := range beforeSlides {
+				if !processedBefore[beforeKey] {
+					sortedBeforeSlides = append(sortedBeforeSlides, beforeSlideInfo{
+						key:           beforeKey,
+						slide:         beforeSlide,
+						originalIndex: beforeMap[beforeKey],
 					})
-					processedBefore[beforeKey] = true
-					processedAfter[key] = true
-					updated = true
-					break
 				}
 			}
 
-			if !updated {
-				// No similar content found - find the first unprocessed slide by index to update
-				minOriginalIndex := -1
-				var selectedKey string
-				for beforeKey := range beforeSlides {
-					if processedBefore[beforeKey] {
-						continue
-					}
-					originalIndex := beforeMap[beforeKey]
-					if minOriginalIndex == -1 || originalIndex < minOriginalIndex {
-						minOriginalIndex = originalIndex
-						selectedKey = beforeKey
+			// Sort by original index to ensure deterministic behavior
+			for i := 0; i < len(sortedBeforeSlides); i++ {
+				for j := i + 1; j < len(sortedBeforeSlides); j++ {
+					if sortedBeforeSlides[i].originalIndex > sortedBeforeSlides[j].originalIndex {
+						sortedBeforeSlides[i], sortedBeforeSlides[j] = sortedBeforeSlides[j], sortedBeforeSlides[i]
 					}
 				}
-				if minOriginalIndex != -1 {
+			}
+
+			for _, beforeInfo := range sortedBeforeSlides {
+				priority := getSimilarityPriority(beforeInfo.slide, afterSlide)
+
+				// Prefer slides at the same index when priority is equal, but only for layout matches
+				if priority < bestMatch.priority ||
+					(priority == bestMatch.priority && priority <= 2 && beforeInfo.originalIndex == i && bestMatch.originalIndex != i) {
+					bestMatch.key = beforeInfo.key
+					bestMatch.slide = beforeInfo.slide
+					bestMatch.originalIndex = beforeInfo.originalIndex
+					bestMatch.priority = priority
+				}
+			}
+
+			if bestMatch.priority <= 5 { // Only match for layout/title/subtitle matches, not subtitle-only or no match
+				// Special case: Use move for layout and title match when position changes
+				// to avoid layout change issues in applyPage
+				if bestMatch.priority <= 2 && bestMatch.originalIndex != i {
 					actions = append(actions, &action{
-						actionType:    actionTypeUpdate,
-						index:         i,
-						originalIndex: minOriginalIndex,
-						slide:         afterSlide,
+						actionType:  actionTypeMove,
+						index:       bestMatch.originalIndex,
+						moveToIndex: i,
+						slide:       bestMatch.slide,
 					})
-					processedBefore[selectedKey] = true
-					processedAfter[key] = true
-					updated = true
+					// Then update the content if needed
+					if generateSlideKey(bestMatch.slide) != generateSlideKey(afterSlide) {
+						actions = append(actions, &action{
+							actionType:  actionTypeUpdate,
+							index:       i,
+							moveToIndex: -1,
+							slide:       afterSlide,
+						})
+					}
+				} else {
+					// Use update for other cases
+					actions = append(actions, &action{
+						actionType:  actionTypeUpdate,
+						index:       i,
+						moveToIndex: -1,
+						slide:       afterSlide,
+					})
 				}
+				processedBefore[bestMatch.key] = true
+				processedAfter[key] = true
+				updatedPositions[i] = true
+			} else {
+				// No suitable match found - update the slide at this position
+				actions = append(actions, &action{
+					actionType:  actionTypeUpdate,
+					index:       i,
+					moveToIndex: -1,
+					slide:       afterSlide,
+				})
+				processedAfter[key] = true
+				updatedPositions[i] = true
 			}
 		}
 	}
@@ -145,16 +193,75 @@ func diffSlides(before, after Slides) ([]*action, error) {
 
 		// Only add new slides when we exceed the original page count
 		actions = append(actions, &action{
-			actionType:    actionTypeAppend,
-			index:         i,
-			originalIndex: -1, // No original index for new slides
-			slide:         afterSlide,
+			actionType:  actionTypeAppend,
+			index:       i,
+			moveToIndex: -1,
+			slide:       afterSlide,
 		})
 		processedAfter[key] = true
 	}
 
-	// Note: Removed slides are not handled here as deletion is handled separately
-	// Only add, update, and move operations are processed for page adjustment from the beginning
+	// Create a list of slides to delete with their original indices
+	var slidesToDelete []struct {
+		index int
+		slide *Slide
+	}
+
+	// Create a sorted list of unprocessed before slides to ensure deterministic behavior
+	type deleteSlideInfo struct {
+		key           string
+		slide         *Slide
+		originalIndex int
+	}
+	var sortedDeleteSlides []deleteSlideInfo
+	for beforeKey, beforeSlide := range beforeSlides {
+		if !processedBefore[beforeKey] {
+			originalIndex := beforeMap[beforeKey]
+			// Skip slides at positions that have been updated
+			if !updatedPositions[originalIndex] {
+				sortedDeleteSlides = append(sortedDeleteSlides, deleteSlideInfo{
+					key:           beforeKey,
+					slide:         beforeSlide,
+					originalIndex: originalIndex,
+				})
+			}
+		}
+	}
+
+	// Sort by original index to ensure deterministic behavior
+	for i := 0; i < len(sortedDeleteSlides); i++ {
+		for j := i + 1; j < len(sortedDeleteSlides); j++ {
+			if sortedDeleteSlides[i].originalIndex > sortedDeleteSlides[j].originalIndex {
+				sortedDeleteSlides[i], sortedDeleteSlides[j] = sortedDeleteSlides[j], sortedDeleteSlides[i]
+			}
+		}
+	}
+
+	for _, deleteInfo := range sortedDeleteSlides {
+		slidesToDelete = append(slidesToDelete, struct {
+			index int
+			slide *Slide
+		}{deleteInfo.originalIndex, deleteInfo.slide})
+	}
+
+	// Sort slides to delete by index in descending order (highest index first)
+	for i := 0; i < len(slidesToDelete); i++ {
+		for j := i + 1; j < len(slidesToDelete); j++ {
+			if slidesToDelete[i].index < slidesToDelete[j].index {
+				slidesToDelete[i], slidesToDelete[j] = slidesToDelete[j], slidesToDelete[i]
+			}
+		}
+	}
+
+	// Add delete actions in the correct order
+	for _, slideToDelete := range slidesToDelete {
+		actions = append(actions, &action{
+			actionType:  actionTypeDelete,
+			index:       slideToDelete.index,
+			moveToIndex: -1,
+			slide:       slideToDelete.slide,
+		})
+	}
 
 	// Sort and adjust actions for sequential execution
 	return adjustActionsForSequentialExecution(actions, len(before)), nil
@@ -171,10 +278,11 @@ func adjustActionsForSequentialExecution(actions []*action, originalLength int) 
 		return actions
 	}
 
-	// Separate actions by type (excluding delete actions)
+	// Separate actions by type
 	var moveActions []*action
 	var updateActions []*action
 	var addActions []*action
+	var deleteActions []*action
 
 	for _, action := range actions {
 		switch action.actionType {
@@ -184,6 +292,8 @@ func adjustActionsForSequentialExecution(actions []*action, originalLength int) 
 			updateActions = append(updateActions, action)
 		case actionTypeAppend, actionTypeInsert:
 			addActions = append(addActions, action)
+		case actionTypeDelete:
+			deleteActions = append(deleteActions, action)
 		}
 	}
 
@@ -225,6 +335,17 @@ func adjustActionsForSequentialExecution(actions []*action, originalLength int) 
 	}
 	result = append(result, addActions...)
 
+	// 4. Process delete actions from highest index to lowest
+	// This ensures proper deletion order (delete from end to beginning)
+	for i := 0; i < len(deleteActions); i++ {
+		for j := i + 1; j < len(deleteActions); j++ {
+			if deleteActions[i].index < deleteActions[j].index {
+				deleteActions[i], deleteActions[j] = deleteActions[j], deleteActions[i]
+			}
+		}
+	}
+	result = append(result, deleteActions...)
+
 	return result
 }
 
@@ -246,8 +367,8 @@ func optimizeMoveActions(moveActions []*action, originalLength int) []*action {
 
 	// Process moves in order and simulate their effects
 	for _, move := range moveActions {
-		currentPos := currentPositions[move.originalIndex]
-		targetPos := move.index
+		currentPos := currentPositions[move.index]
+		targetPos := move.moveToIndex
 
 		// If the slide is already in the correct position, skip this move
 		if currentPos == targetPos {
@@ -275,7 +396,7 @@ func optimizeMoveActions(moveActions []*action, originalLength int) []*action {
 			}
 		}
 		// Update the moved slide's position
-		currentPositions[move.originalIndex] = targetPos
+		currentPositions[move.index] = targetPos
 	}
 
 	return optimizedMoves
@@ -329,20 +450,90 @@ func generateSlideKey(slide *Slide) string {
 }
 
 // slidesHaveSimilarContent checks if two slides have similar content (for update detection)
+// Priority order:
+// 1. Exact layout and title match (highest priority for reuse)
+// 2. Title match only
+// 3. Layout match only
 func slidesHaveSimilarContent(slide1, slide2 *Slide) bool {
 	if slide1 == nil || slide2 == nil {
 		return false
 	}
 
-	// Check if titles match
+	// Check if both layout and titles match (highest priority)
+	if slide1.Layout != "" && slide2.Layout != "" && slide1.Layout == slide2.Layout {
+		if len(slide1.Titles) > 0 && len(slide2.Titles) > 0 {
+			return slide1.Titles[0] == slide2.Titles[0]
+		}
+		// If layouts match but no titles, still consider it similar
+		return true
+	}
+
+	// Check if titles match (medium priority)
 	if len(slide1.Titles) > 0 && len(slide2.Titles) > 0 {
 		return slide1.Titles[0] == slide2.Titles[0]
 	}
 
-	// Check if layouts match
-	if slide1.Layout != "" && slide2.Layout != "" {
-		return slide1.Layout == slide2.Layout
+	return false
+}
+
+// getSimilarityPriority returns the priority for slide similarity matching
+// Lower numbers indicate higher priority for reuse
+// 1: Exact layout, title, and subtitle match (highest priority)
+// 2: Exact layout and title match
+// 3: Exact layout and subtitle match
+// 4: Title match only
+// 5: Layout match only
+// 6: Subtitle match only
+// 7: No specific match (lowest priority)
+func getSimilarityPriority(beforeSlide, afterSlide *Slide) int {
+	if beforeSlide == nil || afterSlide == nil {
+		return 6
 	}
 
-	return false
+	layoutMatch := beforeSlide.Layout != "" && afterSlide.Layout != "" && beforeSlide.Layout == afterSlide.Layout
+
+	// Check all titles for match
+	titleMatch := true
+	if len(beforeSlide.Titles) != len(afterSlide.Titles) {
+		titleMatch = false
+	} else {
+		for i := range beforeSlide.Titles {
+			if beforeSlide.Titles[i] != afterSlide.Titles[i] {
+				titleMatch = false
+				break
+			}
+		}
+	}
+
+	// Check all subtitles for match (only if both slides have subtitles)
+	subtitleMatch := false
+	if len(beforeSlide.Subtitles) > 0 && len(afterSlide.Subtitles) > 0 {
+		if len(beforeSlide.Subtitles) == len(afterSlide.Subtitles) {
+			subtitleMatch = true
+			for i := range beforeSlide.Subtitles {
+				if beforeSlide.Subtitles[i] != afterSlide.Subtitles[i] {
+					subtitleMatch = false
+					break
+				}
+			}
+		}
+	}
+
+	// Determine priority based on match combinations
+	switch {
+	case layoutMatch && titleMatch && subtitleMatch:
+		return 1 // Highest priority: layout, title, and subtitle all match (with actual subtitles)
+	case layoutMatch && titleMatch:
+		return 2 // High priority: both layout and title match
+	case layoutMatch && subtitleMatch:
+		return 3 // High priority: both layout and subtitle match
+	case titleMatch:
+		return 4 // Medium priority: title match only
+	case layoutMatch:
+		return 5 // Lower priority: layout match only
+	case subtitleMatch:
+		return 6 // Lower priority: subtitle match only
+	default:
+		return 7 // Lowest priority: no specific match
+	}
 }
