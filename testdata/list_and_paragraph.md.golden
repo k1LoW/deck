@@ -2,6 +2,12 @@
   {
     "layout": "",
     "titles": [
+      "List and paragraph"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
       "Title"
     ],
     "bodies": [
@@ -37,10 +43,7 @@
             "fragments": [
               {
                 "value": "C",
-                "bold": true
-              },
-              {
-                "value": "",
+                "bold": true,
                 "softLineBreak": true
               },
               {

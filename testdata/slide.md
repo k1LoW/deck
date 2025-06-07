@@ -32,7 +32,7 @@ comment
     - fF
         - gG
 1. h**H**
-  2. **i**I
+1. **i**I
 
 ref: [deck repo](https://github.com/k1LoW/deck)
 
