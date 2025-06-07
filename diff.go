@@ -2,6 +2,7 @@ package deck
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -48,15 +49,15 @@ func diffSlides(before, after Slides) ([]*action, error) {
 	beforeSlides := make(map[string]*Slide) // key -> slide
 	afterSlides := make(map[string]*Slide)  // key -> slide
 
-	// Generate unique keys for slides based on their content
+	// Generate unique keys for slides based on their content and position
 	for i, slide := range before {
-		key := generateSlideKey(slide)
+		key := generateSlideKey(slide, i)
 		beforeMap[key] = i
 		beforeSlides[key] = slide
 	}
 
 	for i, slide := range after {
-		key := generateSlideKey(slide)
+		key := generateSlideKey(slide, i)
 		afterMap[key] = i
 		afterSlides[key] = slide
 	}
@@ -77,19 +78,21 @@ func diffSlides(before, after Slides) ([]*action, error) {
 	// First pass: handle slides within existing page range
 	for i := 0; i < minLength; i++ {
 		afterSlide := after[i]
-		key := generateSlideKey(afterSlide)
+		key := generateSlideKey(afterSlide, i)
 
-		if originalIndex, exists := beforeMap[key]; exists {
-			// Exact match found - check if moved
-			if originalIndex != i {
+		// Always try content-based matching first for better duplicate handling
+		contentKey := generateContentKey(afterSlide)
+		if matchKey, matchSlide, matchIndex, found := findSlideByContent(contentKey, i, beforeSlides, beforeMap, processedBefore); found {
+			// Found slide with same content
+			if matchIndex != i {
 				actions = append(actions, &action{
 					actionType:  actionTypeMove,
-					index:       originalIndex,
+					index:       matchIndex,
 					moveToIndex: i,
-					slide:       afterSlide,
+					slide:       matchSlide,
 				})
 			}
-			processedBefore[key] = true
+			processedBefore[matchKey] = true
 			processedAfter[key] = true
 		} else {
 			// No exact match - look for similar content to update with priority
@@ -153,7 +156,7 @@ func diffSlides(before, after Slides) ([]*action, error) {
 						slide:       bestMatch.slide,
 					})
 					// Then update the content if needed
-					if generateSlideKey(bestMatch.slide) != generateSlideKey(afterSlide) {
+					if generateContentKey(bestMatch.slide) != generateContentKey(afterSlide) {
 						actions = append(actions, &action{
 							actionType:  actionTypeUpdate,
 							index:       i,
@@ -190,7 +193,7 @@ func diffSlides(before, after Slides) ([]*action, error) {
 	// Second pass: handle additional slides beyond existing page count (add only when pages are insufficient)
 	for i := minLength; i < len(after); i++ {
 		afterSlide := after[i]
-		key := generateSlideKey(afterSlide)
+		key := generateSlideKey(afterSlide, i)
 
 		// Only add new slides when we exceed the original page count
 		actions = append(actions, &action{
@@ -403,8 +406,17 @@ func optimizeMoveActions(moveActions []*action, originalLength int) []*action {
 	return optimizedMoves
 }
 
-// generateSlideKey creates a unique key for a slide based on its content
-func generateSlideKey(slide *Slide) string {
+// generateSlideKey creates a unique key for a slide based on its content and position
+func generateSlideKey(slide *Slide, index int) string {
+	b, err := json.Marshal(slide)
+	if err != nil {
+		return fmt.Sprintf("%d_%s", index, time.Now().String()) // Fallback to current time if JSON marshalling fails
+	}
+	return fmt.Sprintf("%d_%s", index, string(b))
+}
+
+// generateContentKey creates a key for a slide based only on its content (without position)
+func generateContentKey(slide *Slide) string {
 	b, err := json.Marshal(slide)
 	if err != nil {
 		return time.Now().String() // Fallback to current time if JSON marshalling fails
@@ -412,31 +424,43 @@ func generateSlideKey(slide *Slide) string {
 	return string(b)
 }
 
-// slidesHaveSimilarContent checks if two slides have similar content (for update detection)
-// Priority order:
-// 1. Exact layout and title match (highest priority for reuse)
-// 2. Title match only
-// 3. Layout match only
-func slidesHaveSimilarContent(slide1, slide2 *Slide) bool {
-	if slide1 == nil || slide2 == nil {
-		return false
+// findSlideByContent finds a slide with matching content that hasn't been processed yet
+// Prefers slides that are closest to the target position
+func findSlideByContent(contentKey string, targetIndex int, beforeSlides map[string]*Slide, beforeMap map[string]int, processedBefore map[string]bool) (string, *Slide, int, bool) {
+	var bestMatch struct {
+		key      string
+		slide    *Slide
+		index    int
+		distance int
 	}
+	bestMatch.distance = -1 // Initialize with invalid distance
 
-	// Check if both layout and titles match (highest priority)
-	if slide1.Layout != "" && slide2.Layout != "" && slide1.Layout == slide2.Layout {
-		if len(slide1.Titles) > 0 && len(slide2.Titles) > 0 {
-			return slide1.Titles[0] == slide2.Titles[0]
+	for key, slide := range beforeSlides {
+		if processedBefore[key] {
+			continue
 		}
-		// If layouts match but no titles, still consider it similar
-		return true
+		if generateContentKey(slide) == contentKey {
+			slideIndex := beforeMap[key]
+			distance := slideIndex - targetIndex
+			if distance < 0 {
+				distance = -distance // absolute value
+			}
+
+			// Choose the slide closest to target position, or if same distance, prefer lower index
+			if bestMatch.distance == -1 || distance < bestMatch.distance ||
+				(distance == bestMatch.distance && slideIndex < bestMatch.index) {
+				bestMatch.key = key
+				bestMatch.slide = slide
+				bestMatch.index = slideIndex
+				bestMatch.distance = distance
+			}
+		}
 	}
 
-	// Check if titles match (medium priority)
-	if len(slide1.Titles) > 0 && len(slide2.Titles) > 0 {
-		return slide1.Titles[0] == slide2.Titles[0]
+	if bestMatch.distance != -1 {
+		return bestMatch.key, bestMatch.slide, bestMatch.index, true
 	}
-
-	return false
+	return "", nil, -1, false
 }
 
 // getSimilarityPriority returns the priority for slide similarity matching

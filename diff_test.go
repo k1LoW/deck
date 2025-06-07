@@ -830,6 +830,56 @@ func TestDiffSlides(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "duplicate slides reordering - A A B A to A B A A",
+			before: Slides{
+				{
+					Layout: "TITLE",
+					Titles: []string{"A"},
+				}, // index 0
+				{
+					Layout: "TITLE",
+					Titles: []string{"A"},
+				}, // index 1
+				{
+					Layout: "TITLE",
+					Titles: []string{"B"},
+				}, // index 2
+				{
+					Layout: "TITLE",
+					Titles: []string{"A"},
+				}, // index 3
+			},
+			after: Slides{
+				{
+					Layout: "TITLE",
+					Titles: []string{"A"},
+				}, // index 0 (no change)
+				{
+					Layout: "TITLE",
+					Titles: []string{"B"},
+				}, // index 1 (moved from index 2)
+				{
+					Layout: "TITLE",
+					Titles: []string{"A"},
+				}, // index 2 (moved from index 1)
+				{
+					Layout: "TITLE",
+					Titles: []string{"A"},
+				}, // index 3 (no change)
+			},
+			expected: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       1,
+					moveToIndex: 2,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"A"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -844,6 +894,14 @@ func TestDiffSlides(t *testing.T) {
 			}
 
 			if len(actions) != len(tt.expected) {
+				t.Logf("Actual actions:")
+				for i, action := range actions {
+					t.Logf("  [%d] %s: index=%d, moveToIndex=%d, slide=%+v", i, action.actionType, action.index, action.moveToIndex, action.slide)
+				}
+				t.Logf("Expected actions:")
+				for i, action := range tt.expected {
+					t.Logf("  [%d] %s: index=%d, moveToIndex=%d, slide=%+v", i, action.actionType, action.index, action.moveToIndex, action.slide)
+				}
 				t.Fatalf("diffSlides() returned %d actions, expected %d", len(actions), len(tt.expected))
 			}
 
@@ -877,84 +935,6 @@ func TestDiffSlides(t *testing.T) {
 				if _, exists := expectedMap[key]; !exists {
 					t.Errorf("Unexpected action found: %+v", actual)
 				}
-			}
-		})
-	}
-}
-
-func TestSlidesHaveSimilarContent(t *testing.T) {
-	tests := []struct {
-		name     string
-		slide1   *Slide
-		slide2   *Slide
-		expected bool
-	}{
-		{
-			name:     "nil slides",
-			slide1:   nil,
-			slide2:   nil,
-			expected: false,
-		},
-		{
-			name:   "one nil slide",
-			slide1: nil,
-			slide2: &Slide{
-				Layout: "TITLE",
-				Titles: []string{"Test"},
-			},
-			expected: false,
-		},
-		{
-			name: "same titles",
-			slide1: &Slide{
-				Layout: "TITLE",
-				Titles: []string{"Same Title"},
-			},
-			slide2: &Slide{
-				Layout: "TITLE_AND_BODY",
-				Titles: []string{"Same Title"},
-			},
-			expected: true,
-		},
-		{
-			name: "different titles",
-			slide1: &Slide{
-				Layout: "TITLE",
-				Titles: []string{"Title 1"},
-			},
-			slide2: &Slide{
-				Layout: "TITLE",
-				Titles: []string{"Title 2"},
-			},
-			expected: false,
-		},
-		{
-			name: "same layouts, no titles",
-			slide1: &Slide{
-				Layout: "TITLE",
-			},
-			slide2: &Slide{
-				Layout: "TITLE",
-			},
-			expected: true,
-		},
-		{
-			name: "different layouts, no titles",
-			slide1: &Slide{
-				Layout: "TITLE",
-			},
-			slide2: &Slide{
-				Layout: "TITLE_AND_BODY",
-			},
-			expected: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := slidesHaveSimilarContent(tt.slide1, tt.slide2)
-			if result != tt.expected {
-				t.Errorf("slidesHaveSimilarContent() = %v, expected %v", result, tt.expected)
 			}
 		})
 	}
