@@ -891,6 +891,61 @@ func TestDiffSlides(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "do not update unless absolutely necessary",
+			before: Slides{
+				{
+					Layout: "TITLE_A",
+					Titles: []string{"A"},
+				},
+				{
+					Layout: "TITLE_B",
+					Titles: []string{"A"},
+				},
+				{
+					Layout: "TITLE_C",
+					Titles: []string{"A"},
+				},
+				{
+					Layout: "TITLE_D",
+					Titles: []string{"A"},
+				},
+			},
+			after: Slides{
+				{
+					Layout: "TITLE_A",
+					Titles: []string{"A"},
+				},
+				{
+					Layout: "TITLE_B",
+					Titles: []string{"A"},
+				},
+				{
+					Layout: "TITLE_D",
+					Titles: []string{"A"},
+				},
+			},
+			expected: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       3,
+					moveToIndex: 2,
+					slide: &Slide{
+						Layout: "TITLE_D",
+						Titles: []string{"A"},
+					},
+				},
+				{
+					actionType:  actionTypeDelete,
+					index:       3,
+					moveToIndex: -1,
+					slide: &Slide{
+						Layout: "TITLE_C",
+						Titles: []string{"A"},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

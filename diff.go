@@ -280,7 +280,7 @@ func diffSlides(before, after Slides) ([]*action, error) {
 // 1. Move actions (to reposition existing slides, optimized to avoid redundant moves)
 // 2. Update actions (to modify existing slides in their new positions)
 // 3. Add actions (to insert new slides from lowest index to highest)
-// Note: Delete actions are not processed here as they are handled separately
+// 4. Delete actions (adjusted for move effects and processed from highest to lowest index)
 func adjustActionsForSequentialExecution(actions []*action, originalLength int) []*action {
 	if len(actions) == 0 {
 		return actions
@@ -343,16 +343,19 @@ func adjustActionsForSequentialExecution(actions []*action, originalLength int) 
 	}
 	result = append(result, addActions...)
 
-	// 4. Process delete actions from highest index to lowest
+	// 4. Adjust delete action indices based on move actions and process from highest to lowest
+	adjustedDeleteActions := adjustDeleteIndicesAfterMoves(deleteActions, optimizedMoves, originalLength)
+
+	// Sort adjusted delete actions from highest index to lowest
 	// This ensures proper deletion order (delete from end to beginning)
-	for i := 0; i < len(deleteActions); i++ {
-		for j := i + 1; j < len(deleteActions); j++ {
-			if deleteActions[i].index < deleteActions[j].index {
-				deleteActions[i], deleteActions[j] = deleteActions[j], deleteActions[i]
+	for i := 0; i < len(adjustedDeleteActions); i++ {
+		for j := i + 1; j < len(adjustedDeleteActions); j++ {
+			if adjustedDeleteActions[i].index < adjustedDeleteActions[j].index {
+				adjustedDeleteActions[i], adjustedDeleteActions[j] = adjustedDeleteActions[j], adjustedDeleteActions[i]
 			}
 		}
 	}
-	result = append(result, deleteActions...)
+	result = append(result, adjustedDeleteActions...)
 
 	return result
 }
@@ -408,6 +411,67 @@ func optimizeMoveActions(moveActions []*action, originalLength int) []*action {
 	}
 
 	return optimizedMoves
+}
+
+// adjustDeleteIndicesAfterMoves adjusts delete action indices based on the effects of move actions
+// This ensures that delete actions target the correct positions after moves have been executed
+func adjustDeleteIndicesAfterMoves(deleteActions []*action, moveActions []*action, originalLength int) []*action {
+	if len(deleteActions) == 0 {
+		return deleteActions
+	}
+
+	// Create a simulation of the current slide positions after moves
+	// Map from original index to current index
+	currentPositions := make(map[int]int)
+	for i := 0; i < originalLength; i++ {
+		currentPositions[i] = i
+	}
+
+	// Apply all move actions to simulate the final positions
+	for _, move := range moveActions {
+		currentPos := currentPositions[move.index]
+		targetPos := move.moveToIndex
+
+		// Simulate the move: update all positions
+		if currentPos < targetPos {
+			// Moving forward: slides between currentPos+1 and targetPos shift left
+			for origIdx, pos := range currentPositions {
+				if pos > currentPos && pos <= targetPos {
+					currentPositions[origIdx] = pos - 1
+				}
+			}
+		} else {
+			// Moving backward: slides between targetPos and currentPos-1 shift right
+			for origIdx, pos := range currentPositions {
+				if pos >= targetPos && pos < currentPos {
+					currentPositions[origIdx] = pos + 1
+				}
+			}
+		}
+		// Update the moved slide's position
+		currentPositions[move.index] = targetPos
+	}
+
+	// Adjust delete action indices based on final positions
+	var adjustedDeleteActions []*action
+	for _, deleteAction := range deleteActions {
+		originalIndex := deleteAction.index
+
+		// Find the current position of the slide to be deleted
+		if newIndex, exists := currentPositions[originalIndex]; exists {
+			adjustedDeleteActions = append(adjustedDeleteActions, &action{
+				actionType:  deleteAction.actionType,
+				index:       newIndex,
+				moveToIndex: deleteAction.moveToIndex,
+				slide:       deleteAction.slide,
+			})
+		} else {
+			// If the slide doesn't exist in current positions, keep original index
+			adjustedDeleteActions = append(adjustedDeleteActions, deleteAction)
+		}
+	}
+
+	return adjustedDeleteActions
 }
 
 // generateSlideKey creates a unique key for a slide based on its content and position
