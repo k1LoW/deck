@@ -155,17 +155,17 @@ func TestDiffSlides(t *testing.T) {
 				},
 			},
 			expected: []*action{
-				// Move actions first
+				// Move Slide 1 to position 1 (from index 0)
 				{
 					actionType:  actionTypeMove,
-					index:       1,
-					moveToIndex: 0,
+					index:       0,
+					moveToIndex: 1,
 					slide: &Slide{
 						Layout: "TITLE",
-						Titles: []string{"Slide 2"},
+						Titles: []string{"Slide 1"},
 					},
 				},
-				// Update actions (New Slide replaces existing slide at lowest available index)
+				// Update actions (New Slide replaces existing slide at index 1)
 				{
 					actionType:  actionTypeUpdate,
 					index:       1,
@@ -175,7 +175,7 @@ func TestDiffSlides(t *testing.T) {
 						Titles: []string{"New Slide"},
 					},
 				},
-				// Update actions (Slide 1 with subtitles is detected as update)
+				// Update actions (Slide 1 with subtitles is detected as update at index 2)
 				{
 					actionType:  actionTypeUpdate,
 					index:       2,
@@ -401,7 +401,17 @@ func TestDiffSlides(t *testing.T) {
 				},
 			},
 			expected: []*action{
-				// Move Third Page
+				// Move First Page to position 2
+				{
+					actionType:  actionTypeMove,
+					index:       0,
+					moveToIndex: 2,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"First Page"},
+					},
+				},
+				// Move Third Page to position 0
 				{
 					actionType:  actionTypeMove,
 					index:       2,
@@ -458,23 +468,24 @@ func TestDiffSlides(t *testing.T) {
 				},
 			},
 			expected: []*action{
-				// Move actions
+				// Move Delete Me 1 to position 2
+				{
+					actionType:  actionTypeMove,
+					index:       0,
+					moveToIndex: 2,
+					slide: &Slide{
+						Layout: "TITLE",
+						Titles: []string{"Delete Me 1"},
+					},
+				},
+				// Move Keep Me B to position 0
 				{
 					actionType:  actionTypeMove,
 					index:       3,
-					moveToIndex: 0, // Keep Me B
+					moveToIndex: 0,
 					slide: &Slide{
 						Layout: "TITLE",
 						Titles: []string{"Keep Me B"},
-					},
-				},
-				{
-					actionType:  actionTypeMove,
-					index:       2,
-					moveToIndex: 1, // Keep Me A
-					slide: &Slide{
-						Layout: "TITLE",
-						Titles: []string{"Keep Me A"},
 					},
 				},
 				// Update existing page at index 2
@@ -951,7 +962,7 @@ func TestGetSimilarityPriority(t *testing.T) {
 			name:     "nil slides",
 			slide1:   nil,
 			slide2:   nil,
-			expected: 6,
+			expected: 7,
 		},
 		{
 			name:   "one nil slide",
@@ -960,7 +971,7 @@ func TestGetSimilarityPriority(t *testing.T) {
 				Layout: "TITLE",
 				Titles: []string{"Test"},
 			},
-			expected: 6,
+			expected: 7,
 		},
 		{
 			name: "exact layout and title match",
@@ -972,7 +983,7 @@ func TestGetSimilarityPriority(t *testing.T) {
 				Layout: "TITLE",
 				Titles: []string{"Same Title"},
 			},
-			expected: 2,
+			expected: 0,
 		},
 		{
 			name: "title match only",
@@ -1018,7 +1029,7 @@ func TestGetSimilarityPriority(t *testing.T) {
 			slide2: &Slide{
 				Layout: "TITLE",
 			},
-			expected: 2, // Layout and title match (both have empty titles)
+			expected: 0, // Perfect match (both have same layout and empty titles)
 		},
 		{
 			name: "subtitle match only",
@@ -1136,7 +1147,7 @@ func TestGetSimilarityPriority(t *testing.T) {
 				Layout: "TITLE",
 				Titles: []string{"Title A", "Title B"},
 			},
-			expected: 2, // High priority: both layout and all titles match exactly
+			expected: 0, // Perfect match: both layout and all titles match exactly
 		},
 		{
 			name: "layout match but titles don't match exactly",
@@ -1202,7 +1213,7 @@ func TestGetSimilarityPriority(t *testing.T) {
 				Titles:    []string{"Same Title"},
 				Subtitles: []string{"Same Subtitle"},
 			},
-			expected: 1, // Highest priority: layout, title, and subtitle all match
+			expected: 0, // Perfect match: layout, title, and subtitle all match
 		},
 	}
 

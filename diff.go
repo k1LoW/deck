@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -146,26 +147,29 @@ func diffSlides(before, after Slides) ([]*action, error) {
 			}
 
 			if bestMatch.priority <= 5 { // Only match for layout/title/subtitle matches, not subtitle-only or no match
-				// Special case: Use move for layout and title match when position changes
-				// to avoid layout change issues in applyPage
-				if bestMatch.priority <= 2 && bestMatch.originalIndex != i {
-					actions = append(actions, &action{
-						actionType:  actionTypeMove,
-						index:       bestMatch.originalIndex,
-						moveToIndex: i,
-						slide:       bestMatch.slide,
-					})
-					// Then update the content if needed
-					if generateContentKey(bestMatch.slide) != generateContentKey(afterSlide) {
+				// Special case: For perfect match (priority 0), only move if position changes
+				if bestMatch.priority == 0 {
+					if bestMatch.originalIndex != i {
 						actions = append(actions, &action{
-							actionType:  actionTypeUpdate,
-							index:       i,
-							moveToIndex: -1,
-							slide:       afterSlide,
+							actionType:  actionTypeMove,
+							index:       bestMatch.originalIndex,
+							moveToIndex: i,
+							slide:       bestMatch.slide,
 						})
 					}
+					// No update needed for perfect match
 				} else {
-					// Use update for other cases
+					// For non-perfect matches (priority 1-5), always update after move/in-place
+					if bestMatch.originalIndex != i {
+						// Move first, then update
+						actions = append(actions, &action{
+							actionType:  actionTypeMove,
+							index:       bestMatch.originalIndex,
+							moveToIndex: i,
+							slide:       bestMatch.slide,
+						})
+					}
+					// Always update for non-perfect matches
 					actions = append(actions, &action{
 						actionType:  actionTypeUpdate,
 						index:       i,
@@ -465,7 +469,8 @@ func findSlideByContent(contentKey string, targetIndex int, beforeSlides map[str
 
 // getSimilarityPriority returns the priority for slide similarity matching
 // Lower numbers indicate higher priority for reuse
-// 1: Exact layout, title, and subtitle match (highest priority)
+// 0: Perfect match - identical content (highest priority)
+// 1: Exact layout, title, and subtitle match
 // 2: Exact layout and title match
 // 3: Exact layout and subtitle match
 // 4: Title match only
@@ -474,7 +479,16 @@ func findSlideByContent(contentKey string, targetIndex int, beforeSlides map[str
 // 7: No specific match (lowest priority)
 func getSimilarityPriority(beforeSlide, afterSlide *Slide) int {
 	if beforeSlide == nil || afterSlide == nil {
-		return 6
+		return 7
+	}
+
+	beforeB, err := json.Marshal(beforeSlide)
+	if err != nil {
+		return 7
+	}
+	afterB, err := json.Marshal(afterSlide)
+	if err != nil {
+		return 7
 	}
 
 	layoutMatch := beforeSlide.Layout != "" && afterSlide.Layout != "" && beforeSlide.Layout == afterSlide.Layout
@@ -508,6 +522,8 @@ func getSimilarityPriority(beforeSlide, afterSlide *Slide) int {
 
 	// Determine priority based on match combinations
 	switch {
+	case bytes.Equal(beforeB, afterB):
+		return 0 // Perfect match: same content and position
 	case layoutMatch && titleMatch && subtitleMatch:
 		return 1 // Highest priority: layout, title, and subtitle all match (with actual subtitles)
 	case layoutMatch && titleMatch:
