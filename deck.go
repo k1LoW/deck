@@ -989,12 +989,18 @@ func (d *Deck) movePage(ctx context.Context, fromIndex, toIndex int) error {
 	}
 
 	currentSlide := d.presentation.Slides[fromIndex]
+
+	if fromIndex < toIndex {
+		toIndex++
+	}
+
 	req := &slides.BatchUpdatePresentationRequest{
 		Requests: []*slides.Request{
 			{
 				UpdateSlidesPosition: &slides.UpdateSlidesPositionRequest{
-					SlideObjectIds: []string{currentSlide.ObjectId},
-					InsertionIndex: int64(toIndex),
+					SlideObjectIds:  []string{currentSlide.ObjectId},
+					InsertionIndex:  int64(toIndex),
+					ForceSendFields: []string{"InsertionIndex"},
 				},
 			},
 		},

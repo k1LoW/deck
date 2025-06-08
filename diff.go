@@ -3,8 +3,6 @@ package deck
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"time"
 )
 
 type actionType int
@@ -41,494 +39,258 @@ type action struct {
 	slide       *Slide
 }
 
+// positionTracker tracks the current position of each slide after moves.
+type positionTracker struct {
+	currentPos   map[int]int // originalIndex -> currentPosition
+	posContent   map[int]int // currentPosition -> originalIndex
+	originalSize int
+}
+
+// newPositionTracker creates a new position tracker.
+func newPositionTracker(size int) *positionTracker {
+	tracker := &positionTracker{
+		currentPos:   make(map[int]int),
+		posContent:   make(map[int]int),
+		originalSize: size,
+	}
+
+	// Initialize with identity mapping
+	for i := 0; i < size; i++ {
+		tracker.currentPos[i] = i
+		tracker.posContent[i] = i
+	}
+
+	return tracker
+}
+
+// getCurrentPosition returns the current position of a slide by its original index.
+func (pt *positionTracker) getCurrentPosition(originalIndex int) int {
+	if pos, exists := pt.currentPos[originalIndex]; exists {
+		return pos
+	}
+	return -1 // Not found
+}
+
+// getSlideAtPosition returns the original index of the slide at the given position.
+func (pt *positionTracker) getSlideAtPosition(position int) int {
+	if origIdx, exists := pt.posContent[position]; exists {
+		return origIdx
+	}
+	return -1 // Not found
+}
+
+// moveSlide updates positions after a move operation.
+func (pt *positionTracker) moveSlide(originalIndex, fromPos, toPos int) {
+	// Remove from old position
+	delete(pt.posContent, fromPos)
+
+	// Shift slides between fromPos and toPos
+	if fromPos < toPos {
+		// Moving forward: slides between fromPos+1 and toPos shift left
+		for pos := fromPos + 1; pos <= toPos; pos++ {
+			if origIdx, exists := pt.posContent[pos]; exists {
+				pt.posContent[pos-1] = origIdx
+				pt.currentPos[origIdx] = pos - 1
+			}
+		}
+	} else {
+		// Moving backward: slides between toPos and fromPos-1 shift right
+		for pos := fromPos - 1; pos >= toPos; pos-- {
+			if origIdx, exists := pt.posContent[pos]; exists {
+				pt.posContent[pos+1] = origIdx
+				pt.currentPos[origIdx] = pos + 1
+			}
+		}
+	}
+
+	// Place moved slide at target position
+	pt.posContent[toPos] = originalIndex
+	pt.currentPos[originalIndex] = toPos
+}
+
+// removeSlide removes a slide from tracking (for delete operations).
+func (pt *positionTracker) removeSlide(originalIndex int) {
+	if pos, exists := pt.currentPos[originalIndex]; exists {
+		delete(pt.currentPos, originalIndex)
+		delete(pt.posContent, pos)
+	}
+}
+
 func diffSlides(before, after Slides) ([]*action, error) {
 	var actions []*action
 
-	// Create maps for efficient lookup with separate index tracking
-	beforeMap := make(map[string]int)       // key -> original index
-	afterMap := make(map[string]int)        // key -> new index
-	beforeSlides := make(map[string]*Slide) // key -> slide
-	afterSlides := make(map[string]*Slide)  // key -> slide
-
-	// Generate unique keys for slides based on their content and position
-	for i, slide := range before {
-		key := generateSlideKey(slide, i)
-		beforeMap[key] = i
-		beforeSlides[key] = slide
+	if len(before) == 0 && len(after) == 0 {
+		return actions, nil
 	}
 
-	for i, slide := range after {
-		key := generateSlideKey(slide, i)
-		afterMap[key] = i
-		afterSlides[key] = slide
-	}
+	// Initialize position tracker
+	tracker := newPositionTracker(len(before))
 
-	// Track processed slides
-	processedBefore := make(map[string]bool)
-	processedAfter := make(map[string]bool)
-	// Track positions that have been updated (to avoid deleting slides at those positions)
-	updatedPositions := make(map[int]bool)
+	// Track which slides have been processed
+	processedBefore := make(map[int]bool)
 
-	// Process slides up to the minimum of before and after lengths
-	// Use move and update for existing page positions
+	// Process each target position in order
 	minLength := len(before)
 	if len(after) < minLength {
 		minLength = len(after)
 	}
 
 	// First pass: handle slides within existing page range
-	for i := 0; i < minLength; i++ {
-		afterSlide := after[i]
-		key := generateSlideKey(afterSlide, i)
+	for targetPos := 0; targetPos < minLength; targetPos++ {
+		targetSlide := after[targetPos]
 
-		// Always try content-based matching first for better duplicate handling
-		contentKey := generateContentKey(afterSlide)
-		if matchKey, matchSlide, matchIndex, found := findSlideByContent(contentKey, i, beforeSlides, beforeMap, processedBefore); found {
-			// Found slide with same content
-			if matchIndex != i {
-				actions = append(actions, &action{
-					actionType:  actionTypeMove,
-					index:       matchIndex,
-					moveToIndex: i,
-					slide:       matchSlide,
-				})
-			}
-			processedBefore[matchKey] = true
-			processedAfter[key] = true
-		} else {
-			// No exact match - look for similar content to update with priority
+		// Find the best matching slide in before
+		bestMatch := findBestMatchingSlide(targetSlide, before, processedBefore)
 
-			// Find slides with best similarity match based on priority
-			var bestMatch struct {
-				key           string
-				slide         *Slide
-				originalIndex int
-				priority      int // 1=layout+title+subtitle, 2=layout+title, 3=layout+subtitle, 4=title only, 5=layout only, 6=subtitle only, 7=no match
-			}
-			bestMatch.priority = 8 // Initialize with lowest priority
+		if bestMatch.originalIndex == -1 {
+			// No suitable match found - this will be an update operation
+			// Check if the slide at this position has any similarity with the target
+			slideAtPos := tracker.getSlideAtPosition(targetPos)
+			if slideAtPos != -1 {
+				slideAtPosition := before[slideAtPos]
+				similarity := getSimilarityPriority(slideAtPosition, targetSlide)
 
-			// Create a sorted list of before slides by index to ensure deterministic behavior
-			type beforeSlideInfo struct {
-				key           string
-				slide         *Slide
-				originalIndex int
-			}
-			var sortedBeforeSlides []beforeSlideInfo
-			for beforeKey, beforeSlide := range beforeSlides {
-				if !processedBefore[beforeKey] {
-					sortedBeforeSlides = append(sortedBeforeSlides, beforeSlideInfo{
-						key:           beforeKey,
-						slide:         beforeSlide,
-						originalIndex: beforeMap[beforeKey],
-					})
+				// Mark as processed if there's meaningful similarity
+				// Priority 4 or better (title match or better), or subtitle match
+				if similarity <= 4 || similarity == 6 {
+					processedBefore[slideAtPos] = true
+				} else if slideAtPos == targetPos || targetPos < minLength {
+					// Mark as processed if:
+					// 1. The slide is at its original position (no moves involved), OR
+					// 2. We're updating within the overlapping range of before and after
+					processedBefore[slideAtPos] = true
 				}
+				// Layout-only matches (priority 5) or no match (priority 7)
+				// should not prevent deletion of the original slide unless it's a direct replacement
 			}
 
-			// Sort by original index to ensure deterministic behavior
-			for i := 0; i < len(sortedBeforeSlides); i++ {
-				for j := i + 1; j < len(sortedBeforeSlides); j++ {
-					if sortedBeforeSlides[i].originalIndex > sortedBeforeSlides[j].originalIndex {
-						sortedBeforeSlides[i], sortedBeforeSlides[j] = sortedBeforeSlides[j], sortedBeforeSlides[i]
-					}
-				}
-			}
+			actions = append(actions, &action{
+				actionType:  actionTypeUpdate,
+				index:       targetPos,
+				moveToIndex: -1,
+				slide:       targetSlide,
+			})
+			continue
+		}
 
-			for _, beforeInfo := range sortedBeforeSlides {
-				priority := getSimilarityPriority(beforeInfo.slide, afterSlide)
+		// Get current position of the best matching slide
+		currentPos := tracker.getCurrentPosition(bestMatch.originalIndex)
 
-				// Prefer slides at the same index when priority is equal, but only for layout matches
-				if priority < bestMatch.priority ||
-					(priority == bestMatch.priority && priority <= 2 && beforeInfo.originalIndex == i && bestMatch.originalIndex != i) {
-					bestMatch.key = beforeInfo.key
-					bestMatch.slide = beforeInfo.slide
-					bestMatch.originalIndex = beforeInfo.originalIndex
-					bestMatch.priority = priority
-				}
-			}
+		// If slide is not at target position, generate move action
+		if currentPos != targetPos {
+			actions = append(actions, &action{
+				actionType:  actionTypeMove,
+				index:       currentPos,
+				moveToIndex: targetPos,
+				slide:       bestMatch.slide,
+			})
 
-			if bestMatch.priority <= 5 { // Only match for layout/title/subtitle matches, not subtitle-only or no match
-				// Special case: For perfect match (priority 0), only move if position changes
-				if bestMatch.priority == 0 {
-					if bestMatch.originalIndex != i {
-						actions = append(actions, &action{
-							actionType:  actionTypeMove,
-							index:       bestMatch.originalIndex,
-							moveToIndex: i,
-							slide:       bestMatch.slide,
-						})
-					}
-					// No update needed for perfect match
-				} else {
-					// For non-perfect matches (priority 1-5), always update after move/in-place
-					if bestMatch.originalIndex != i {
-						// Move first, then update
-						actions = append(actions, &action{
-							actionType:  actionTypeMove,
-							index:       bestMatch.originalIndex,
-							moveToIndex: i,
-							slide:       bestMatch.slide,
-						})
-					}
-					// Always update for non-perfect matches
-					actions = append(actions, &action{
-						actionType:  actionTypeUpdate,
-						index:       i,
-						moveToIndex: -1,
-						slide:       afterSlide,
-					})
-				}
-				processedBefore[bestMatch.key] = true
-				processedAfter[key] = true
-				updatedPositions[i] = true
-			} else {
-				// No suitable match found - update the slide at this position
-				actions = append(actions, &action{
-					actionType:  actionTypeUpdate,
-					index:       i,
-					moveToIndex: -1,
-					slide:       afterSlide,
-				})
-				processedAfter[key] = true
-				updatedPositions[i] = true
-			}
+			// Update tracker after move
+			tracker.moveSlide(bestMatch.originalIndex, currentPos, targetPos)
+		}
+
+		// Mark as processed
+		processedBefore[bestMatch.originalIndex] = true
+
+		// If content is different, add update action
+		if !slidesEqual(bestMatch.slide, targetSlide) {
+			actions = append(actions, &action{
+				actionType:  actionTypeUpdate,
+				index:       targetPos,
+				moveToIndex: -1,
+				slide:       targetSlide,
+			})
 		}
 	}
 
-	// Second pass: handle additional slides beyond existing page count (add only when pages are insufficient)
+	// Second pass: handle additional slides beyond existing page count
 	for i := minLength; i < len(after); i++ {
-		afterSlide := after[i]
-		key := generateSlideKey(afterSlide, i)
-
-		// Only add new slides when we exceed the original page count
 		actions = append(actions, &action{
 			actionType:  actionTypeAppend,
 			index:       i,
 			moveToIndex: -1,
-			slide:       afterSlide,
+			slide:       after[i],
 		})
-		processedAfter[key] = true
 	}
 
-	// Create a list of slides to delete with their original indices
-	var slidesToDelete []struct {
-		index int
-		slide *Slide
-	}
-
-	// Create a sorted list of unprocessed before slides to ensure deterministic behavior
-	type deleteSlideInfo struct {
-		key           string
-		slide         *Slide
-		originalIndex int
-	}
-	var sortedDeleteSlides []deleteSlideInfo
-	for beforeKey, beforeSlide := range beforeSlides {
-		if !processedBefore[beforeKey] {
-			originalIndex := beforeMap[beforeKey]
-			// Skip slides at positions that have been updated
-			if !updatedPositions[originalIndex] {
-				sortedDeleteSlides = append(sortedDeleteSlides, deleteSlideInfo{
-					key:           beforeKey,
-					slide:         beforeSlide,
-					originalIndex: originalIndex,
+	// Third pass: delete unprocessed slides
+	var deleteActions []*action
+	for originalIndex := 0; originalIndex < len(before); originalIndex++ {
+		if !processedBefore[originalIndex] {
+			currentPos := tracker.getCurrentPosition(originalIndex)
+			if currentPos != -1 {
+				deleteActions = append(deleteActions, &action{
+					actionType:  actionTypeDelete,
+					index:       currentPos,
+					moveToIndex: -1,
+					slide:       before[originalIndex],
 				})
 			}
 		}
 	}
 
-	// Sort by original index to ensure deterministic behavior
-	for i := 0; i < len(sortedDeleteSlides); i++ {
-		for j := i + 1; j < len(sortedDeleteSlides); j++ {
-			if sortedDeleteSlides[i].originalIndex > sortedDeleteSlides[j].originalIndex {
-				sortedDeleteSlides[i], sortedDeleteSlides[j] = sortedDeleteSlides[j], sortedDeleteSlides[i]
+	// Sort delete actions by position in descending order (delete from end to beginning)
+	for i := 0; i < len(deleteActions); i++ {
+		for j := i + 1; j < len(deleteActions); j++ {
+			if deleteActions[i].index < deleteActions[j].index {
+				deleteActions[i], deleteActions[j] = deleteActions[j], deleteActions[i]
 			}
 		}
 	}
 
-	for _, deleteInfo := range sortedDeleteSlides {
-		slidesToDelete = append(slidesToDelete, struct {
-			index int
-			slide *Slide
-		}{deleteInfo.originalIndex, deleteInfo.slide})
-	}
+	actions = append(actions, deleteActions...)
 
-	// Sort slides to delete by index in descending order (highest index first)
-	for i := 0; i < len(slidesToDelete); i++ {
-		for j := i + 1; j < len(slidesToDelete); j++ {
-			if slidesToDelete[i].index < slidesToDelete[j].index {
-				slidesToDelete[i], slidesToDelete[j] = slidesToDelete[j], slidesToDelete[i]
-			}
-		}
-	}
-
-	// Add delete actions in the correct order
-	for _, slideToDelete := range slidesToDelete {
-		actions = append(actions, &action{
-			actionType:  actionTypeDelete,
-			index:       slideToDelete.index,
-			moveToIndex: -1,
-			slide:       slideToDelete.slide,
-		})
-	}
-
-	// Sort and adjust actions for sequential execution
-	return adjustActionsForSequentialExecution(actions, len(before)), nil
+	return actions, nil
 }
 
-// adjustActionsForSequentialExecution sorts actions and adjusts indices for sequential execution
-// Actions are ordered to process page adjustments from the beginning:
-// 1. Move actions (to reposition existing slides, optimized to avoid redundant moves)
-// 2. Update actions (to modify existing slides in their new positions)
-// 3. Add actions (to insert new slides from lowest index to highest)
-// 4. Delete actions (adjusted for move effects and processed from highest to lowest index)
-func adjustActionsForSequentialExecution(actions []*action, originalLength int) []*action {
-	if len(actions) == 0 {
-		return actions
-	}
-
-	// Separate actions by type
-	var moveActions []*action
-	var updateActions []*action
-	var addActions []*action
-	var deleteActions []*action
-
-	for _, action := range actions {
-		switch action.actionType {
-		case actionTypeMove:
-			moveActions = append(moveActions, action)
-		case actionTypeUpdate:
-			updateActions = append(updateActions, action)
-		case actionTypeAppend, actionTypeInsert:
-			addActions = append(addActions, action)
-		case actionTypeDelete:
-			deleteActions = append(deleteActions, action)
-		}
-	}
-
-	var result []*action
-
-	// 1. Process move actions with optimization
-	// Sort move actions by target index to process from beginning to end
-	for i := 0; i < len(moveActions); i++ {
-		for j := i + 1; j < len(moveActions); j++ {
-			if moveActions[i].index > moveActions[j].index {
-				moveActions[i], moveActions[j] = moveActions[j], moveActions[i]
-			}
-		}
-	}
-
-	// Optimize move actions: simulate the moves and only include necessary ones
-	optimizedMoves := optimizeMoveActions(moveActions, originalLength)
-	result = append(result, optimizedMoves...)
-
-	// 2. Process update actions
-	// Sort update actions by target index
-	for i := 0; i < len(updateActions); i++ {
-		for j := i + 1; j < len(updateActions); j++ {
-			if updateActions[i].index > updateActions[j].index {
-				updateActions[i], updateActions[j] = updateActions[j], updateActions[i]
-			}
-		}
-	}
-	result = append(result, updateActions...)
-
-	// 3. Process add actions from lowest index to highest
-	// This ensures proper insertion order from the beginning
-	for i := 0; i < len(addActions); i++ {
-		for j := i + 1; j < len(addActions); j++ {
-			if addActions[i].index > addActions[j].index {
-				addActions[i], addActions[j] = addActions[j], addActions[i]
-			}
-		}
-	}
-	result = append(result, addActions...)
-
-	// 4. Adjust delete action indices based on move actions and process from highest to lowest
-	adjustedDeleteActions := adjustDeleteIndicesAfterMoves(deleteActions, optimizedMoves, originalLength)
-
-	// Sort adjusted delete actions from highest index to lowest
-	// This ensures proper deletion order (delete from end to beginning)
-	for i := 0; i < len(adjustedDeleteActions); i++ {
-		for j := i + 1; j < len(adjustedDeleteActions); j++ {
-			if adjustedDeleteActions[i].index < adjustedDeleteActions[j].index {
-				adjustedDeleteActions[i], adjustedDeleteActions[j] = adjustedDeleteActions[j], adjustedDeleteActions[i]
-			}
-		}
-	}
-	result = append(result, adjustedDeleteActions...)
-
-	return result
+// matchResult represents the result of slide matching.
+type matchResult struct {
+	originalIndex int
+	slide         *Slide
+	priority      int
 }
 
-// optimizeMoveActions optimizes move actions by simulating sequential execution
-// and removing redundant moves that would be automatically handled by previous moves
-func optimizeMoveActions(moveActions []*action, originalLength int) []*action {
-	if len(moveActions) == 0 {
-		return moveActions
-	}
+// findBestMatchingSlide finds the best matching slide for the target.
+func findBestMatchingSlide(targetSlide *Slide, before Slides, processedBefore map[int]bool) matchResult {
+	bestMatch := matchResult{originalIndex: -1, priority: 8}
 
-	// Create a simulation of the current slide positions
-	// Map from original index to current index
-	currentPositions := make(map[int]int)
-	for i := 0; i < originalLength; i++ {
-		currentPositions[i] = i
-	}
-
-	var optimizedMoves []*action
-
-	// Process moves in order and simulate their effects
-	for _, move := range moveActions {
-		currentPos := currentPositions[move.index]
-		targetPos := move.moveToIndex
-
-		// If the slide is already in the correct position, skip this move
-		if currentPos == targetPos {
+	for i, beforeSlide := range before {
+		if processedBefore[i] {
 			continue
 		}
 
-		// Add this move to the optimized list
-		optimizedMoves = append(optimizedMoves, move)
+		priority := getSimilarityPriority(beforeSlide, targetSlide)
 
-		// Simulate the move: update all positions
-		// When moving from currentPos to targetPos, all slides between them shift
-		if currentPos < targetPos {
-			// Moving forward: slides between currentPos+1 and targetPos shift left
-			for origIdx, pos := range currentPositions {
-				if pos > currentPos && pos <= targetPos {
-					currentPositions[origIdx] = pos - 1
-				}
-			}
-		} else {
-			// Moving backward: slides between targetPos and currentPos-1 shift right
-			for origIdx, pos := range currentPositions {
-				if pos >= targetPos && pos < currentPos {
-					currentPositions[origIdx] = pos + 1
-				}
-			}
+		// Accept matches with priority 5 or better (layout/title/subtitle matches)
+		if priority <= 5 && priority < bestMatch.priority {
+			bestMatch.originalIndex = i
+			bestMatch.slide = beforeSlide
+			bestMatch.priority = priority
 		}
-		// Update the moved slide's position
-		currentPositions[move.index] = targetPos
 	}
 
-	return optimizedMoves
+	return bestMatch
 }
 
-// adjustDeleteIndicesAfterMoves adjusts delete action indices based on the effects of move actions
-// This ensures that delete actions target the correct positions after moves have been executed
-func adjustDeleteIndicesAfterMoves(deleteActions []*action, moveActions []*action, originalLength int) []*action {
-	if len(deleteActions) == 0 {
-		return deleteActions
+// slidesEqual checks if two slides have identical content.
+func slidesEqual(slide1, slide2 *Slide) bool {
+	if slide1 == nil || slide2 == nil {
+		return slide1 == slide2
 	}
 
-	// Create a simulation of the current slide positions after moves
-	// Map from original index to current index
-	currentPositions := make(map[int]int)
-	for i := 0; i < originalLength; i++ {
-		currentPositions[i] = i
+	// Use JSON marshaling for complete comparison
+	// This ensures all fields including Bodies are compared
+	slide1B, err1 := json.Marshal(slide1)
+	if err1 != nil {
+		return false
 	}
 
-	// Apply all move actions to simulate the final positions
-	for _, move := range moveActions {
-		currentPos := currentPositions[move.index]
-		targetPos := move.moveToIndex
-
-		// Simulate the move: update all positions
-		if currentPos < targetPos {
-			// Moving forward: slides between currentPos+1 and targetPos shift left
-			for origIdx, pos := range currentPositions {
-				if pos > currentPos && pos <= targetPos {
-					currentPositions[origIdx] = pos - 1
-				}
-			}
-		} else {
-			// Moving backward: slides between targetPos and currentPos-1 shift right
-			for origIdx, pos := range currentPositions {
-				if pos >= targetPos && pos < currentPos {
-					currentPositions[origIdx] = pos + 1
-				}
-			}
-		}
-		// Update the moved slide's position
-		currentPositions[move.index] = targetPos
+	slide2B, err2 := json.Marshal(slide2)
+	if err2 != nil {
+		return false
 	}
 
-	// Adjust delete action indices based on final positions
-	var adjustedDeleteActions []*action
-	for _, deleteAction := range deleteActions {
-		originalIndex := deleteAction.index
-
-		// Find the current position of the slide to be deleted
-		if newIndex, exists := currentPositions[originalIndex]; exists {
-			adjustedDeleteActions = append(adjustedDeleteActions, &action{
-				actionType:  deleteAction.actionType,
-				index:       newIndex,
-				moveToIndex: deleteAction.moveToIndex,
-				slide:       deleteAction.slide,
-			})
-		} else {
-			// If the slide doesn't exist in current positions, keep original index
-			adjustedDeleteActions = append(adjustedDeleteActions, deleteAction)
-		}
-	}
-
-	return adjustedDeleteActions
-}
-
-// generateSlideKey creates a unique key for a slide based on its content and position
-func generateSlideKey(slide *Slide, index int) string {
-	b, err := json.Marshal(slide)
-	if err != nil {
-		return fmt.Sprintf("%d_%s", index, time.Now().String()) // Fallback to current time if JSON marshalling fails
-	}
-	return fmt.Sprintf("%d_%s", index, string(b))
-}
-
-// generateContentKey creates a key for a slide based only on its content (without position)
-func generateContentKey(slide *Slide) string {
-	b, err := json.Marshal(slide)
-	if err != nil {
-		return time.Now().String() // Fallback to current time if JSON marshalling fails
-	}
-	return string(b)
-}
-
-// findSlideByContent finds a slide with matching content that hasn't been processed yet
-// Prefers slides that are closest to the target position
-func findSlideByContent(contentKey string, targetIndex int, beforeSlides map[string]*Slide, beforeMap map[string]int, processedBefore map[string]bool) (string, *Slide, int, bool) {
-	var bestMatch struct {
-		key      string
-		slide    *Slide
-		index    int
-		distance int
-	}
-	bestMatch.distance = -1 // Initialize with invalid distance
-
-	for key, slide := range beforeSlides {
-		if processedBefore[key] {
-			continue
-		}
-		if generateContentKey(slide) == contentKey {
-			slideIndex := beforeMap[key]
-			distance := slideIndex - targetIndex
-			if distance < 0 {
-				distance = -distance // absolute value
-			}
-
-			// Choose the slide closest to target position, or if same distance, prefer lower index
-			if bestMatch.distance == -1 || distance < bestMatch.distance ||
-				(distance == bestMatch.distance && slideIndex < bestMatch.index) {
-				bestMatch.key = key
-				bestMatch.slide = slide
-				bestMatch.index = slideIndex
-				bestMatch.distance = distance
-			}
-		}
-	}
-
-	if bestMatch.distance != -1 {
-		return bestMatch.key, bestMatch.slide, bestMatch.index, true
-	}
-	return "", nil, -1, false
+	return bytes.Equal(slide1B, slide2B)
 }
 
 // getSimilarityPriority returns the priority for slide similarity matching

@@ -1,5 +1,3 @@
-//go:build integration
-
 package deck_test
 
 import (
@@ -14,6 +12,10 @@ import (
 )
 
 func TestApply(t *testing.T) {
+	if os.Getenv("TEST_INTEGRATION") == "" {
+		t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
+	}
+
 	presentationID := os.Getenv("TEST_PRESENTATION_ID")
 
 	tests := []struct {
@@ -57,6 +59,10 @@ func TestApply(t *testing.T) {
 }
 
 func TestConvertToSlide(t *testing.T) {
+	if os.Getenv("TEST_INTEGRATION") == "" {
+		t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
+	}
+
 	presentationID := os.Getenv("TEST_PRESENTATION_ID")
 
 	tests := []struct {
@@ -80,7 +86,9 @@ func TestConvertToSlide(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	d.DeletePageAfter(ctx, 0)
+	if err := d.DeletePageAfter(ctx, 0); err != nil {
+		t.Fatal(err)
+	}
 
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName", "SoftLineBreak"),
@@ -99,6 +107,10 @@ func TestConvertToSlide(t *testing.T) {
 			fromMd := contents.ToSlides()
 			d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
 			if err != nil {
+				t.Fatal(err)
+			}
+			// Clear existing slides before applying new ones
+			if err := d.DeletePageAfter(ctx, 0); err != nil {
 				t.Fatal(err)
 			}
 			if err := d.Apply(ctx, fromMd); err != nil {
