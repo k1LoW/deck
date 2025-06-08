@@ -309,15 +309,28 @@ func (d *Deck) ListLayouts() []string {
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(ctx context.Context, slides Slides) error {
 	pages := make([]int, 0, len(slides))
-	for i := range slides {
+	for i := range len(slides) {
 		pages = append(pages, i+1)
 	}
 	return d.ApplyPages(ctx, slides, pages)
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(ctx context.Context, slides Slides, pages []int) error {
-	for i, slide := range slides {
+func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
+	layoutObjectIdMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutObjectIdMap[l.ObjectId] = l
+	}
+
+	before := make(Slides, 0, len(d.presentation.Slides))
+	var after Slides
+	for _, p := range d.presentation.Slides {
+		slide := convertToSlide(p, layoutObjectIdMap)
+		before = append(before, slide)
+		after = append(after, slide)
+	}
+
+	for i, slide := range ss {
 		if !slices.Contains(pages, i+1) {
 			continue
 		}
@@ -331,12 +344,47 @@ func (d *Deck) ApplyPages(ctx context.Context, slides Slides, pages []int) error
 				slide.Layout = d.defaultLayout
 			}
 		}
-		if err := d.applyPage(ctx, i, slide); err != nil {
-			return err
+		if len(after) < i {
+			after[i] = slide
+		} else if len(after) == i {
+			after = append(after, slide)
+		} else {
+			after[i] = slide
 		}
 	}
 
-	if err := d.DeletePageAfter(ctx, len(slides)-1); err != nil {
+	actions, err := diffSlides(before, after)
+	if err != nil {
+		return fmt.Errorf("failed to diff slides: %w", err)
+	}
+
+	for _, action := range actions {
+		switch action.actionType {
+		case actionTypeAppend, actionTypeInsert:
+			if err := d.CreatePage(ctx, action.index, action.slide); err != nil {
+				return fmt.Errorf("failed to create page: %w", err)
+			}
+			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+				return fmt.Errorf("failed to apply page: %w", err)
+			}
+		case actionTypeUpdate:
+			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+				return fmt.Errorf("failed to apply page: %w", err)
+			}
+		case actionTypeMove:
+			if err := d.movePage(ctx, action.index, action.moveToIndex); err != nil {
+				return fmt.Errorf("failed to move page: %w", err)
+			}
+		case actionTypeDelete:
+			if err := d.DeletePage(ctx, action.index); err != nil {
+				return fmt.Errorf("failed to delete page: %w", err)
+			}
+		}
+	}
+
+	// Note: DeletePageAfter is still needed to handle cases where slides are reduced
+	// but not explicitly deleted through diff actions (e.g., when the new slide count is less)
+	if err := d.DeletePageAfter(ctx, len(ss)-1); err != nil {
 		return err
 	}
 
@@ -364,6 +412,25 @@ func (d *Deck) Export(ctx context.Context, w io.Writer) error {
 		return fmt.Errorf("unable to create PDF file: %w", err)
 	}
 	return nil
+}
+
+func (d *Deck) DumpSlides(ctx context.Context) (Slides, error) {
+	if err := d.refresh(ctx); err != nil {
+		return nil, fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if d.presentation == nil {
+		return nil, fmt.Errorf("presentation is not loaded")
+	}
+	layoutObjectIdMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutObjectIdMap[l.ObjectId] = l
+	}
+	slides := make(Slides, 0, len(d.presentation.Slides))
+	for _, p := range d.presentation.Slides {
+		slide := convertToSlide(p, layoutObjectIdMap)
+		slides = append(slides, slide)
+	}
+	return slides, nil
 }
 
 func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
@@ -822,6 +889,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			})
 		}
 	}
+
 	if len(req.Requests) > 0 {
 		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 			return err
@@ -906,6 +974,38 @@ func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
 	if len(req.Requests) == 0 {
 		return nil
 	}
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		return err
+	}
+	if err := d.refresh(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Deck) movePage(ctx context.Context, fromIndex, toIndex int) error {
+	if fromIndex == toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= len(d.presentation.Slides) || toIndex >= len(d.presentation.Slides) {
+		return nil
+	}
+
+	currentSlide := d.presentation.Slides[fromIndex]
+
+	if fromIndex < toIndex {
+		toIndex++
+	}
+
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{
+			{
+				UpdateSlidesPosition: &slides.UpdateSlidesPositionRequest{
+					SlideObjectIds:  []string{currentSlide.ObjectId},
+					InsertionIndex:  int64(toIndex),
+					ForceSendFields: []string{"InsertionIndex"},
+				},
+			},
+		},
+	}
+
 	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 		return err
 	}
@@ -1169,8 +1269,8 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 	return nil
 }
 
-// generateCodeVerifier generates a code verifier for PKCE
-// Generates a random string of 43-128 characters in compliance with RFC7636
+// generateCodeVerifier generates a code verifier for PKCE.
+// Generates a random string of 43-128 characters in compliance with RFC7636.
 func generateCodeVerifier() (string, error) {
 	// Generate 64 bytes (512 bits) of random data
 	b := make([]byte, 64)
@@ -1180,8 +1280,8 @@ func generateCodeVerifier() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(b), nil
 }
 
-// generateCodeChallenge generates a code challenge from the code verifier
-// Calculates SHA-256 hash and applies Base64 URL encoding
+// generateCodeChallenge generates a code challenge from the code verifier.
+// Calculates SHA-256 hash and applies Base64 URL encoding.
 func generateCodeChallenge(verifier string) string {
 	h := sha256.New()
 	h.Write([]byte(verifier))
@@ -1217,4 +1317,230 @@ func convertBullet(b Bullet) string {
 	default:
 		return "UNRECOGNIZED"
 	}
+}
+
+func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *Slide {
+	slide := &Slide{
+		Layout: "",
+		Freeze: false,
+	}
+	if p.SlideProperties != nil {
+		page, ok := layoutObjectIdMap[p.SlideProperties.LayoutObjectId]
+		if ok {
+			slide.Layout = page.LayoutProperties.DisplayName
+		}
+	}
+
+	var titles []string
+	var subtitles []string
+	var bodies []*Body
+
+	// Extract titles, subtitles, and bodies from page elements
+	for _, element := range p.PageElements {
+		if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+			switch element.Shape.Placeholder.Type {
+			case "CENTERED_TITLE", "TITLE":
+				text := extractText(element.Shape.Text)
+				if text != "" {
+					titles = append(titles, text)
+				}
+			case "SUBTITLE":
+				text := extractText(element.Shape.Text)
+				if text != "" {
+					subtitles = append(subtitles, text)
+				}
+			case "BODY":
+				body := convertToBody(element.Shape.Text)
+				if body != nil {
+					bodies = append(bodies, body)
+				}
+			}
+		}
+	}
+
+	slide.Titles = titles
+	slide.Subtitles = subtitles
+	slide.Bodies = bodies
+
+	// Extract speaker notes
+	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {
+		for _, element := range p.SlideProperties.NotesPage.PageElements {
+			if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+				if element.Shape.Placeholder.Type == "BODY" {
+					slide.SpeakerNote = extractText(element.Shape.Text)
+					break
+				}
+			}
+		}
+	}
+
+	return slide
+}
+
+// extractText extracts plain text from Shape.Text.
+func extractText(text *slides.TextContent) string {
+	if text == nil || len(text.TextElements) == 0 {
+		return ""
+	}
+
+	var result strings.Builder
+	for _, element := range text.TextElements {
+		if element.TextRun != nil {
+			result.WriteString(element.TextRun.Content)
+		}
+	}
+	return strings.TrimSpace(result.String())
+}
+
+// convertToBody generates a Body struct from Shape.Text.
+func convertToBody(text *slides.TextContent) *Body {
+	if text == nil || len(text.TextElements) == 0 {
+		return nil
+	}
+
+	body := &Body{
+		Paragraphs: []*Paragraph{},
+	}
+
+	var currentParagraph *Paragraph
+	var currentBullet Bullet
+
+	for _, element := range text.TextElements {
+		if element.ParagraphMarker != nil {
+			// Start of a new paragraph
+			if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
+				// Check if this is a continuation of a non-bullet paragraph
+				// If the previous paragraph had no bullet and this one also has no bullet,
+				// merge them with a newline fragment
+				if currentParagraph.Bullet == BulletNone &&
+					(element.ParagraphMarker.Bullet == nil) {
+					// Add newline fragment to continue the paragraph
+					currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
+						Value: "\n",
+					})
+					// Don't create a new paragraph, continue with the current one
+				} else {
+					body.Paragraphs = append(body.Paragraphs, currentParagraph)
+					currentParagraph = &Paragraph{
+						Fragments: []*Fragment{},
+						Nesting:   0,
+					}
+				}
+			} else {
+				currentParagraph = &Paragraph{
+					Fragments: []*Fragment{},
+					Nesting:   0,
+				}
+			}
+
+			// Process bullet points
+			if element.ParagraphMarker.Bullet != nil {
+				// Determine the type of bullet points based on glyph content
+				if element.ParagraphMarker.Bullet.Glyph != "" {
+					glyph := element.ParagraphMarker.Bullet.Glyph
+					// Check for numbered bullets (1, 2, 3, etc.)
+					if strings.Contains(glyph, "1") || strings.Contains(glyph, "2") || strings.Contains(glyph, "3") ||
+						strings.Contains(glyph, "4") || strings.Contains(glyph, "5") || strings.Contains(glyph, "6") ||
+						strings.Contains(glyph, "7") || strings.Contains(glyph, "8") || strings.Contains(glyph, "9") ||
+						strings.Contains(glyph, "0") {
+						currentBullet = BulletNumber
+					} else {
+						currentBullet = BulletDash
+					}
+				} else {
+					// If no glyph, assume it's a dash bullet
+					currentBullet = BulletDash
+				}
+				currentParagraph.Bullet = currentBullet
+
+				// Set nesting level
+				currentParagraph.Nesting = int(element.ParagraphMarker.Bullet.NestingLevel)
+			} else {
+				currentBullet = BulletNone
+				currentParagraph.Bullet = currentBullet
+			}
+		}
+
+		if element.TextRun != nil && currentParagraph != nil {
+			// Process text content
+			content := element.TextRun.Content
+
+			// Check if this is an empty content that should be treated as SoftLineBreak
+			if content == "" {
+				fragment := &Fragment{
+					Value:         "",
+					SoftLineBreak: true,
+					ClassName:     "",
+				}
+				currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
+				continue
+			}
+
+			// Handle special case where content is just a newline
+			if content == "\n" {
+				// Check if the previous fragment exists and can be marked with SoftLineBreak
+				if len(currentParagraph.Fragments) > 0 {
+					lastFragment := currentParagraph.Fragments[len(currentParagraph.Fragments)-1]
+					if lastFragment.Value != "" && !lastFragment.SoftLineBreak {
+						lastFragment.SoftLineBreak = true
+						continue
+					}
+				}
+				// If no previous fragment or it already has SoftLineBreak, add as newline fragment
+				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
+					Value: "\n",
+				})
+				continue
+			}
+
+			// Get styles from TextRun
+			var bold, italic, code bool
+			var link string
+			if element.TextRun.Style != nil {
+				bold = element.TextRun.Style.Bold
+				italic = element.TextRun.Style.Italic
+				if element.TextRun.Style.Link != nil && element.TextRun.Style.Link.Url != "" {
+					link = element.TextRun.Style.Link.Url
+				}
+
+				// Detect code style (based on font family and background color)
+				if element.TextRun.Style.FontFamily == defaultCodeFontFamily ||
+					(element.TextRun.Style.BackgroundColor != nil &&
+						element.TextRun.Style.BackgroundColor.OpaqueColor != nil &&
+						element.TextRun.Style.BackgroundColor.OpaqueColor.RgbColor != nil) {
+					code = true
+				}
+			}
+
+			// Process line breaks
+			softLineBreak := false
+			if strings.HasSuffix(content, "\n") {
+				content = strings.TrimSuffix(content, "\n")
+				softLineBreak = true
+			}
+
+			fragments := []*Fragment{{
+				Value:         content,
+				Bold:          bold,
+				Italic:        italic,
+				Code:          code,
+				Link:          link,
+				SoftLineBreak: softLineBreak,
+			}}
+
+			for _, fragment := range fragments {
+				// Only add non-empty fragments
+				if fragment.Value != "" {
+					currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
+				}
+			}
+		}
+	}
+
+	// Add the last paragraph
+	if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
+		body.Paragraphs = append(body.Paragraphs, currentParagraph)
+	}
+
+	return body
 }

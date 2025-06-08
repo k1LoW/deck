@@ -12,7 +12,7 @@ default: test
 ci: depsdev test
 
 test:
-	go test ./... -coverprofile=coverage.out -covermode=count
+	go test ./... -coverprofile=coverage.out -covermode=count -count=1
 
 build:
 	go build -ldflags="$(BUILD_LDFLAGS)" -o deck cmd/deck/main.go
@@ -25,7 +25,7 @@ fuzz:
 
 export TEST_PRESENTATION_ID=1_QRwonGFKTcsakL0QFCUNvNKWMedDS-C5KRMqMTwz6E
 integration:
-	go test -v -test.failfast -tags integration ./...
+	env TEST_INTEGRATION=1 go test -v -test.failfast . -run 'TestConvert|TestApply' -timeout 30m
 
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest

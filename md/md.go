@@ -133,7 +133,9 @@ func ParseContent(b []byte) (*Content, error) {
 				if v.Offset >= 2 {
 					nesting = v.Offset/2 - 1
 				}
-
+				if len(frags) == 0 {
+					return ast.WalkContinue, nil
+				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 					Fragments: frags,
 					Bullet:    currentListMarker,
@@ -182,7 +184,7 @@ func ParseContent(b []byte) (*Content, error) {
 	// remove empty bodies
 	notEmpty := false
 	for _, body := range content.Bodies {
-		if len(body.Paragraphs) > 0 {
+		if len(body.Paragraphs) > 0 && len(body.Paragraphs[0].Fragments) > 0 {
 			notEmpty = true
 			break
 		}
@@ -254,6 +256,14 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				ClassName:     className,
 			})
 		case *ast.Text:
+			v := convert(childNode.Segment.Value(b))
+			if v == "" {
+				if len(frags) > 0 {
+					frags[len(frags)-1].SoftLineBreak = childNode.SoftLineBreak()
+				}
+				continue // Skip empty text fragments
+			}
+
 			frags = append(frags, &deck.Fragment{
 				Value:         convert(childNode.Segment.Value(b)),
 				SoftLineBreak: childNode.SoftLineBreak(),
@@ -274,12 +284,15 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				continue
 			}
 
-			// <br> tag
+			// <br> tag - add a newline fragment
 			if strings.HasPrefix(htmlContent, "<br") {
-				className = "" // Reset class attribute for closing tags
 				frags = append(frags, &deck.Fragment{
-					Value: "\n",
+					Value:         "\n",
+					Bold:          false,
+					SoftLineBreak: false,
+					ClassName:     className,
 				})
+				className = "" // Reset class attribute
 				continue
 			}
 
