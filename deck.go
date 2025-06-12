@@ -45,6 +45,9 @@ type Slide struct {
 	Subtitles   []string `json:"subtitles,omitempty"`
 	Bodies      []*Body  `json:"bodies,omitempty"`
 	SpeakerNote string   `json:"speakerNote,omitempty"`
+
+	new    bool
+	delete bool
 }
 
 // Body represents the content body of a slide.

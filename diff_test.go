@@ -1271,3 +1271,185 @@ func TestApply(t *testing.T) {
 		})
 	}
 }
+
+// TestAdjustSlideCount tests the adjustSlideCount function
+func TestAdjustSlideCount(t *testing.T) {
+	tests := []struct {
+		name           string
+		before         Slides
+		after          Slides
+		expectedBefore Slides
+		expectedAfter  Slides
+	}{
+		{
+			name: "same count - no adjustment needed",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"D"}},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expectedAfter: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"D"}},
+			},
+		},
+		{
+			name: "after is shorter - add slides to after with .new = true",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}}, // high similarity with before[0]
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			expectedAfter: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}, new: true}, // lowest similarity score
+				{Layout: "title", Titles: []string{"C"}, new: true}, // second lowest similarity score
+			},
+		},
+		{
+			name: "before is shorter - add slides to before with .delete = true",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}}, // high similarity with after[0]
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}, delete: true}, // lowest similarity score
+				{Layout: "title", Titles: []string{"C"}, delete: true}, // second lowest similarity score
+			},
+			expectedAfter: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+		},
+		{
+			name:   "empty before - add all after slides to before with .delete = true",
+			before: Slides{},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}, delete: true},
+				{Layout: "title", Titles: []string{"B"}, delete: true},
+			},
+			expectedAfter: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+		},
+		{
+			name: "empty after - add all before slides to after with .new = true",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expectedAfter: Slides{
+				{Layout: "title", Titles: []string{"A"}, new: true},
+				{Layout: "title", Titles: []string{"B"}, new: true},
+			},
+		},
+		{
+			name: "complex similarity calculation - layout and content differences",
+			before: Slides{
+				{
+					Layout: "title",
+					Titles: []string{"Same Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Fragments: []*Fragment{
+										{Value: "Content A"},
+									},
+								},
+							},
+						},
+					},
+				}, // High similarity with after[0]
+				{Layout: "title-and-body", Titles: []string{"Different Title"}}, // Low similarity
+				{Layout: "title", Titles: []string{"Another Title"}},            // Medium similarity
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"Same Title"}}, // High similarity with before[0]
+			},
+			expectedBefore: Slides{
+				{
+					Layout: "title",
+					Titles: []string{"Same Title"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Fragments: []*Fragment{
+										{Value: "Content A"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{Layout: "title-and-body", Titles: []string{"Different Title"}},
+				{Layout: "title", Titles: []string{"Another Title"}},
+			},
+			expectedAfter: Slides{
+				{Layout: "title", Titles: []string{"Same Title"}},
+				{Layout: "title-and-body", Titles: []string{"Different Title"}, new: true}, // Lowest similarity
+				{Layout: "title", Titles: []string{"Another Title"}, new: true},            // Second lowest
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			adjustedBefore, adjustedAfter, err := adjustSlideCount(tt.before, tt.after)
+			if err != nil {
+				t.Fatalf("adjustSlideCount() error = %v", err)
+			}
+
+			// Check lengths are equal
+			if len(adjustedBefore) != len(adjustedAfter) {
+				t.Errorf("adjustSlideCount() lengths not equal: before=%d, after=%d", len(adjustedBefore), len(adjustedAfter))
+			}
+
+			// Compare with expected results
+			cmpopts := cmp.Options{
+				cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+				cmpopts.IgnoreUnexported(Slide{}),
+			}
+
+			if diff := cmp.Diff(tt.expectedBefore, adjustedBefore, cmpopts...); diff != "" {
+				t.Errorf("adjustSlideCount() before mismatch (-want +got):\n%s", diff)
+			}
+
+			if diff := cmp.Diff(tt.expectedAfter, adjustedAfter, cmpopts...); diff != "" {
+				t.Errorf("adjustSlideCount() after mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

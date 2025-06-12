@@ -43,6 +43,146 @@ func diffSlides(before, after Slides) ([]*action, error) {
 	return nil, nil // 実装は後で行います
 }
 
+// slideScore represents a slide with its similarity score
+type slideScore struct {
+	slide *Slide
+	score int
+	index int
+}
+
+// adjustSlideCount adjusts the count of before and after slides to be equal
+// for Hungarian algorithm application
+func adjustSlideCount(before, after Slides) (Slides, Slides, error) {
+	if len(before) == len(after) {
+		// No adjustment needed
+		return before, after, nil
+	}
+
+	adjustedBefore := make(Slides, len(before))
+	adjustedAfter := make(Slides, len(after))
+
+	// Deep copy original slides
+	for i, slide := range before {
+		adjustedBefore[i] = deepCopySlide(slide)
+	}
+	for i, slide := range after {
+		adjustedAfter[i] = deepCopySlide(slide)
+	}
+
+	if len(after) < len(before) {
+		// after is shorter - add slides to after with .new = true
+		return adjustShorterAfter(adjustedBefore, adjustedAfter)
+	} else {
+		// before is shorter - add slides to before with .delete = true
+		return adjustShorterBefore(adjustedBefore, adjustedAfter)
+	}
+}
+
+// adjustShorterAfter adds slides to after when it's shorter than before
+func adjustShorterAfter(before, after Slides) (Slides, Slides, error) {
+	needed := len(before) - len(after)
+
+	// Calculate similarity scores for each before slide
+	var scores []slideScore
+	for i, beforeSlide := range before {
+		totalScore := calculateTotalSimilarityScore(beforeSlide, after)
+		scores = append(scores, slideScore{
+			slide: beforeSlide,
+			score: totalScore,
+			index: i,
+		})
+	}
+
+	// Sort by score (ascending - lowest similarity first)
+	sortSlideScores(scores)
+
+	// Add the slides with lowest similarity scores to after
+	for i := 0; i < needed; i++ {
+		slideToAdd := deepCopySlide(scores[i].slide)
+		slideToAdd.new = true
+		after = append(after, slideToAdd)
+	}
+
+	return before, after, nil
+}
+
+// adjustShorterBefore adds slides to before when it's shorter than after
+func adjustShorterBefore(before, after Slides) (Slides, Slides, error) {
+	needed := len(after) - len(before)
+
+	// Calculate similarity scores for each after slide
+	var scores []slideScore
+	for i, afterSlide := range after {
+		totalScore := calculateTotalSimilarityScore(afterSlide, before)
+		scores = append(scores, slideScore{
+			slide: afterSlide,
+			score: totalScore,
+			index: i,
+		})
+	}
+
+	// Sort by score (ascending - lowest similarity first)
+	sortSlideScores(scores)
+
+	// Add the slides with lowest similarity scores to before
+	for i := 0; i < needed; i++ {
+		slideToAdd := deepCopySlide(scores[i].slide)
+		slideToAdd.delete = true
+		before = append(before, slideToAdd)
+	}
+
+	return before, after, nil
+}
+
+// calculateTotalSimilarityScore calculates the total similarity score
+// of a slide against all slides in the target slice
+func calculateTotalSimilarityScore(slide *Slide, targetSlides Slides) int {
+	totalScore := 0
+	for _, targetSlide := range targetSlides {
+		totalScore += getSimilarity(slide, targetSlide)
+	}
+	return totalScore
+}
+
+// deepCopySlide creates a deep copy of a slide using JSON marshal/unmarshal
+func deepCopySlide(slide *Slide) *Slide {
+	if slide == nil {
+		return nil
+	}
+
+	// Marshal to JSON
+	data, err := json.Marshal(slide)
+	if err != nil {
+		// Fallback to original slide if marshal fails
+		return slide
+	}
+
+	// Unmarshal to new slide
+	copied := &Slide{}
+	err = json.Unmarshal(data, copied)
+	if err != nil {
+		// Fallback to original slide if unmarshal fails
+		return slide
+	}
+
+	// Copy unexported fields manually
+	copied.new = slide.new
+	copied.delete = slide.delete
+
+	return copied
+}
+
+// sortSlideScores sorts slide scores in ascending order (lowest score first)
+func sortSlideScores(scores []slideScore) {
+	for i := 0; i < len(scores)-1; i++ {
+		for j := i + 1; j < len(scores); j++ {
+			if scores[i].score > scores[j].score {
+				scores[i], scores[j] = scores[j], scores[i]
+			}
+		}
+	}
+}
+
 func getSimilarity(beforeSlide, afterSlide *Slide) int {
 	if beforeSlide == nil || afterSlide == nil {
 		return 0
