@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.21.0](https://github.com/k1LoW/deck/compare/v0.20.0...v0.21.0) - 2025-06-12
+### New Features 🎉
+- fix: improve file change detection for vim compatibility by @hanhan1978 in https://github.com/k1LoW/deck/pull/114
+
 ## [v0.20.0](https://github.com/k1LoW/deck/compare/v0.19.1...v0.20.0) - 2025-06-08
 ### New Features 🎉
 - fix: improve update logic for slides by @k1LoW in https://github.com/k1LoW/deck/pull/112
