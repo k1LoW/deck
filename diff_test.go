@@ -1453,3 +1453,188 @@ func TestAdjustSlideCount(t *testing.T) {
 		})
 	}
 }
+
+// TestMapSlides tests the mapSlides function
+func TestMapSlides(t *testing.T) {
+	tests := []struct {
+		name     string
+		before   Slides
+		after    Slides
+		expected map[int]int
+	}{
+		{
+			name: "basic perfect match",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expected: map[int]int{0: 0, 1: 1},
+		},
+		{
+			name: "simple swap",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			expected: map[int]int{0: 1, 1: 0},
+		},
+		{
+			name: "layout and title priority",
+			before: Slides{
+				{Layout: "title", Titles: []string{"Same Title"}},
+				{Layout: "title-and-body", Titles: []string{"Different Title"}},
+			},
+			after: Slides{
+				{Layout: "title-and-body", Titles: []string{"Different Title"}},
+				{Layout: "title", Titles: []string{"Same Title"}},
+			},
+			expected: map[int]int{0: 1, 1: 0}, // Layout+Title match should be prioritized
+		},
+		{
+			name: "position bonus consideration",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expected: map[int]int{0: 1, 1: 2, 2: 0}, // Position bonus should influence mapping
+		},
+		{
+			name: "complex optimization",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"D"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"D"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			expected: map[int]int{0: 2, 1: 1, 2: 3, 3: 0}, // Optimal mapping considering all factors
+		},
+		{
+			name: "single slide",
+			before: Slides{
+				{Layout: "title", Titles: []string{"Only"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"Only"}},
+			},
+			expected: map[int]int{0: 0},
+		},
+		{
+			name: "different layouts with same titles",
+			before: Slides{
+				{Layout: "title", Titles: []string{"Same"}},
+				{Layout: "title-and-body", Titles: []string{"Same"}},
+			},
+			after: Slides{
+				{Layout: "title-and-body", Titles: []string{"Same"}},
+				{Layout: "title", Titles: []string{"Same"}},
+			},
+			expected: map[int]int{0: 1, 1: 0}, // Layout match should be prioritized
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Ensure slides are same length (prerequisite for mapSlides)
+			if len(tt.before) != len(tt.after) {
+				t.Fatalf("Test setup error: before and after must have same length")
+			}
+
+			result, err := mapSlides(tt.before, tt.after)
+			if err != nil {
+				t.Fatalf("mapSlides() error = %v", err)
+			}
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("mapSlides() result length = %d, expected %d", len(result), len(tt.expected))
+			}
+
+			for beforeIdx, expectedAfterIdx := range tt.expected {
+				if actualAfterIdx, ok := result[beforeIdx]; !ok {
+					t.Errorf("mapSlides() missing mapping for before index %d", beforeIdx)
+				} else if actualAfterIdx != expectedAfterIdx {
+					t.Errorf("mapSlides() mapping[%d] = %d, expected %d", beforeIdx, actualAfterIdx, expectedAfterIdx)
+				}
+			}
+
+			// Verify that all after indices are used exactly once
+			usedAfterIndices := make(map[int]bool)
+			for _, afterIdx := range result {
+				if usedAfterIndices[afterIdx] {
+					t.Errorf("mapSlides() after index %d used multiple times", afterIdx)
+				}
+				usedAfterIndices[afterIdx] = true
+			}
+
+			// Verify all after indices from 0 to len-1 are used
+			for i := 0; i < len(tt.after); i++ {
+				if !usedAfterIndices[i] {
+					t.Errorf("mapSlides() after index %d not used", i)
+				}
+			}
+		})
+	}
+}
+
+// TestMapSlidesErrors tests error cases for mapSlides function
+func TestMapSlidesErrors(t *testing.T) {
+	tests := []struct {
+		name   string
+		before Slides
+		after  Slides
+	}{
+		{
+			name: "different lengths",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+		},
+		{
+			name:   "empty slides",
+			before: Slides{},
+			after:  Slides{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := mapSlides(tt.before, tt.after)
+
+			if tt.name == "different lengths" {
+				if err == nil {
+					t.Error("mapSlides() expected error for different lengths, got nil")
+				}
+			} else if tt.name == "empty slides" {
+				if err != nil {
+					t.Errorf("mapSlides() unexpected error for empty slides: %v", err)
+				}
+				if len(result) != 0 {
+					t.Errorf("mapSlides() expected empty result for empty slides, got %v", result)
+				}
+			}
+		})
+	}
+}

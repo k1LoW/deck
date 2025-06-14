@@ -3,6 +3,7 @@ package deck
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 )
 
 type actionType int
@@ -41,6 +42,256 @@ type action struct {
 
 func diffSlides(before, after Slides) ([]*action, error) {
 	return nil, nil // 実装は後で行います
+}
+
+// mapSlides は before と after のスライドを1:1でマッピングする
+// 前提: before と after の長さは同じ（adjustSlideCount で調整済み）
+// 返り値: map[int]int - beforeのindexをキー、afterのindexを値とするマッピング
+func mapSlides(before, after Slides) (map[int]int, error) {
+	if len(before) != len(after) {
+		return nil, fmt.Errorf("before and after slides must have the same length: before=%d, after=%d", len(before), len(after))
+	}
+
+	n := len(before)
+	if n == 0 {
+		return make(map[int]int), nil
+	}
+
+	// 類似度マトリックスを作成
+	similarityMatrix := createSimilarityMatrix(before, after)
+
+	// ハンガリアンアルゴリズムを実行（最大化問題として）
+	assignment := hungarianAlgorithm(similarityMatrix)
+
+	// 結果をmap[int]int形式に変換
+	result := make(map[int]int)
+	for beforeIdx, afterIdx := range assignment {
+		result[beforeIdx] = afterIdx
+	}
+
+	return result, nil
+}
+
+// createSimilarityMatrix は類似度マトリックスを作成する
+func createSimilarityMatrix(before, after Slides) [][]int {
+	n := len(before)
+	matrix := make([][]int, n)
+
+	for i := 0; i < n; i++ {
+		matrix[i] = make([]int, n)
+		for j := 0; j < n; j++ {
+			matrix[i][j] = getSimilarityForMapping(before[i], after[j], i, j)
+		}
+	}
+
+	return matrix
+}
+
+// hungarianAlgorithm はハンガリアンアルゴリズムを実装（最大化問題用）
+// 入力: 類似度マトリックス（値が大きいほど良いマッチ）
+// 出力: assignment[i] = j は、beforeのi番目がafterのj番目にマッピングされることを意味
+func hungarianAlgorithm(similarityMatrix [][]int) []int {
+	n := len(similarityMatrix)
+	if n == 0 {
+		return []int{}
+	}
+
+	// 最大化問題を最小化問題に変換するため、最大値から各要素を引く
+	maxValue := 0
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if similarityMatrix[i][j] > maxValue {
+				maxValue = similarityMatrix[i][j]
+			}
+		}
+	}
+
+	// コスト行列を作成（最大値 - 類似度）
+	costMatrix := make([][]int, n)
+	for i := 0; i < n; i++ {
+		costMatrix[i] = make([]int, n)
+		for j := 0; j < n; j++ {
+			costMatrix[i][j] = maxValue - similarityMatrix[i][j]
+		}
+	}
+
+	// ハンガリアンアルゴリズムの実装
+	return solveAssignment(costMatrix)
+}
+
+// solveAssignment はハンガリアンアルゴリズムでコスト最小化問題を解く
+func solveAssignment(costMatrix [][]int) []int {
+	n := len(costMatrix)
+
+	// 作業用のコピーを作成
+	matrix := make([][]int, n)
+	for i := 0; i < n; i++ {
+		matrix[i] = make([]int, n)
+		copy(matrix[i], costMatrix[i])
+	}
+
+	// Step 1: 各行から最小値を引く
+	for i := 0; i < n; i++ {
+		minVal := matrix[i][0]
+		for j := 1; j < n; j++ {
+			if matrix[i][j] < minVal {
+				minVal = matrix[i][j]
+			}
+		}
+		for j := 0; j < n; j++ {
+			matrix[i][j] -= minVal
+		}
+	}
+
+	// Step 2: 各列から最小値を引く
+	for j := 0; j < n; j++ {
+		minVal := matrix[0][j]
+		for i := 1; i < n; i++ {
+			if matrix[i][j] < minVal {
+				minVal = matrix[i][j]
+			}
+		}
+		for i := 0; i < n; i++ {
+			matrix[i][j] -= minVal
+		}
+	}
+
+	// Step 3: 最小数の線で全ての0をカバーできるかチェック
+	for {
+		assignment := findAssignment(matrix)
+		if assignment != nil {
+			return assignment
+		}
+
+		// 最小カバーを見つけて行列を更新
+		if !updateMatrix(matrix) {
+			break
+		}
+	}
+
+	// フォールバック: 貪欲アルゴリズム
+	return greedyAssignment(costMatrix)
+}
+
+// findAssignment は現在の行列で完全マッチングを見つける
+func findAssignment(matrix [][]int) []int {
+	n := len(matrix)
+	assignment := make([]int, n)
+	for i := 0; i < n; i++ {
+		assignment[i] = -1
+	}
+
+	usedCols := make([]bool, n)
+
+	// 各行で0の要素を1つだけ持つ行から開始
+	for i := 0; i < n; i++ {
+		zeroCount := 0
+		zeroCol := -1
+		for j := 0; j < n; j++ {
+			if matrix[i][j] == 0 && !usedCols[j] {
+				zeroCount++
+				zeroCol = j
+			}
+		}
+		if zeroCount == 1 {
+			assignment[i] = zeroCol
+			usedCols[zeroCol] = true
+		}
+	}
+
+	// 残りの行を処理
+	for i := 0; i < n; i++ {
+		if assignment[i] == -1 {
+			for j := 0; j < n; j++ {
+				if matrix[i][j] == 0 && !usedCols[j] {
+					assignment[i] = j
+					usedCols[j] = true
+					break
+				}
+			}
+		}
+	}
+
+	// 全ての行が割り当てられているかチェック
+	for i := 0; i < n; i++ {
+		if assignment[i] == -1 {
+			return nil
+		}
+	}
+
+	return assignment
+}
+
+// updateMatrix は行列を更新して次のイテレーションに備える
+func updateMatrix(matrix [][]int) bool {
+	n := len(matrix)
+
+	// 最小カバーを見つける（簡略化版）
+	rowCovered := make([]bool, n)
+	colCovered := make([]bool, n)
+
+	// 0の要素がある行をマーク
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if matrix[i][j] == 0 {
+				rowCovered[i] = true
+				break
+			}
+		}
+	}
+
+	// カバーされていない要素の最小値を見つける
+	minUncovered := -1
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if !rowCovered[i] && !colCovered[j] {
+				if minUncovered == -1 || matrix[i][j] < minUncovered {
+					minUncovered = matrix[i][j]
+				}
+			}
+		}
+	}
+
+	if minUncovered == -1 {
+		return false
+	}
+
+	// 行列を更新
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if rowCovered[i] && colCovered[j] {
+				matrix[i][j] += minUncovered
+			} else if !rowCovered[i] && !colCovered[j] {
+				matrix[i][j] -= minUncovered
+			}
+		}
+	}
+
+	return true
+}
+
+// greedyAssignment は貪欲アルゴリズムで近似解を求める
+func greedyAssignment(costMatrix [][]int) []int {
+	n := len(costMatrix)
+	assignment := make([]int, n)
+	usedCols := make([]bool, n)
+
+	for i := 0; i < n; i++ {
+		bestCol := -1
+		bestCost := -1
+
+		for j := 0; j < n; j++ {
+			if !usedCols[j] && (bestCol == -1 || costMatrix[i][j] < bestCost) {
+				bestCol = j
+				bestCost = costMatrix[i][j]
+			}
+		}
+
+		assignment[i] = bestCol
+		usedCols[bestCol] = true
+	}
+
+	return assignment
 }
 
 // slideScore represents a slide with its similarity score
