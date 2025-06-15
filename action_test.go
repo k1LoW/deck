@@ -530,7 +530,6 @@ var tests = []struct {
 			}, // index 3 (no change)
 		},
 	},
-
 	{
 		name: "move slide to correct position and delete unused slide",
 		before: Slides{
@@ -703,6 +702,129 @@ var tests = []struct {
 							{
 								Fragments: []*Fragment{
 									{Value: "The system continues to operate despite an arbitrary number of messages being dropped."},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		name: "expand simple slides to complex content with layout reuse",
+		before: Slides{
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			},
+			{
+				Layout: "title-and-body",
+				Titles: []string{"A"},
+			},
+			{
+				Layout: "title-and-body-3col",
+				Titles: []string{"A"},
+			},
+		},
+		after: Slides{
+			{
+				Layout:    "title-and-body-3col",
+				Titles:    []string{"CAP theorem"},
+				Subtitles: []string{"In Database theory", "Consistency", "Availability", "Partition tolerance"},
+				Bodies: []*Body{
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Every read receives the most recent write or an error."},
+								},
+							},
+						},
+					},
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Every request received by a non-failing node in the system must result in a response."},
+								},
+							},
+						},
+					},
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "The system continues to operate despite an arbitrary number of messages being dropped."},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Layout:    "title",
+				Titles:    []string{"Title"},
+				Subtitles: []string{"Subtitle"},
+				Bodies: []*Body{
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Body content"},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Layout:      "section",
+				Titles:      []string{"Title"},
+				SpeakerNote: "comment\n\ncomment",
+			},
+			{
+				Layout: "title-and-body",
+				Titles: []string{"Title"},
+				Bodies: []*Body{
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Body content"},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Layout:    "title-and-body-3col",
+				Titles:    []string{"1"},
+				Subtitles: []string{"2", "3", "4", "5"},
+				Bodies: []*Body{
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Body 1"},
+								},
+							},
+						},
+					},
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Body 2"},
+								},
+							},
+						},
+					},
+					{
+						Paragraphs: []*Paragraph{
+							{
+								Fragments: []*Fragment{
+									{Value: "Body 3"},
 								},
 							},
 						},
