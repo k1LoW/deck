@@ -24,6 +24,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/style.md"},
 		{"../testdata/empty_list.md"},
 		{"../testdata/empty_link.md"},
+		{"../testdata/lists_with_blankline.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
