@@ -227,7 +227,8 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 				continue
 			}
 
-			if event.Op&fsnotify.Write != fsnotify.Write {
+			if event.Op&fsnotify.Write != fsnotify.Write && 
+				event.Op&fsnotify.Create != fsnotify.Create {
 				continue
 			}
 

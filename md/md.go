@@ -142,6 +142,10 @@ func ParseContent(b []byte) (*Content, error) {
 					Nesting:   nesting,
 				})
 			case *ast.Paragraph:
+				// Skip paragraphs that are direct children of list items to avoid duplication
+				if v.Parent() != nil && v.Parent().Kind() == ast.KindListItem {
+					return ast.WalkSkipChildren, nil
+				}
 				frags, err := toFragments(b, v)
 				if err != nil {
 					return ast.WalkStop, err

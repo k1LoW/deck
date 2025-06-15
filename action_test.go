@@ -1992,8 +1992,8 @@ func TestGenerateDeleteActions(t *testing.T) {
 		before          Slides
 		mapping         map[int]int
 		expectedActions []*action
-		expectedBefore  Slides      // beforeの期待される状態（削除後）
-		expectedMapping map[int]int // mappingの期待される状態（削除後）
+		expectedBefore  Slides      // Expected state of before (after deletion)
+		expectedMapping map[int]int // Expected state of mapping (after deletion)
 	}{
 		{
 			name: "no delete slides",
@@ -2220,7 +2220,7 @@ func TestGenerateMoveActions(t *testing.T) {
 		after           Slides
 		mapping         map[int]int
 		expectedActions []*action
-		expectedBefore  Slides // beforeの期待される状態（移動後）
+		expectedBefore  Slides // Expected state of before (after move)
 	}{
 		{
 			name: "no moves needed - already in correct order",
@@ -2319,7 +2319,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				},
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Move B (position after D moved)
+					index:       2, // Move B (position after D is moved)
 					moveToIndex: 1,
 					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
 				},
@@ -2370,7 +2370,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				},
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Move B (position after C moved)
+					index:       2, // Move B (position after C is moved)
 					moveToIndex: 1,
 					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
 				},
@@ -2396,7 +2396,6 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 0, 1: 2, 2: 1, 3: 3},
-			// Correct expectation: 1 move needed
 			// 1. Move B(index 2) to index 1 → A B A A
 			expectedActions: []*action{
 				{
