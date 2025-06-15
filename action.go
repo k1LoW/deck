@@ -70,13 +70,13 @@ func generateActions(before, after Slides) ([]*action, error) {
 
 	var actions []*action
 
-	// Generate update actions
-	updateActions := generateUpdateActions(adjustedBefore, adjustedAfter, mapping)
-	actions = append(actions, updateActions...)
-
-	// Generate append actions
+	// Generate append actions first (before any updates that might reference new indices)
 	appendActions := generateAppendActions(adjustedBefore)
 	actions = append(actions, appendActions...)
+
+	// Generate update actions (after append, so indices are stable)
+	updateActions := generateUpdateActions(adjustedBefore, adjustedAfter, mapping)
+	actions = append(actions, updateActions...)
 
 	// Remove .delete slides from after
 	cleanedAfter := removeDeleteMarked(adjustedAfter)
@@ -425,8 +425,24 @@ func adjustShorterBefore(before, after Slides) (Slides, Slides, error) {
 	sortSlideScores(scores)
 
 	// Add the slides with lowest similarity scores to before
+	// But preserve the original order by adding them in index order
+	indicesToAdd := make([]int, needed)
 	for i := range needed {
-		slideToAdd := copySlide(scores[i].slide)
+		indicesToAdd[i] = scores[i].index
+	}
+
+	// Sort indices to maintain order
+	for i := range len(indicesToAdd) - 1 {
+		for j := i + 1; j < len(indicesToAdd); j++ {
+			if indicesToAdd[i] > indicesToAdd[j] {
+				indicesToAdd[i], indicesToAdd[j] = indicesToAdd[j], indicesToAdd[i]
+			}
+		}
+	}
+
+	// Add slides in order
+	for _, idx := range indicesToAdd {
+		slideToAdd := copySlide(after[idx])
 		slideToAdd.new = true
 		before = append(before, slideToAdd)
 	}
@@ -518,7 +534,7 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 
 	// Calculate score only when layouts match
 	if beforeSlide.Layout == afterSlide.Layout && beforeSlide.Layout != "" {
-		score += 10 // Layout base score
+		score += 50 // Increased layout base score from 10 to 50
 
 		if len(beforeSlide.Titles) > 0 && len(afterSlide.Titles) > 0 && titlesEqual(beforeSlide.Titles, afterSlide.Titles) {
 			score += 80
@@ -541,15 +557,30 @@ func getSimilarityForMapping(beforeSlide, afterSlide *Slide, beforeIndex, afterI
 	// Get base similarity
 	baseScore := getSimilarity(beforeSlide, afterSlide)
 
-	// Add position bonus
+	// Add position bonus - prioritize earlier positions for same layout
 	var positionBonus int
-	switch {
-	case beforeIndex == afterIndex:
-		positionBonus = 4 // Perfect position match
-	case beforeIndex < afterIndex:
-		positionBonus = 2 // before is ahead of after (natural order)
-	default:
-		positionBonus = 0 // before is behind after
+	if beforeSlide.Layout == afterSlide.Layout && beforeSlide.Layout != "" {
+		// For same layout, prefer earlier positions in after
+		switch {
+		case beforeIndex == afterIndex:
+			positionBonus = 8 // Perfect position match
+		case afterIndex < beforeIndex:
+			positionBonus = 6 // Prefer earlier positions in after
+		case beforeIndex < afterIndex:
+			positionBonus = 4 // Natural order
+		default:
+			positionBonus = 2 // Default bonus
+		}
+	} else {
+		// For different layouts, use original logic
+		switch {
+		case beforeIndex == afterIndex:
+			positionBonus = 4 // Perfect position match
+		case beforeIndex < afterIndex:
+			positionBonus = 2 // before is ahead of after (natural order)
+		default:
+			positionBonus = 0 // before is behind after
+		}
 	}
 
 	return baseScore + positionBonus
@@ -598,12 +629,13 @@ func generateUpdateActions(before, after Slides, mapping map[int]int) []*action 
 		beforeSlide := before[beforeIdx]
 		afterSlide := after[afterIdx]
 
-		// Don't update slides marked with .new or .delete
-		if beforeSlide.new || beforeSlide.delete {
+		// Don't update slides marked with .delete
+		if beforeSlide.delete {
 			continue
 		}
 
 		// Generate update action if similarity is less than 500
+		// Include .new slides if they are mapped to specific after slides
 		score := getSimilarity(beforeSlide, afterSlide)
 		if score < 500 {
 			actions = append(actions, &action{

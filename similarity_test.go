@@ -34,7 +34,7 @@ func TestSimilarityCalculation(t *testing.T) {
 				Titles:    []string{"Same Title"},
 				Subtitles: []string{"Different Subtitle"},
 			},
-			expected: 90, // layout (10) + title (80)
+			expected: 130, // layout (50) + title (80)
 		},
 		{
 			name: "same layout only",
@@ -46,7 +46,7 @@ func TestSimilarityCalculation(t *testing.T) {
 				Layout: "title",
 				Titles: []string{"Title 2"},
 			},
-			expected: 10, // layout only
+			expected: 50, // layout only
 		},
 		{
 			name: "no similarity",
@@ -86,19 +86,19 @@ func TestSimilarityForMapping(t *testing.T) {
 			name:          "same position",
 			beforeIndex:   0,
 			afterIndex:    0,
-			expectedBonus: 4, // perfect position match
+			expectedBonus: 8, // perfect position match for same layout
 		},
 		{
 			name:          "forward movement",
 			beforeIndex:   0,
 			afterIndex:    1,
-			expectedBonus: 2, // natural order
+			expectedBonus: 4, // natural order for same layout
 		},
 		{
 			name:          "backward movement",
 			beforeIndex:   1,
 			afterIndex:    0,
-			expectedBonus: 0, // no bonus
+			expectedBonus: 6, // prefer earlier positions in after for same layout
 		},
 	}
 

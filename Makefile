@@ -26,7 +26,7 @@ fuzz:
 
 export TEST_PRESENTATION_ID=1_QRwonGFKTcsakL0QFCUNvNKWMedDS-C5KRMqMTwz6E
 integration:
-	env TEST_INTEGRATION=1 go test -v -test.failfast . -run 'TestMarkdownToSlide$$|TestApplyMarkdown$$|TestApplyAction$$' -timeout 30m
+	env TEST_INTEGRATION=1 go test -v . -run 'TestApply$$|TestMarkdownToSlide$$|TestApplyMarkdown$$|TestApplyAction$$' -timeout 30m
 
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
