@@ -21,7 +21,8 @@ lint:
 	golangci-lint run ./...
 
 fuzz:
-	go test -fuzz=FuzzParse -fuzztime=5m ./md/.
+	go test -fuzz=FuzzParse -fuzztime=1m ./md/.
+	go test -fuzz=FuzzGenerateActions -fuzztime=1m .
 
 export TEST_PRESENTATION_ID=1_QRwonGFKTcsakL0QFCUNvNKWMedDS-C5KRMqMTwz6E
 integration:
