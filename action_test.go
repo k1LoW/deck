@@ -1655,7 +1655,7 @@ func TestApplyDeleteMarks(t *testing.T) {
 		before          Slides
 		after           Slides
 		mapping         map[int]int
-		expectedDeleted []bool // Expected value for before[i].delete
+		expectedDeleted []bool // Expected values for before[i].delete
 	}{
 		{
 			name: "no deleted slides",
@@ -2250,7 +2250,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 1, 1: 0}, // A->1, B->0
-			// Correct expectation: Just move B(index 1) to index 0
+			// Correct expected value: just move B(index 1) to index 0
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
@@ -2277,7 +2277,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"B"}},
 			},
 			mapping: map[int]int{0: 1, 1: 2, 2: 0}, // A->1, B->2, C->0
-			// Correct expectation: Just move C(index 2) to index 0
+			// Correct expected value: just move C(index 2) to index 0
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
@@ -2307,7 +2307,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"C"}},
 			},
 			mapping: map[int]int{0: 2, 1: 1, 2: 3, 3: 0}, // A->2, B->1, C->3, D->0
-			// Correct expectation: 2 moves needed
+			// Correct expected value: 2 moves needed
 			// 1. Move D(index 3) to index 0 → D A B C
 			// 2. Move B(index 2) to index 1 → D B A C
 			expectedActions: []*action{
@@ -2358,7 +2358,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 2, 1: 1, 2: 0}, // A->2, B->1, C->0
-			// Correct expectation: 2 moves needed
+			// Correct expected value: 2 moves needed
 			// 1. Move C(index 2) to index 0 → C A B
 			// 2. Move B(index 2) to index 1 → C B A
 			expectedActions: []*action{
@@ -2396,6 +2396,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 0, 1: 2, 2: 1, 3: 3},
+			// Correct expected value: 1 move needed
 			// 1. Move B(index 2) to index 1 → A B A A
 			expectedActions: []*action{
 				{
