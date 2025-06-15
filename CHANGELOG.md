@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.21.1](https://github.com/k1LoW/deck/compare/v0.21.0...v0.21.1) - 2025-06-15
+### Fix bug 🐛
+- fix: resolve duplicate output in markdown lists separated by blank lines by @hanhan1978 in https://github.com/k1LoW/deck/pull/116
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/113
+
 ## [v0.21.0](https://github.com/k1LoW/deck/compare/v0.20.0...v0.21.0) - 2025-06-12
 ### New Features 🎉
 - fix: improve file change detection for vim compatibility by @hanhan1978 in https://github.com/k1LoW/deck/pull/114
