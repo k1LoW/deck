@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
       - id: list
-        uses: shogo82148/actions-go-fuzz/list@v1
+        uses: shogo82148/actions-go-fuzz/list@9694a8a3fd8c21af0fccba84b99d716027e81449 # v1.1.8
     outputs:
       fuzz-tests: ${{steps.list.outputs.fuzz-tests}}
 
@@ -31,11 +31,11 @@ jobs:
       matrix:
         include: ${{fromJson(needs.list.outputs.fuzz-tests)}}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version-file: go.mod
-      - uses: shogo82148/actions-go-fuzz/run@v1
+      - uses: shogo82148/actions-go-fuzz/run@9694a8a3fd8c21af0fccba84b99d716027e81449 # v1.1.8
         with:
           packages: ${{ matrix.package }}
           fuzz-regexp: ${{ matrix.func }}
