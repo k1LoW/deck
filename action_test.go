@@ -1654,7 +1654,7 @@ func TestApplyDeleteMarks(t *testing.T) {
 		before          Slides
 		after           Slides
 		mapping         map[int]int
-		expectedDeleted []bool // before[i].delete の期待値
+		expectedDeleted []bool // Expected values for before[i].delete
 	}{
 		{
 			name: "no deleted slides",
@@ -1718,7 +1718,7 @@ func TestApplyDeleteMarks(t *testing.T) {
 			after: Slides{
 				{Layout: "title", Titles: []string{"A"}, delete: true},
 			},
-			mapping:         map[int]int{0: 0, 5: 10}, // 無効なインデックス
+			mapping:         map[int]int{0: 0, 5: 10}, // Invalid indices
 			expectedDeleted: []bool{true},
 		},
 		{
@@ -1991,8 +1991,8 @@ func TestGenerateDeleteActions(t *testing.T) {
 		before          Slides
 		mapping         map[int]int
 		expectedActions []*action
-		expectedBefore  Slides      // beforeの期待される状態（削除後）
-		expectedMapping map[int]int // mappingの期待される状態（削除後）
+		expectedBefore  Slides      // Expected state of before (after deletion)
+		expectedMapping map[int]int // Expected state of mapping (after deletion)
 	}{
 		{
 			name: "no delete slides",
@@ -2039,12 +2039,12 @@ func TestGenerateDeleteActions(t *testing.T) {
 			expectedActions: []*action{
 				{
 					actionType: actionTypeDelete,
-					index:      3, // 後ろから削除するので、まずDが削除される（index 3）
+					index:      3, // Delete from back, so D is deleted first (index 3)
 					slide:      &Slide{Layout: "title", Titles: []string{"D"}, delete: true},
 				},
 				{
 					actionType: actionTypeDelete,
-					index:      2, // 次にCが削除される（index 2）
+					index:      2, // Then C is deleted (index 2)
 					slide:      &Slide{Layout: "title", Titles: []string{"C"}, delete: true},
 				},
 			},
@@ -2066,12 +2066,12 @@ func TestGenerateDeleteActions(t *testing.T) {
 			expectedActions: []*action{
 				{
 					actionType: actionTypeDelete,
-					index:      3, // 後ろから削除するので、まずDが削除される（index 3）
+					index:      3, // Delete from back, so D is deleted first (index 3)
 					slide:      &Slide{Layout: "title", Titles: []string{"D"}, delete: true},
 				},
 				{
 					actionType: actionTypeDelete,
-					index:      1, // 次にBが削除される（index 1）
+					index:      1, // Then B is deleted (index 1)
 					slide:      &Slide{Layout: "title", Titles: []string{"B"}, delete: true},
 				},
 			},
@@ -2079,7 +2079,7 @@ func TestGenerateDeleteActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"C"}},
 			},
-			expectedMapping: map[int]int{0: 1, 1: 3}, // A->1, C->3 (Cは元々index 2だったが、Bが削除されたのでindex 1になる)
+			expectedMapping: map[int]int{0: 1, 1: 3}, // A->1, C->3 (C was originally index 2, but becomes index 1 after B is deleted)
 		},
 		{
 			name: "all slides deleted",
@@ -2091,12 +2091,12 @@ func TestGenerateDeleteActions(t *testing.T) {
 			expectedActions: []*action{
 				{
 					actionType: actionTypeDelete,
-					index:      1, // 後ろから削除するので、まずBが削除される（index 1）
+					index:      1, // Delete from back, so B is deleted first (index 1)
 					slide:      &Slide{Layout: "title", Titles: []string{"B"}, delete: true},
 				},
 				{
 					actionType: actionTypeDelete,
-					index:      0, // 次にAが削除される（index 0）
+					index:      0, // Then A is deleted (index 0)
 					slide:      &Slide{Layout: "title", Titles: []string{"A"}, delete: true},
 				},
 			},
@@ -2116,27 +2116,27 @@ func TestGenerateDeleteActions(t *testing.T) {
 			expectedActions: []*action{
 				{
 					actionType: actionTypeDelete,
-					index:      3, // 後ろから削除するので、まずDelete2が削除される（index 3）
+					index:      3, // Delete from back, so Delete2 is deleted first (index 3)
 					slide:      &Slide{Layout: "title", Titles: []string{"Delete2"}, delete: true},
 				},
 				{
 					actionType: actionTypeDelete,
-					index:      1, // 次にDelete1が削除される（index 1）
+					index:      1, // Then Delete1 is deleted (index 1)
 					slide:      &Slide{Layout: "title", Titles: []string{"Delete1"}, delete: true},
 				},
 			},
 			expectedBefore: Slides{
 				{Layout: "title", Titles: []string{"Keep1"}}, // index 0
-				{Layout: "title", Titles: []string{"Keep2"}}, // index 1 (元々index 2)
-				{Layout: "title", Titles: []string{"Keep3"}}, // index 2 (元々index 4)
+				{Layout: "title", Titles: []string{"Keep2"}}, // index 1 (originally index 2)
+				{Layout: "title", Titles: []string{"Keep3"}}, // index 2 (originally index 4)
 			},
-			expectedMapping: map[int]int{0: 2, 1: 4, 2: 3}, // Keep1->2, Keep2->4, Keep3->3 (調整後)
+			expectedMapping: map[int]int{0: 2, 1: 4, 2: 3}, // Keep1->2, Keep2->4, Keep3->3 (after adjustment)
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// beforeとmappingのコピーを作成（元のデータを保護）
+			// Create copies of before and mapping (to protect original data)
 			beforeCopy := make(Slides, len(tt.before))
 			for i, slide := range tt.before {
 				beforeCopy[i] = copySlide(slide)
@@ -2145,15 +2145,15 @@ func TestGenerateDeleteActions(t *testing.T) {
 			mappingCopy := make(map[int]int)
 			maps.Copy(mappingCopy, tt.mapping)
 
-			// 関数実行
+			// Execute function
 			actions := generateDeleteActions(&beforeCopy, &mappingCopy)
 
-			// アクション数の検証
+			// Verify action count
 			if len(actions) != len(tt.expectedActions) {
 				t.Errorf("generateDeleteActions() action count = %d, expected %d", len(actions), len(tt.expectedActions))
 			}
 
-			// 各アクションの検証
+			// Verify each action
 			for i, action := range actions {
 				if i >= len(tt.expectedActions) {
 					break
@@ -2168,7 +2168,7 @@ func TestGenerateDeleteActions(t *testing.T) {
 					t.Errorf("generateDeleteActions() action[%d].index = %d, expected %d", i, action.index, expected.index)
 				}
 
-				// スライドの内容検証（簡易版）
+				// Verify slide content (simplified)
 				if action.slide != nil && expected.slide != nil {
 					if len(action.slide.Titles) > 0 && len(expected.slide.Titles) > 0 {
 						if action.slide.Titles[0] != expected.slide.Titles[0] {
@@ -2178,7 +2178,7 @@ func TestGenerateDeleteActions(t *testing.T) {
 				}
 			}
 
-			// beforeの状態検証
+			// Verify before state
 			if len(beforeCopy) != len(tt.expectedBefore) {
 				t.Errorf("generateDeleteActions() before length = %d, expected %d", len(beforeCopy), len(tt.expectedBefore))
 			}
@@ -2195,7 +2195,7 @@ func TestGenerateDeleteActions(t *testing.T) {
 				}
 			}
 
-			// mappingの状態検証
+			// Verify mapping state
 			if len(mappingCopy) != len(tt.expectedMapping) {
 				t.Errorf("generateDeleteActions() mapping length = %d, expected %d", len(mappingCopy), len(tt.expectedMapping))
 			}
@@ -2219,7 +2219,7 @@ func TestGenerateMoveActions(t *testing.T) {
 		after           Slides
 		mapping         map[int]int
 		expectedActions []*action
-		expectedBefore  Slides // beforeの期待される状態（移動後）
+		expectedBefore  Slides // Expected state of before (after move)
 	}{
 		{
 			name: "no moves needed - already in correct order",
@@ -2249,11 +2249,11 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 1, 1: 0}, // A->1, B->0
-			// 正しい期待値: B(index 1)をindex 0に移動するだけで済む
+			// Correct expected value: just move B(index 1) to index 0
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
-					index:       1, // Bを移動
+					index:       1, // Move B
 					moveToIndex: 0,
 					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
 				},
@@ -2276,11 +2276,11 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"B"}},
 			},
 			mapping: map[int]int{0: 1, 1: 2, 2: 0}, // A->1, B->2, C->0
-			// 正しい期待値: C(index 2)をindex 0に移動するだけで済む
+			// Correct expected value: just move C(index 2) to index 0
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Cを移動
+					index:       2, // Move C
 					moveToIndex: 0,
 					slide:       &Slide{Layout: "title", Titles: []string{"C"}},
 				},
@@ -2306,19 +2306,19 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"C"}},
 			},
 			mapping: map[int]int{0: 2, 1: 1, 2: 3, 3: 0}, // A->2, B->1, C->3, D->0
-			// 正しい期待値: 2つの移動が必要
-			// 1. D(index 3)をindex 0に移動 → D A B C
-			// 2. B(index 2)をindex 1に移動 → D B A C
+			// Correct expected value: 2 moves needed
+			// 1. Move D(index 3) to index 0 → D A B C
+			// 2. Move B(index 2) to index 1 → D B A C
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
-					index:       3, // Dを移動
+					index:       3, // Move D
 					moveToIndex: 0,
 					slide:       &Slide{Layout: "title", Titles: []string{"D"}},
 				},
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Bを移動（Dが移動した後の位置）
+					index:       2, // Move B (position after D is moved)
 					moveToIndex: 1,
 					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
 				},
@@ -2357,19 +2357,19 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 2, 1: 1, 2: 0}, // A->2, B->1, C->0
-			// 正しい期待値: 2つの移動が必要
-			// 1. C(index 2)をindex 0に移動 → C A B
-			// 2. B(index 2)をindex 1に移動 → C B A
+			// Correct expected value: 2 moves needed
+			// 1. Move C(index 2) to index 0 → C A B
+			// 2. Move B(index 2) to index 1 → C B A
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Cを移動
+					index:       2, // Move C
 					moveToIndex: 0,
 					slide:       &Slide{Layout: "title", Titles: []string{"C"}},
 				},
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Bを移動（Cが移動した後の位置）
+					index:       2, // Move B (position after C is moved)
 					moveToIndex: 1,
 					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
 				},
@@ -2395,12 +2395,12 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 			},
 			mapping: map[int]int{0: 0, 1: 2, 2: 1, 3: 3},
-			// 正しい期待値: 1つの移動が必要
-			// 1. B(index 2)をindex 1に移動 →A B A A
+			// Correct expected value: 1 move needed
+			// 1. Move B(index 2) to index 1 → A B A A
 			expectedActions: []*action{
 				{
 					actionType:  actionTypeMove,
-					index:       2, // Bを移動
+					index:       2, // Move B
 					moveToIndex: 1,
 					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
 				},
@@ -2416,7 +2416,7 @@ func TestGenerateMoveActions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// beforeとmappingのコピーを作成（元のデータを保護）
+			// Create copies of before and mapping (to protect original data)
 			beforeCopy := make(Slides, len(tt.before))
 			for i, slide := range tt.before {
 				beforeCopy[i] = copySlide(slide)
@@ -2425,13 +2425,13 @@ func TestGenerateMoveActions(t *testing.T) {
 			mappingCopy := make(map[int]int)
 			maps.Copy(mappingCopy, tt.mapping)
 
-			// 関数実行
+			// Execute function
 			actions := generateMoveActions(&beforeCopy, tt.after, &mappingCopy)
 
-			// アクション数の検証
+			// Verify action count
 			if len(actions) != len(tt.expectedActions) {
 				t.Errorf("generateMoveActions() action count = %d, expected %d", len(actions), len(tt.expectedActions))
-				// デバッグ情報を出力
+				// Output debug information
 				for i, action := range actions {
 					t.Logf("actual action[%d]: type=%s, index=%d, moveToIndex=%d", i, action.actionType.String(), action.index, action.moveToIndex)
 				}
@@ -2440,7 +2440,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				}
 			}
 
-			// 各アクションの検証
+			// Verify each action
 			for i, action := range actions {
 				if i >= len(tt.expectedActions) {
 					break
@@ -2459,7 +2459,7 @@ func TestGenerateMoveActions(t *testing.T) {
 					t.Errorf("generateMoveActions() action[%d].moveToIndex = %d, expected %d", i, action.moveToIndex, expected.moveToIndex)
 				}
 
-				// スライドの内容検証（簡易版）
+				// Verify slide content (simplified)
 				if action.slide != nil && expected.slide != nil {
 					if len(action.slide.Titles) > 0 && len(expected.slide.Titles) > 0 {
 						if action.slide.Titles[0] != expected.slide.Titles[0] {
@@ -2469,7 +2469,7 @@ func TestGenerateMoveActions(t *testing.T) {
 				}
 			}
 
-			// beforeの最終状態検証
+			// Verify final state of before
 			if len(beforeCopy) != len(tt.expectedBefore) {
 				t.Errorf("generateMoveActions() before length = %d, expected %d", len(beforeCopy), len(tt.expectedBefore))
 			}
