@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.22.0](https://github.com/k1LoW/deck/compare/v0.21.1...v0.22.0) - 2025-06-15
+### New Features 🎉
+- fix: improve actions generation logic by @k1LoW in https://github.com/k1LoW/deck/pull/118
+### Fix bug 🐛
+- fix: improve action generation and similarity scoring by @k1LoW in https://github.com/k1LoW/deck/pull/121
+### Other Changes
+- test: add FuzzGenerateActions by @k1LoW in https://github.com/k1LoW/deck/pull/120
+- test: add fuzzing workflow by @k1LoW in https://github.com/k1LoW/deck/pull/122
+
 ## [v0.21.1](https://github.com/k1LoW/deck/compare/v0.21.0...v0.21.1) - 2025-06-15
 ### Fix bug 🐛
 - fix: resolve duplicate output in markdown lists separated by blank lines by @hanhan1978 in https://github.com/k1LoW/deck/pull/116
