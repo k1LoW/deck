@@ -356,7 +356,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		}
 	}
 
-	actions, err := diffSlides(before, after)
+	actions, err := generateActions(before, after)
 	if err != nil {
 		return fmt.Errorf("failed to diff slides: %w", err)
 	}

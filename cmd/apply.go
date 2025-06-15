@@ -119,7 +119,7 @@ func pageToPages(page string, total int) ([]int, error) {
 	if page == "" {
 		// If no page is specified, return all pages
 		pages := make([]int, total)
-		for i := 0; i < total; i++ {
+		for i := range total {
 			pages[i] = i + 1
 		}
 		return pages, nil
@@ -236,7 +236,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			var newContents md.Contents
 			var parseErr error
 
-			for retry := 0; retry < 3; retry++ {
+			for retry := range 3 {
 				newContents, parseErr = md.ParseFile(filePath)
 				if parseErr == nil {
 					break

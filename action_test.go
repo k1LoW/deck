@@ -1,15 +1,13 @@
 package deck
 
 import (
-	"context"
-	"os"
+	"maps"
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
-
-const presentationID = "1_QRwonGFKTcsakL0QFCUNvNKWMedDS-C5KRMqMTwz6E"
 
 var tests = []struct {
 	name   string
@@ -492,6 +490,46 @@ var tests = []struct {
 			}, // index 3 (no change)
 		},
 	},
+	{
+		name: "duplicate slides reordering - A B A A to A A B A",
+		before: Slides{
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			}, // index 0
+			{
+				Layout: "title",
+				Titles: []string{"B"},
+			}, // index 1
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			}, // index 2
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			}, // index 3
+		},
+		after: Slides{
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			}, // index 0 (no change)
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			}, // index 1 (corrected: "B" → "A")
+			{
+				Layout: "title",
+				Titles: []string{"B"},
+			}, // index 2 (corrected: "A" → "B")
+			{
+				Layout: "title",
+				Titles: []string{"A"},
+			}, // index 3 (no change)
+		},
+	},
+
 	{
 		name: "move slide to correct position and delete unused slide",
 		before: Slides{
@@ -1229,13 +1267,7 @@ var tests = []struct {
 	},
 }
 
-func TestApply(t *testing.T) {
-	if os.Getenv("TEST_INTEGRATION") == "" {
-		// t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
-	}
-
-	ctx := context.Background()
-	//presentationID := os.Getenv("TEST_PRESENTATION_ID")
+func TestGenerateActions(t *testing.T) {
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
 		cmpopts.IgnoreUnexported(Slide{}),
@@ -1243,36 +1275,19 @@ func TestApply(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d, err := New(ctx, WithPresentationID(presentationID))
+			actions, err := generateActions(tt.before, tt.after)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := d.Apply(ctx, tt.before); err != nil {
-				t.Fatal(err)
-			}
-			before, err := d.DumpSlides(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(tt.before, before, cmpopts...); diff != "" {
-				t.Errorf("diff before apply: %s", diff)
-			}
-			t.Log("---")
-			if err := d.Apply(ctx, tt.after); err != nil {
-				t.Fatal(err)
-			}
-			after, err := d.DumpSlides(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(tt.after, after, cmpopts...); diff != "" {
-				t.Errorf("diff after apply: %s", diff)
+			got := actionsEmulator(t, tt.before, actions)
+			if diff := cmp.Diff(got, tt.after, cmpopts...); diff != "" {
+				t.Error(diff)
 			}
 		})
 	}
 }
 
-// TestAdjustSlideCount tests the adjustSlideCount function
+// TestAdjustSlideCount tests the adjustSlideCount function.
 func TestAdjustSlideCount(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -1454,7 +1469,7 @@ func TestAdjustSlideCount(t *testing.T) {
 	}
 }
 
-// TestMapSlides tests the mapSlides function
+// TestMapSlides tests the mapSlides function.
 func TestMapSlides(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -1586,7 +1601,7 @@ func TestMapSlides(t *testing.T) {
 			}
 
 			// Verify all after indices from 0 to len-1 are used
-			for i := 0; i < len(tt.after); i++ {
+			for i := range len(tt.after) {
 				if !usedAfterIndices[i] {
 					t.Errorf("mapSlides() after index %d not used", i)
 				}
@@ -1595,12 +1610,13 @@ func TestMapSlides(t *testing.T) {
 	}
 }
 
-// TestMapSlidesErrors tests error cases for mapSlides function
+// TestMapSlidesErrors tests error cases for mapSlides function.
 func TestMapSlidesErrors(t *testing.T) {
 	tests := []struct {
-		name   string
-		before Slides
-		after  Slides
+		name    string
+		before  Slides
+		after   Slides
+		wantErr bool
 	}{
 		{
 			name: "different lengths",
@@ -1611,36 +1627,28 @@ func TestMapSlidesErrors(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"B"}},
 			},
+			wantErr: true, // Expect error for different lengths
 		},
 		{
-			name:   "empty slides",
-			before: Slides{},
-			after:  Slides{},
+			name:    "empty slides",
+			before:  Slides{},
+			after:   Slides{},
+			wantErr: false, // No error expected for empty slides
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := mapSlides(tt.before, tt.after)
-
-			if tt.name == "different lengths" {
-				if err == nil {
-					t.Error("mapSlides() expected error for different lengths, got nil")
-				}
-			} else if tt.name == "empty slides" {
-				if err != nil {
-					t.Errorf("mapSlides() unexpected error for empty slides: %v", err)
-				}
-				if len(result) != 0 {
-					t.Errorf("mapSlides() expected empty result for empty slides, got %v", result)
-				}
+			_, err := mapSlides(tt.before, tt.after)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("mapSlides() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-// TestMarkDeletedSlides tests the markDeletedSlides function
-func TestMarkDeletedSlides(t *testing.T) {
+// TestApplyDeleteMarks tests the applyDeleteMarks function.
+func TestApplyDeleteMarks(t *testing.T) {
 	tests := []struct {
 		name            string
 		before          Slides
@@ -1743,10 +1751,8 @@ func TestMarkDeletedSlides(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// 関数実行
-			markDeletedSlides(tt.before, tt.after, tt.mapping)
+			applyDeleteMarks(tt.before, tt.after, tt.mapping)
 
-			// 結果検証
 			if len(tt.after) != len(tt.expectedDeleted) {
 				t.Fatalf("Expected %d slides, got %d", len(tt.expectedDeleted), len(tt.after))
 			}
@@ -1758,4 +1764,776 @@ func TestMarkDeletedSlides(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestCopySlides tests the copySlides function.
+func TestCopySlides(t *testing.T) {
+	tests := []struct {
+		name     string
+		slides   Slides
+		expected Slides
+	}{
+		{
+			name:     "nil slides",
+			slides:   nil,
+			expected: nil,
+		},
+		{
+			name:     "empty slides",
+			slides:   Slides{},
+			expected: Slides{},
+		},
+		{
+			name: "single slide",
+			slides: Slides{
+				{
+					Layout: "title",
+					Titles: []string{"Test Title"},
+				},
+			},
+			expected: Slides{
+				{
+					Layout: "title",
+					Titles: []string{"Test Title"},
+				},
+			},
+		},
+		{
+			name: "complex slide with bodies",
+			slides: Slides{
+				{
+					Layout:    "title-and-body",
+					Titles:    []string{"Complex Title"},
+					Subtitles: []string{"Subtitle"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Fragments: []*Fragment{
+										{Value: "Test content", Bold: true},
+									},
+									Bullet: BulletDash,
+								},
+							},
+						},
+					},
+					SpeakerNote: "Test note",
+				},
+			},
+			expected: Slides{
+				{
+					Layout:    "title-and-body",
+					Titles:    []string{"Complex Title"},
+					Subtitles: []string{"Subtitle"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Fragments: []*Fragment{
+										{Value: "Test content", Bold: true},
+									},
+									Bullet: BulletDash,
+								},
+							},
+						},
+					},
+					SpeakerNote: "Test note",
+				},
+			},
+		},
+		{
+			name: "multiple slides",
+			slides: Slides{
+				{
+					Layout: "title",
+					Titles: []string{"Slide 1"},
+				},
+				{
+					Layout: "title-and-body",
+					Titles: []string{"Slide 2"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Fragments: []*Fragment{
+										{Value: "Body content"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: Slides{
+				{
+					Layout: "title",
+					Titles: []string{"Slide 1"},
+				},
+				{
+					Layout: "title-and-body",
+					Titles: []string{"Slide 2"},
+					Bodies: []*Body{
+						{
+							Paragraphs: []*Paragraph{
+								{
+									Fragments: []*Fragment{
+										{Value: "Body content"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cmpopts := cmp.Options{
+		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreUnexported(Slide{}),
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			copied, err := copySlides(tt.slides)
+			if err != nil {
+				t.Fatalf("copySlides() error = %v", err)
+			}
+
+			// Check that the copy matches the expected result
+			if diff := cmp.Diff(tt.expected, copied, cmpopts...); diff != "" {
+				t.Errorf("copySlides() mismatch (-want +got):\n%s", diff)
+			}
+
+			// Check that modifying the original doesn't affect the copy
+			if len(tt.slides) > 0 && len(copied) > 0 {
+				originalTitle := tt.slides[0].Titles[0]
+				tt.slides[0].Titles[0] = "Modified Title"
+
+				if len(copied[0].Titles) > 0 && copied[0].Titles[0] != originalTitle {
+					t.Errorf("copySlides() copy was affected by original modification")
+				}
+
+				// Restore original for other tests
+				tt.slides[0].Titles[0] = originalTitle
+			}
+		})
+	}
+}
+
+// TestDiffSlidesDoesNotModifyOriginal tests that generateActions doesn't modify the original slides.
+func TestDiffSlidesDoesNotModifyOriginal(t *testing.T) {
+	originalBefore := Slides{
+		{
+			Layout: "title",
+			Titles: []string{"Original Before"},
+		},
+		{
+			Layout: "title-and-body",
+			Titles: []string{"Before Slide 2"},
+			Bodies: []*Body{
+				{
+					Paragraphs: []*Paragraph{
+						{
+							Fragments: []*Fragment{
+								{Value: "Original content"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	originalAfter := Slides{
+		{
+			Layout: "title",
+			Titles: []string{"Original After"},
+		},
+	}
+
+	// Create deep copies for comparison
+	beforeCopy, err := copySlides(originalBefore)
+	if err != nil {
+		t.Fatalf("Failed to create before copy: %v", err)
+	}
+
+	afterCopy, err := copySlides(originalAfter)
+	if err != nil {
+		t.Fatalf("Failed to create after copy: %v", err)
+	}
+
+	// Execute generateActions
+	_, err = generateActions(originalBefore, originalAfter)
+	if err != nil {
+		t.Fatalf("generateActions() error = %v", err)
+	}
+
+	// Check that original slides were not modified
+	cmpopts := cmp.Options{
+		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreUnexported(Slide{}),
+	}
+
+	if diff := cmp.Diff(beforeCopy, originalBefore, cmpopts...); diff != "" {
+		t.Errorf("generateActions() modified original before slides (-want +got):\n%s", diff)
+	}
+
+	if diff := cmp.Diff(afterCopy, originalAfter, cmpopts...); diff != "" {
+		t.Errorf("generateActions() modified original after slides (-want +got):\n%s", diff)
+	}
+}
+
+// TestGenerateDeleteActions tests the generateDeleteActions function.
+func TestGenerateDeleteActions(t *testing.T) {
+	tests := []struct {
+		name            string
+		before          Slides
+		mapping         map[int]int
+		expectedActions []*action
+		expectedBefore  Slides      // beforeの期待される状態（削除後）
+		expectedMapping map[int]int // mappingの期待される状態（削除後）
+	}{
+		{
+			name: "no delete slides",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			mapping:         map[int]int{0: 0, 1: 1},
+			expectedActions: []*action{},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expectedMapping: map[int]int{0: 0, 1: 1},
+		},
+		{
+			name: "single delete slide at end",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}, delete: true},
+			},
+			mapping: map[int]int{0: 0, 1: 1},
+			expectedActions: []*action{
+				{
+					actionType: actionTypeDelete,
+					index:      1,
+					slide:      &Slide{Layout: "title", Titles: []string{"B"}, delete: true},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			expectedMapping: map[int]int{0: 0},
+		},
+		{
+			name: "multiple delete slides at end",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}, delete: true},
+				{Layout: "title", Titles: []string{"D"}, delete: true},
+			},
+			mapping: map[int]int{0: 0, 1: 1, 2: 2, 3: 3},
+			expectedActions: []*action{
+				{
+					actionType: actionTypeDelete,
+					index:      3, // 後ろから削除するので、まずDが削除される（index 3）
+					slide:      &Slide{Layout: "title", Titles: []string{"D"}, delete: true},
+				},
+				{
+					actionType: actionTypeDelete,
+					index:      2, // 次にCが削除される（index 2）
+					slide:      &Slide{Layout: "title", Titles: []string{"C"}, delete: true},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			expectedMapping: map[int]int{0: 0, 1: 1},
+		},
+		{
+			name: "delete slides with mapping adjustment",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}, delete: true},
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"D"}, delete: true},
+			},
+			mapping: map[int]int{0: 1, 1: 0, 2: 3, 3: 2}, // A->1, B->0, C->3, D->2
+			expectedActions: []*action{
+				{
+					actionType: actionTypeDelete,
+					index:      3, // 後ろから削除するので、まずDが削除される（index 3）
+					slide:      &Slide{Layout: "title", Titles: []string{"D"}, delete: true},
+				},
+				{
+					actionType: actionTypeDelete,
+					index:      1, // 次にBが削除される（index 1）
+					slide:      &Slide{Layout: "title", Titles: []string{"B"}, delete: true},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			expectedMapping: map[int]int{0: 1, 1: 3}, // A->1, C->3 (Cは元々index 2だったが、Bが削除されたのでindex 1になる)
+		},
+		{
+			name: "all slides deleted",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}, delete: true},
+				{Layout: "title", Titles: []string{"B"}, delete: true},
+			},
+			mapping: map[int]int{0: 0, 1: 1},
+			expectedActions: []*action{
+				{
+					actionType: actionTypeDelete,
+					index:      1, // 後ろから削除するので、まずBが削除される（index 1）
+					slide:      &Slide{Layout: "title", Titles: []string{"B"}, delete: true},
+				},
+				{
+					actionType: actionTypeDelete,
+					index:      0, // 次にAが削除される（index 0）
+					slide:      &Slide{Layout: "title", Titles: []string{"A"}, delete: true},
+				},
+			},
+			expectedBefore:  Slides{},
+			expectedMapping: map[int]int{},
+		},
+		{
+			name: "complex delete with reordering",
+			before: Slides{
+				{Layout: "title", Titles: []string{"Keep1"}},                 // index 0
+				{Layout: "title", Titles: []string{"Delete1"}, delete: true}, // index 1
+				{Layout: "title", Titles: []string{"Keep2"}},                 // index 2
+				{Layout: "title", Titles: []string{"Delete2"}, delete: true}, // index 3
+				{Layout: "title", Titles: []string{"Keep3"}},                 // index 4
+			},
+			mapping: map[int]int{0: 2, 1: 0, 2: 4, 3: 1, 4: 3}, // Keep1->2, Delete1->0, Keep2->4, Delete2->1, Keep3->3
+			expectedActions: []*action{
+				{
+					actionType: actionTypeDelete,
+					index:      3, // 後ろから削除するので、まずDelete2が削除される（index 3）
+					slide:      &Slide{Layout: "title", Titles: []string{"Delete2"}, delete: true},
+				},
+				{
+					actionType: actionTypeDelete,
+					index:      1, // 次にDelete1が削除される（index 1）
+					slide:      &Slide{Layout: "title", Titles: []string{"Delete1"}, delete: true},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"Keep1"}}, // index 0
+				{Layout: "title", Titles: []string{"Keep2"}}, // index 1 (元々index 2)
+				{Layout: "title", Titles: []string{"Keep3"}}, // index 2 (元々index 4)
+			},
+			expectedMapping: map[int]int{0: 2, 1: 4, 2: 3}, // Keep1->2, Keep2->4, Keep3->3 (調整後)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// beforeとmappingのコピーを作成（元のデータを保護）
+			beforeCopy := make(Slides, len(tt.before))
+			for i, slide := range tt.before {
+				beforeCopy[i] = copySlide(slide)
+			}
+
+			mappingCopy := make(map[int]int)
+			maps.Copy(mappingCopy, tt.mapping)
+
+			// 関数実行
+			actions := generateDeleteActions(&beforeCopy, &mappingCopy)
+
+			// アクション数の検証
+			if len(actions) != len(tt.expectedActions) {
+				t.Errorf("generateDeleteActions() action count = %d, expected %d", len(actions), len(tt.expectedActions))
+			}
+
+			// 各アクションの検証
+			for i, action := range actions {
+				if i >= len(tt.expectedActions) {
+					break
+				}
+				expected := tt.expectedActions[i]
+
+				if action.actionType != expected.actionType {
+					t.Errorf("generateDeleteActions() action[%d].actionType = %v, expected %v", i, action.actionType, expected.actionType)
+				}
+
+				if action.index != expected.index {
+					t.Errorf("generateDeleteActions() action[%d].index = %d, expected %d", i, action.index, expected.index)
+				}
+
+				// スライドの内容検証（簡易版）
+				if action.slide != nil && expected.slide != nil {
+					if len(action.slide.Titles) > 0 && len(expected.slide.Titles) > 0 {
+						if action.slide.Titles[0] != expected.slide.Titles[0] {
+							t.Errorf("generateDeleteActions() action[%d].slide.Titles[0] = %s, expected %s", i, action.slide.Titles[0], expected.slide.Titles[0])
+						}
+					}
+				}
+			}
+
+			// beforeの状態検証
+			if len(beforeCopy) != len(tt.expectedBefore) {
+				t.Errorf("generateDeleteActions() before length = %d, expected %d", len(beforeCopy), len(tt.expectedBefore))
+			}
+
+			for i, slide := range beforeCopy {
+				if i >= len(tt.expectedBefore) {
+					break
+				}
+				expected := tt.expectedBefore[i]
+				if len(slide.Titles) > 0 && len(expected.Titles) > 0 {
+					if slide.Titles[0] != expected.Titles[0] {
+						t.Errorf("generateDeleteActions() before[%d].Titles[0] = %s, expected %s", i, slide.Titles[0], expected.Titles[0])
+					}
+				}
+			}
+
+			// mappingの状態検証
+			if len(mappingCopy) != len(tt.expectedMapping) {
+				t.Errorf("generateDeleteActions() mapping length = %d, expected %d", len(mappingCopy), len(tt.expectedMapping))
+			}
+
+			for k, v := range tt.expectedMapping {
+				if actualV, ok := mappingCopy[k]; !ok {
+					t.Errorf("generateDeleteActions() mapping missing key %d", k)
+				} else if actualV != v {
+					t.Errorf("generateDeleteActions() mapping[%d] = %d, expected %d", k, actualV, v)
+				}
+			}
+		})
+	}
+}
+
+// TestGenerateMoveActions tests the generateMoveActions function.
+func TestGenerateMoveActions(t *testing.T) {
+	tests := []struct {
+		name            string
+		before          Slides
+		after           Slides
+		mapping         map[int]int
+		expectedActions []*action
+		expectedBefore  Slides // beforeの期待される状態（移動後）
+	}{
+		{
+			name: "no moves needed - already in correct order",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			mapping:         map[int]int{0: 0, 1: 1},
+			expectedActions: []*action{},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+		},
+		{
+			name: "simple swap - two slides",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			mapping: map[int]int{0: 1, 1: 0}, // A->1, B->0
+			// 正しい期待値: B(index 1)をindex 0に移動するだけで済む
+			expectedActions: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       1, // Bを移動
+					moveToIndex: 0,
+					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+		},
+		{
+			name: "three slides reordering - A B C to C A B",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			mapping: map[int]int{0: 1, 1: 2, 2: 0}, // A->1, B->2, C->0
+			// 正しい期待値: C(index 2)をindex 0に移動するだけで済む
+			expectedActions: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       2, // Cを移動
+					moveToIndex: 0,
+					slide:       &Slide{Layout: "title", Titles: []string{"C"}},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+		},
+		{
+			name: "complex reordering - A B C D to D B A C",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"D"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"D"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			mapping: map[int]int{0: 2, 1: 1, 2: 3, 3: 0}, // A->2, B->1, C->3, D->0
+			// 正しい期待値: 2つの移動が必要
+			// 1. D(index 3)をindex 0に移動 → D A B C
+			// 2. B(index 2)をindex 1に移動 → D B A C
+			expectedActions: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       3, // Dを移動
+					moveToIndex: 0,
+					slide:       &Slide{Layout: "title", Titles: []string{"D"}},
+				},
+				{
+					actionType:  actionTypeMove,
+					index:       2, // Bを移動（Dが移動した後の位置）
+					moveToIndex: 1,
+					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"D"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+		},
+		{
+			name: "single slide - no moves needed",
+			before: Slides{
+				{Layout: "title", Titles: []string{"Only"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"Only"}},
+			},
+			mapping:         map[int]int{0: 0},
+			expectedActions: []*action{},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"Only"}},
+			},
+		},
+		{
+			name: "reverse order - A B C to C B A",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			mapping: map[int]int{0: 2, 1: 1, 2: 0}, // A->2, B->1, C->0
+			// 正しい期待値: 2つの移動が必要
+			// 1. C(index 2)をindex 0に移動 → C A B
+			// 2. B(index 2)をindex 1に移動 → C B A
+			expectedActions: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       2, // Cを移動
+					moveToIndex: 0,
+					slide:       &Slide{Layout: "title", Titles: []string{"C"}},
+				},
+				{
+					actionType:  actionTypeMove,
+					index:       2, // Bを移動（Cが移動した後の位置）
+					moveToIndex: 1,
+					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+		},
+		{
+			name: "complex reordering - A A B A to A B A A",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			mapping: map[int]int{0: 0, 1: 2, 2: 1, 3: 3},
+			// 正しい期待値: 1つの移動が必要
+			// 1. B(index 2)をindex 1に移動 →A B A A
+			expectedActions: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       2, // Bを移動
+					moveToIndex: 1,
+					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"A"}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// beforeとmappingのコピーを作成（元のデータを保護）
+			beforeCopy := make(Slides, len(tt.before))
+			for i, slide := range tt.before {
+				beforeCopy[i] = copySlide(slide)
+			}
+
+			mappingCopy := make(map[int]int)
+			maps.Copy(mappingCopy, tt.mapping)
+
+			// 関数実行
+			actions := generateMoveActions(&beforeCopy, tt.after, &mappingCopy)
+
+			// アクション数の検証
+			if len(actions) != len(tt.expectedActions) {
+				t.Errorf("generateMoveActions() action count = %d, expected %d", len(actions), len(tt.expectedActions))
+				// デバッグ情報を出力
+				for i, action := range actions {
+					t.Logf("actual action[%d]: type=%s, index=%d, moveToIndex=%d", i, action.actionType.String(), action.index, action.moveToIndex)
+				}
+				for i, action := range tt.expectedActions {
+					t.Logf("expected action[%d]: type=%s, index=%d, moveToIndex=%d", i, action.actionType.String(), action.index, action.moveToIndex)
+				}
+			}
+
+			// 各アクションの検証
+			for i, action := range actions {
+				if i >= len(tt.expectedActions) {
+					break
+				}
+				expected := tt.expectedActions[i]
+
+				if action.actionType != expected.actionType {
+					t.Errorf("generateMoveActions() action[%d].actionType = %v, expected %v", i, action.actionType, expected.actionType)
+				}
+
+				if action.index != expected.index {
+					t.Errorf("generateMoveActions() action[%d].index = %d, expected %d", i, action.index, expected.index)
+				}
+
+				if action.moveToIndex != expected.moveToIndex {
+					t.Errorf("generateMoveActions() action[%d].moveToIndex = %d, expected %d", i, action.moveToIndex, expected.moveToIndex)
+				}
+
+				// スライドの内容検証（簡易版）
+				if action.slide != nil && expected.slide != nil {
+					if len(action.slide.Titles) > 0 && len(expected.slide.Titles) > 0 {
+						if action.slide.Titles[0] != expected.slide.Titles[0] {
+							t.Errorf("generateMoveActions() action[%d].slide.Titles[0] = %s, expected %s", i, action.slide.Titles[0], expected.slide.Titles[0])
+						}
+					}
+				}
+			}
+
+			// beforeの最終状態検証
+			if len(beforeCopy) != len(tt.expectedBefore) {
+				t.Errorf("generateMoveActions() before length = %d, expected %d", len(beforeCopy), len(tt.expectedBefore))
+			}
+
+			for i, slide := range beforeCopy {
+				if i >= len(tt.expectedBefore) {
+					break
+				}
+				expected := tt.expectedBefore[i]
+				if len(slide.Titles) > 0 && len(expected.Titles) > 0 {
+					if slide.Titles[0] != expected.Titles[0] {
+						t.Errorf("generateMoveActions() before[%d].Titles[0] = %s, expected %s", i, slide.Titles[0], expected.Titles[0])
+					}
+				}
+			}
+		})
+	}
+}
+
+func actionsEmulator(t *testing.T, before Slides, actions []*action) Slides {
+	t.Helper()
+	beforeCopy, err := copySlides(before)
+	if err != nil {
+		t.Fatalf("actionsEmulator() failed to deep copy before slides: %v", err)
+	}
+	for _, action := range actions {
+		switch action.actionType {
+		case actionTypeAppend:
+			if action.slide == nil {
+				t.Fatalf("actionsEmulator() append action missing slide")
+			}
+			beforeCopy = append(beforeCopy, copySlide(action.slide))
+		case actionTypeUpdate:
+			if action.slide == nil {
+				t.Fatalf("actionsEmulator() update action missing slide")
+			}
+			if action.index < 0 || action.index >= len(beforeCopy) {
+				t.Fatalf("actionsEmulator() update action invalid index: %d", action.index)
+			}
+			beforeCopy[action.index] = copySlide(action.slide)
+		case actionTypeDelete:
+			if action.index < 0 || action.index >= len(beforeCopy) {
+				t.Fatalf("actionsEmulator() delete action invalid index: %d", action.index)
+			}
+			beforeCopy = slices.Delete(beforeCopy, action.index, action.index+1)
+		case actionTypeMove:
+			if action.index < 0 || action.index >= len(beforeCopy) {
+				t.Fatalf("actionsEmulator() move action invalid index: %d", action.index)
+			}
+			if action.moveToIndex < 0 || action.moveToIndex >= len(beforeCopy) {
+				t.Fatalf("actionsEmulator() move action invalid moveToIndex: %d", action.moveToIndex)
+			}
+			slide := copySlide(beforeCopy[action.index])
+			beforeCopy = append(beforeCopy[:action.moveToIndex], append([]*Slide{slide}, beforeCopy[action.moveToIndex:]...)...)
+			var deleteIndex int
+			if action.index < action.moveToIndex {
+				deleteIndex = action.index
+			} else {
+				deleteIndex = action.index + 1
+			}
+			beforeCopy = slices.Delete(beforeCopy, deleteIndex, deleteIndex+1)
+		default:
+			t.Fatalf("actionsEmulator() unknown action type: %v", action.actionType)
+		}
+	}
+	return beforeCopy
 }
