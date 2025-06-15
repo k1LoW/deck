@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"encoding/json"
 	"maps"
 	"slices"
 	"testing"
@@ -2536,4 +2537,111 @@ func actionsEmulator(t *testing.T, before Slides, actions []*action) Slides {
 		}
 	}
 	return beforeCopy
+}
+
+func FuzzGenerateActions(f *testing.F) {
+	f.Add([]byte(`{"before":[],"after":[]}`))
+	f.Add([]byte(`{"before":[{"Layout":"title","Titles":["A"]}],"after":[{"Layout":"title","Titles":["A"]}]}`))
+	f.Add([]byte(`{"before":[{"Layout":"title","Titles":["A"]},{"Layout":"title","Titles":["B"]}],"after":[{"Layout":"title","Titles":["B"]},{"Layout":"title","Titles":["A"]}]}`))
+	f.Add([]byte(`{"before":[{"Layout":"title","Titles":["A"]},{"Layout":"title","Titles":["B"]},{"Layout":"title","Titles":["C"]}],"after":[{"Layout":"title","Titles":["C"]},{"Layout":"title","Titles":["A"]}]}`))
+
+	f.Fuzz(func(t *testing.T, data []byte) {
+		var testData struct {
+			Before Slides `json:"before"`
+			After  Slides `json:"after"`
+		}
+
+		if err := json.Unmarshal(data, &testData); err != nil {
+			t.Skip("Invalid JSON data")
+		}
+
+		// Basic validation
+		if len(testData.Before) > 20 || len(testData.After) > 20 {
+			t.Skip("Too many slides")
+		}
+
+		// Basic validation for each slide
+		for _, slide := range testData.Before {
+			if slide == nil {
+				t.Skip("Nil slide in before")
+			}
+			if len(slide.Titles) > 10 || len(slide.Subtitles) > 10 {
+				t.Skip("Too many titles/subtitles")
+			}
+		}
+
+		for _, slide := range testData.After {
+			if slide == nil {
+				t.Skip("Nil slide in after")
+			}
+			if len(slide.Titles) > 10 || len(slide.Subtitles) > 10 {
+				t.Skip("Too many titles/subtitles")
+			}
+		}
+
+		actions, err := generateActions(testData.Before, testData.After)
+		if err != nil {
+			t.Fatalf("generateActions failed: %v", err)
+		}
+
+		cmpOpts := cmp.Options{
+			cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+			cmpopts.IgnoreUnexported(Slide{}),
+			cmpopts.EquateEmpty(),
+		}
+
+		got := actionsEmulator(t, testData.Before, actions)
+		if diff := cmp.Diff(got, testData.After, cmpOpts...); diff != "" {
+			t.Errorf("Actions did not produce expected result (-got +want):\n%s", diff)
+			t.Logf("Before: %+v", testData.Before)
+			t.Logf("After: %+v", testData.After)
+			t.Logf("Actions: %+v", actions)
+			t.Logf("Got: %+v", got)
+		}
+
+		// Basic validity verification of actions
+		for i, action := range actions {
+			if action == nil {
+				t.Errorf("Action %d is nil", i)
+				continue
+			}
+
+			switch action.actionType {
+			case actionTypeAppend:
+				if action.slide == nil {
+					t.Errorf("Action %d (append) has nil slide", i)
+				}
+			case actionTypeUpdate:
+				if action.slide == nil {
+					t.Errorf("Action %d (update) has nil slide", i)
+				}
+				if action.index < 0 {
+					t.Errorf("Action %d (update) has negative index: %d", i, action.index)
+				}
+			case actionTypeDelete:
+				if action.index < 0 {
+					t.Errorf("Action %d (delete) has negative index: %d", i, action.index)
+				}
+			case actionTypeMove:
+				if action.index < 0 {
+					t.Errorf("Action %d (move) has negative index: %d", i, action.index)
+				}
+				if action.moveToIndex < 0 {
+					t.Errorf("Action %d (move) has negative moveToIndex: %d", i, action.moveToIndex)
+				}
+				if action.slide == nil {
+					t.Errorf("Action %d (move) has nil slide", i)
+				}
+			case actionTypeInsert:
+				if action.slide == nil {
+					t.Errorf("Action %d (insert) has nil slide", i)
+				}
+				if action.index < 0 {
+					t.Errorf("Action %d (insert) has negative index: %d", i, action.index)
+				}
+			default:
+				t.Errorf("Action %d has unknown type: %v", i, action.actionType)
+			}
+		}
+	})
 }
