@@ -92,6 +92,7 @@ func TestConvertToSlide(t *testing.T) {
 
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreUnexported(deck.Slide{}),
 	}
 
 	for _, tt := range tests {

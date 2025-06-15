@@ -45,6 +45,9 @@ type Slide struct {
 	Subtitles   []string `json:"subtitles,omitempty"`
 	Bodies      []*Body  `json:"bodies,omitempty"`
 	SpeakerNote string   `json:"speakerNote,omitempty"`
+
+	new    bool
+	delete bool
 }
 
 // Body represents the content body of a slide.
@@ -353,18 +356,25 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		}
 	}
 
-	actions, err := diffSlides(before, after)
+	actions, err := generateActions(before, after)
 	if err != nil {
 		return fmt.Errorf("failed to diff slides: %w", err)
 	}
 
+	slog.Info("len slides", slog.Int("len", len(d.presentation.Slides)))
 	for _, action := range actions {
+		var slideTitle string
+		if action.slide != nil && len(action.slide.Titles) > 0 {
+			slideTitle = action.slide.Titles[0]
+		}
+		slog.Info("action", slog.String("type", action.actionType.String()), slog.Int("index", action.index), slog.Int("moveToIndex", action.moveToIndex), slog.String("slide", slideTitle))
 		switch action.actionType {
-		case actionTypeAppend, actionTypeInsert:
-			if err := d.CreatePage(ctx, action.index, action.slide); err != nil {
-				return fmt.Errorf("failed to create page: %w", err)
+		case actionTypeAppend:
+			if err := d.appendPage(ctx, action.slide); err != nil {
+				return fmt.Errorf("failed to append slide: %w", err)
 			}
-			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+		case actionTypeInsert:
+			if err := d.insertPage(ctx, action.index, action.slide); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}
 		case actionTypeUpdate:
@@ -979,6 +989,48 @@ func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
 	}
 	if err := d.refresh(ctx); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (d *Deck) appendPage(ctx context.Context, slide *Slide) error {
+	index := len(d.presentation.Slides)
+	if err := d.CreatePage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	slog.Info("appendPage: apply page", slog.Int("index", index), slog.String("layout", slide.Layout))
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	return nil
+}
+
+func (d *Deck) insertPage(ctx context.Context, index int, slide *Slide) error {
+	if len(d.presentation.Slides) <= index {
+		return fmt.Errorf("index out of range: %d", index)
+	}
+	if err := d.CreatePage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if index == 0 {
+		if err := d.movePage(ctx, 1, 0); err != nil {
+			return fmt.Errorf("failed to move page: %w", err)
+		}
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
 	return nil
 }

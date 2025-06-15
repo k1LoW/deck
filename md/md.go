@@ -381,13 +381,10 @@ func DiffContents(oldContents, newContents Contents) []int {
 	newLen := len(newContents)
 
 	// Get the maximum length
-	maxLen := oldLen
-	if newLen > maxLen {
-		maxLen = newLen
-	}
+	maxLen := max(oldLen, newLen)
 
 	// Compare each page
-	for i := 0; i < maxLen; i++ {
+	for i := range maxLen {
 		// If a new page has been added
 		if i >= oldLen {
 			changedPages = append(changedPages, i+1) // 1-indexed
