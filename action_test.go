@@ -41,7 +41,7 @@ var tests = []struct {
 		after: Slides{},
 	},
 	{
-		name: "move slide",
+		name: "swap two slides",
 		before: Slides{
 			{
 				Layout: "title",
@@ -80,7 +80,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "move slide and update content",
+		name: "move slide and update content simultaneously",
 		before: Slides{
 			{
 				Layout: "title",
@@ -112,7 +112,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "update slides and delete unused ones",
+		name: "update multiple slides and delete unused ones",
 		before: Slides{
 			{
 				Layout: "title",
@@ -155,7 +155,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "move slides and delete unused one",
+		name: "reorder slides and delete one slide",
 		before: Slides{
 			{
 				Layout: "title",
@@ -221,7 +221,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "move slides and update existing page",
+		name: "move slides and add new page",
 		before: Slides{
 			{
 				Layout: "title",
@@ -252,7 +252,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "move slides, update page, and delete unused slide",
+		name: "complex combination of move update and delete",
 		before: Slides{
 			{
 				Layout: "title",
@@ -992,7 +992,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "reorder slides - simple swap with reuse (NEW)",
+		name: "simple swap with reuse",
 		before: Slides{
 			{
 				Layout: "title",
@@ -1023,7 +1023,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "delete and reorder with reuse (NEW)",
+		name: "delete and reorder with reuse",
 		before: Slides{
 			{
 				Layout: "title",
@@ -1058,7 +1058,7 @@ var tests = []struct {
 		},
 	},
 	{
-		name: "complete reverse order with reuse (NEW)",
+		name: "complete reverse order with reuse",
 		before: Slides{
 			{
 				Layout: "title",
@@ -1572,7 +1572,7 @@ func TestMapSlides(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Ensure slides are same length (prerequisite for mapSlides)
 			if len(tt.before) != len(tt.after) {
-				t.Fatalf("Test setup error: before and after must have same length")
+				t.Fatalf("test setup error: before and after must have same length")
 			}
 
 			result, err := mapSlides(tt.before, tt.after)
@@ -1755,7 +1755,7 @@ func TestApplyDeleteMarks(t *testing.T) {
 			applyDeleteMarks(tt.before, tt.after, tt.mapping)
 
 			if len(tt.after) != len(tt.expectedDeleted) {
-				t.Fatalf("Expected %d slides, got %d", len(tt.expectedDeleted), len(tt.after))
+				t.Fatalf("expected %d slides, got %d", len(tt.expectedDeleted), len(tt.after))
 			}
 
 			for i, expectedDeleted := range tt.expectedDeleted {
@@ -1956,12 +1956,12 @@ func TestDiffSlidesDoesNotModifyOriginal(t *testing.T) {
 	// Create deep copies for comparison
 	beforeCopy, err := copySlides(originalBefore)
 	if err != nil {
-		t.Fatalf("Failed to create before copy: %v", err)
+		t.Fatalf("failed to create before copy: %v", err)
 	}
 
 	afterCopy, err := copySlides(originalAfter)
 	if err != nil {
-		t.Fatalf("Failed to create after copy: %v", err)
+		t.Fatalf("failed to create after copy: %v", err)
 	}
 
 	// Execute generateActions
@@ -2592,55 +2592,55 @@ func FuzzGenerateActions(f *testing.F) {
 
 		got := actionsEmulator(t, testData.Before, actions)
 		if diff := cmp.Diff(got, testData.After, cmpOpts...); diff != "" {
-			t.Errorf("Actions did not produce expected result (-got +want):\n%s", diff)
-			t.Logf("Before: %+v", testData.Before)
-			t.Logf("After: %+v", testData.After)
-			t.Logf("Actions: %+v", actions)
-			t.Logf("Got: %+v", got)
+			t.Errorf("actions did not produce expected result (-got +want):\n%s", diff)
+			t.Logf("before: %+v", testData.Before)
+			t.Logf("after: %+v", testData.After)
+			t.Logf("actions: %+v", actions)
+			t.Logf("got: %+v", got)
 		}
 
 		// Basic validity verification of actions
 		for i, action := range actions {
 			if action == nil {
-				t.Errorf("Action %d is nil", i)
+				t.Errorf("action %d is nil", i)
 				continue
 			}
 
 			switch action.actionType {
 			case actionTypeAppend:
 				if action.slide == nil {
-					t.Errorf("Action %d (append) has nil slide", i)
+					t.Errorf("action %d (append) has nil slide", i)
 				}
 			case actionTypeUpdate:
 				if action.slide == nil {
-					t.Errorf("Action %d (update) has nil slide", i)
+					t.Errorf("action %d (update) has nil slide", i)
 				}
 				if action.index < 0 {
-					t.Errorf("Action %d (update) has negative index: %d", i, action.index)
+					t.Errorf("action %d (update) has negative index: %d", i, action.index)
 				}
 			case actionTypeDelete:
 				if action.index < 0 {
-					t.Errorf("Action %d (delete) has negative index: %d", i, action.index)
+					t.Errorf("action %d (delete) has negative index: %d", i, action.index)
 				}
 			case actionTypeMove:
 				if action.index < 0 {
-					t.Errorf("Action %d (move) has negative index: %d", i, action.index)
+					t.Errorf("action %d (move) has negative index: %d", i, action.index)
 				}
 				if action.moveToIndex < 0 {
-					t.Errorf("Action %d (move) has negative moveToIndex: %d", i, action.moveToIndex)
+					t.Errorf("action %d (move) has negative moveToIndex: %d", i, action.moveToIndex)
 				}
 				if action.slide == nil {
-					t.Errorf("Action %d (move) has nil slide", i)
+					t.Errorf("action %d (move) has nil slide", i)
 				}
 			case actionTypeInsert:
 				if action.slide == nil {
-					t.Errorf("Action %d (insert) has nil slide", i)
+					t.Errorf("action %d (insert) has nil slide", i)
 				}
 				if action.index < 0 {
-					t.Errorf("Action %d (insert) has negative index: %d", i, action.index)
+					t.Errorf("action %d (insert) has negative index: %d", i, action.index)
 				}
 			default:
-				t.Errorf("Action %d has unknown type: %v", i, action.actionType)
+				t.Errorf("action %d has unknown type: %v", i, action.actionType)
 			}
 		}
 	})

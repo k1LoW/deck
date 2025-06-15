@@ -11,7 +11,7 @@ import (
 	"github.com/k1LoW/deck/md"
 )
 
-func TestApply(t *testing.T) {
+func TestApplyMarkdown(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
 		t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
 	}
@@ -58,7 +58,7 @@ func TestApply(t *testing.T) {
 	}
 }
 
-func TestConvertToSlide(t *testing.T) {
+func TestMarkdownToSlide(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
 		t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
 	}

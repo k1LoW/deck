@@ -361,13 +361,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		return fmt.Errorf("failed to diff slides: %w", err)
 	}
 
-	slog.Info("len slides", slog.Int("len", len(d.presentation.Slides)))
 	for _, action := range actions {
-		var slideTitle string
-		if action.slide != nil && len(action.slide.Titles) > 0 {
-			slideTitle = action.slide.Titles[0]
-		}
-		slog.Info("action", slog.String("type", action.actionType.String()), slog.Int("index", action.index), slog.Int("moveToIndex", action.moveToIndex), slog.String("slide", slideTitle))
 		switch action.actionType {
 		case actionTypeAppend:
 			if err := d.appendPage(ctx, action.slide); err != nil {
@@ -1001,7 +995,6 @@ func (d *Deck) appendPage(ctx context.Context, slide *Slide) error {
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
-	slog.Info("appendPage: apply page", slog.Int("index", index), slog.String("layout", slide.Layout))
 	if err := d.applyPage(ctx, index, slide); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
 	}
