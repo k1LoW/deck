@@ -321,10 +321,10 @@ func adjustSlideCount(before, after Slides) (Slides, Slides, error) {
 	}
 
 	if len(after) < len(before) {
-		// after is shorter - add slides to after with .new = true
+		// after is shorter - add slides to after with .delete = true
 		return adjustShorterAfter(adjustedBefore, adjustedAfter)
 	} else {
-		// before is shorter - add slides to before with .delete = true
+		// before is shorter - add slides to before with .new = true
 		return adjustShorterBefore(adjustedBefore, adjustedAfter)
 	}
 }
@@ -350,7 +350,7 @@ func adjustShorterAfter(before, after Slides) (Slides, Slides, error) {
 	// Add the slides with lowest similarity scores to after
 	for i := 0; i < needed; i++ {
 		slideToAdd := deepCopySlide(scores[i].slide)
-		slideToAdd.new = true
+		slideToAdd.delete = true
 		after = append(after, slideToAdd)
 	}
 
@@ -378,7 +378,7 @@ func adjustShorterBefore(before, after Slides) (Slides, Slides, error) {
 	// Add the slides with lowest similarity scores to before
 	for i := 0; i < needed; i++ {
 		slideToAdd := deepCopySlide(scores[i].slide)
-		slideToAdd.delete = true
+		slideToAdd.new = true
 		before = append(before, slideToAdd)
 	}
 
@@ -543,4 +543,16 @@ func bodiesEqual(bodies1, bodies2 []*Body) bool {
 	}
 
 	return bytes.Equal(bodies1B, bodies2B)
+}
+
+// markDeletedSlides applies delete marks from after slides to corresponding before slides
+// based on the provided mapping. It modifies the before slides in-place.
+func markDeletedSlides(before, after Slides, mapping map[int]int) {
+	for beforeIdx, afterIdx := range mapping {
+		if beforeIdx < len(before) && afterIdx < len(after) {
+			if after[afterIdx].delete {
+				before[beforeIdx].delete = true
+			}
+		}
+	}
 }

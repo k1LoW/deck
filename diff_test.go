@@ -1301,7 +1301,7 @@ func TestAdjustSlideCount(t *testing.T) {
 			},
 		},
 		{
-			name: "after is shorter - add slides to after with .new = true",
+			name: "after is shorter - add slides to after with .delete = true",
 			before: Slides{
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"B"}},
@@ -1317,12 +1317,12 @@ func TestAdjustSlideCount(t *testing.T) {
 			},
 			expectedAfter: Slides{
 				{Layout: "title", Titles: []string{"A"}},
-				{Layout: "title", Titles: []string{"B"}, new: true}, // lowest similarity score
-				{Layout: "title", Titles: []string{"C"}, new: true}, // second lowest similarity score
+				{Layout: "title", Titles: []string{"B"}, delete: true}, // lowest similarity score
+				{Layout: "title", Titles: []string{"C"}, delete: true}, // second lowest similarity score
 			},
 		},
 		{
-			name: "before is shorter - add slides to before with .delete = true",
+			name: "before is shorter - add slides to before with .new = true",
 			before: Slides{
 				{Layout: "title", Titles: []string{"A"}}, // high similarity with after[0]
 			},
@@ -1333,8 +1333,8 @@ func TestAdjustSlideCount(t *testing.T) {
 			},
 			expectedBefore: Slides{
 				{Layout: "title", Titles: []string{"A"}},
-				{Layout: "title", Titles: []string{"B"}, delete: true}, // lowest similarity score
-				{Layout: "title", Titles: []string{"C"}, delete: true}, // second lowest similarity score
+				{Layout: "title", Titles: []string{"B"}, new: true}, // lowest similarity score
+				{Layout: "title", Titles: []string{"C"}, new: true}, // second lowest similarity score
 			},
 			expectedAfter: Slides{
 				{Layout: "title", Titles: []string{"A"}},
@@ -1343,15 +1343,15 @@ func TestAdjustSlideCount(t *testing.T) {
 			},
 		},
 		{
-			name:   "empty before - add all after slides to before with .delete = true",
+			name:   "empty before - add all after slides to before with .new = true",
 			before: Slides{},
 			after: Slides{
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"B"}},
 			},
 			expectedBefore: Slides{
-				{Layout: "title", Titles: []string{"A"}, delete: true},
-				{Layout: "title", Titles: []string{"B"}, delete: true},
+				{Layout: "title", Titles: []string{"A"}, new: true},
+				{Layout: "title", Titles: []string{"B"}, new: true},
 			},
 			expectedAfter: Slides{
 				{Layout: "title", Titles: []string{"A"}},
@@ -1359,7 +1359,7 @@ func TestAdjustSlideCount(t *testing.T) {
 			},
 		},
 		{
-			name: "empty after - add all before slides to after with .new = true",
+			name: "empty after - add all before slides to after with .delete = true",
 			before: Slides{
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"B"}},
@@ -1370,8 +1370,8 @@ func TestAdjustSlideCount(t *testing.T) {
 				{Layout: "title", Titles: []string{"B"}},
 			},
 			expectedAfter: Slides{
-				{Layout: "title", Titles: []string{"A"}, new: true},
-				{Layout: "title", Titles: []string{"B"}, new: true},
+				{Layout: "title", Titles: []string{"A"}, delete: true},
+				{Layout: "title", Titles: []string{"B"}, delete: true},
 			},
 		},
 		{
@@ -1419,8 +1419,8 @@ func TestAdjustSlideCount(t *testing.T) {
 			},
 			expectedAfter: Slides{
 				{Layout: "title", Titles: []string{"Same Title"}},
-				{Layout: "title-and-body", Titles: []string{"Different Title"}, new: true}, // Lowest similarity
-				{Layout: "title", Titles: []string{"Another Title"}, new: true},            // Second lowest
+				{Layout: "title-and-body", Titles: []string{"Different Title"}, delete: true}, // Lowest similarity
+				{Layout: "title", Titles: []string{"Another Title"}, delete: true},            // Second lowest
 			},
 		},
 	}
@@ -1633,6 +1633,127 @@ func TestMapSlidesErrors(t *testing.T) {
 				}
 				if len(result) != 0 {
 					t.Errorf("mapSlides() expected empty result for empty slides, got %v", result)
+				}
+			}
+		})
+	}
+}
+
+// TestMarkDeletedSlides tests the markDeletedSlides function
+func TestMarkDeletedSlides(t *testing.T) {
+	tests := []struct {
+		name            string
+		before          Slides
+		after           Slides
+		mapping         map[int]int
+		expectedDeleted []bool // before[i].delete の期待値
+	}{
+		{
+			name: "no deleted slides",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			mapping:         map[int]int{0: 0, 1: 1},
+			expectedDeleted: []bool{false, false},
+		},
+		{
+			name: "single deleted slide",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}, delete: true},
+			},
+			mapping:         map[int]int{0: 0, 1: 1},
+			expectedDeleted: []bool{false, true},
+		},
+		{
+			name: "multiple deleted slides with reordering",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"C"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"C"}, delete: true},
+				{Layout: "title", Titles: []string{"A"}, delete: true},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			mapping:         map[int]int{0: 1, 1: 2, 2: 0}, // A->1, B->2, C->0
+			expectedDeleted: []bool{true, false, true},     // A(deleted), B(not deleted), C(deleted)
+		},
+		{
+			name: "all slides deleted",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"B"}, delete: true},
+				{Layout: "title", Titles: []string{"A"}, delete: true},
+			},
+			mapping:         map[int]int{0: 1, 1: 0},
+			expectedDeleted: []bool{true, true},
+		},
+		{
+			name: "boundary check - invalid mapping indices",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"A"}, delete: true},
+			},
+			mapping:         map[int]int{0: 0, 5: 10}, // 無効なインデックス
+			expectedDeleted: []bool{true},
+		},
+		{
+			name:            "empty slides",
+			before:          Slides{},
+			after:           Slides{},
+			mapping:         map[int]int{},
+			expectedDeleted: []bool{},
+		},
+		{
+			name: "complex scenario with mixed delete flags",
+			before: Slides{
+				{Layout: "title", Titles: []string{"Keep1"}},
+				{Layout: "title", Titles: []string{"Delete1"}},
+				{Layout: "title", Titles: []string{"Keep2"}},
+				{Layout: "title", Titles: []string{"Delete2"}},
+				{Layout: "title", Titles: []string{"Delete3"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"Delete2"}, delete: true},
+				{Layout: "title", Titles: []string{"Keep1"}},
+				{Layout: "title", Titles: []string{"Delete3"}, delete: true},
+				{Layout: "title", Titles: []string{"Keep2"}},
+				{Layout: "title", Titles: []string{"Delete1"}, delete: true},
+			},
+			mapping:         map[int]int{0: 1, 1: 4, 2: 3, 3: 0, 4: 2}, // Keep1->1, Delete1->4, Keep2->3, Delete2->0, Delete3->2
+			expectedDeleted: []bool{false, true, false, true, true},    // Keep1(false), Delete1(true), Keep2(false), Delete2(true), Delete3(true)
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// 関数実行
+			markDeletedSlides(tt.before, tt.after, tt.mapping)
+
+			// 結果検証
+			if len(tt.after) != len(tt.expectedDeleted) {
+				t.Fatalf("Expected %d slides, got %d", len(tt.expectedDeleted), len(tt.after))
+			}
+
+			for i, expectedDeleted := range tt.expectedDeleted {
+				if tt.before[i].delete != expectedDeleted {
+					t.Errorf("before[%d].delete = %v, expected %v (slide: %v)", i, tt.before[i].delete, expectedDeleted, tt.before[i].Titles)
 				}
 			}
 		})
