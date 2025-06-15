@@ -1,0 +1,36 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Lists with blank line"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "First list item"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Second list item"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  }
+]
