@@ -355,10 +355,22 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 			after[i] = slide
 		}
 	}
+	if len(after) > len(ss) {
+		var deleteIndexes []int
+		for i := len(ss); i < len(after); i++ {
+			if !slices.Contains(pages, i+1) {
+				deleteIndexes = append(deleteIndexes, i)
+			}
+		}
+		slices.Reverse(deleteIndexes)
+		for _, i := range deleteIndexes {
+			after = slices.Delete(after, i, i+1)
+		}
+	}
 
 	actions, err := generateActions(before, after)
 	if err != nil {
-		return fmt.Errorf("failed to diff slides: %w", err)
+		return fmt.Errorf("failed to generate actions: %w", err)
 	}
 
 	for _, action := range actions {

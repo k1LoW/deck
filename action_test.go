@@ -1634,21 +1634,21 @@ func TestMapSlides(t *testing.T) {
 				{Layout: "title-and-body", Titles: []string{"Different Title"}},
 				{Layout: "title", Titles: []string{"Same Title"}},
 			},
-			expected: map[int]int{0: 1, 1: 0}, // Layout+Title match should be prioritized
+			expected: map[int]int{0: 1, 1: 0},
 		},
 		{
 			name: "position bonus consideration",
 			before: Slides{
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"B"}},
-				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"B"}},
 			},
 			after: Slides{
-				{Layout: "title", Titles: []string{"C"}},
+				{Layout: "title", Titles: []string{"B"}},
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"B"}},
 			},
-			expected: map[int]int{0: 1, 1: 2, 2: 0}, // Position bonus should influence mapping
+			expected: map[int]int{0: 1, 1: 0, 2: 2},
 		},
 		{
 			name: "complex optimization",
@@ -1664,7 +1664,7 @@ func TestMapSlides(t *testing.T) {
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"C"}},
 			},
-			expected: map[int]int{0: 2, 1: 1, 2: 3, 3: 0}, // Optimal mapping considering all factors
+			expected: map[int]int{0: 2, 1: 1, 2: 3, 3: 0},
 		},
 		{
 			name: "single slide",
@@ -1686,7 +1686,7 @@ func TestMapSlides(t *testing.T) {
 				{Layout: "title-and-body", Titles: []string{"Same"}},
 				{Layout: "title", Titles: []string{"Same"}},
 			},
-			expected: map[int]int{0: 1, 1: 0}, // Layout match should be prioritized
+			expected: map[int]int{0: 1, 1: 0},
 		},
 	}
 
