@@ -36,54 +36,6 @@ const (
 	defaultCodeFontFamily = "Noto Sans Mono"
 )
 
-type Slides []*Slide
-
-type Slide struct {
-	Layout      string   `json:"layout"`
-	Freeze      bool     `json:"freeze,omitempty"`
-	Titles      []string `json:"titles,omitempty"`
-	Subtitles   []string `json:"subtitles,omitempty"`
-	Bodies      []*Body  `json:"bodies,omitempty"`
-	SpeakerNote string   `json:"speakerNote,omitempty"`
-
-	new    bool
-	delete bool
-}
-
-// Body represents the content body of a slide.
-type Body struct {
-	Paragraphs []*Paragraph `json:"paragraphs,omitempty"`
-}
-
-// Paragraph represents a paragraph within a slide body.
-type Paragraph struct {
-	Fragments []*Fragment `json:"fragments,omitempty"`
-	Bullet    Bullet      `json:"bullet,omitempty"`
-	Nesting   int         `json:"nesting,omitempty"`
-}
-
-// Fragment represents a text fragment within a paragraph.
-type Fragment struct {
-	Value         string `json:"value"`
-	Bold          bool   `json:"bold,omitempty"`
-	Italic        bool   `json:"italic,omitempty"`
-	Link          string `json:"link,omitempty"`
-	Code          bool   `json:"code,omitempty"`
-	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
-	ClassName     string `json:"className,omitempty"`
-}
-
-// Bullet represents the type of bullet point for a paragraph.
-type Bullet string
-
-// Bullet constants for different bullet point types.
-const (
-	BulletNone   Bullet = ""
-	BulletDash   Bullet = "-"
-	BulletNumber Bullet = "1"
-	BulletAlpha  Bullet = "a"
-)
-
 type Deck struct {
 	id                   string
 	dataHomePath         string
