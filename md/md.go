@@ -32,12 +32,13 @@ type Config struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout    string       `json:"layout"`
-	Freeze    bool         `json:"freeze,omitempty"`
-	Titles    []string     `json:"titles,omitempty"`
-	Subtitles []string     `json:"subtitles,omitempty"`
-	Bodies    []*deck.Body `json:"bodies,omitempty"`
-	Comments  []string     `json:"comments,omitempty"`
+	Layout    string        `json:"layout"`
+	Freeze    bool          `json:"freeze,omitempty"`
+	Titles    []string      `json:"titles,omitempty"`
+	Subtitles []string      `json:"subtitles,omitempty"`
+	Bodies    []*deck.Body  `json:"bodies,omitempty"`
+	Images    []*deck.Image `json:"images,omitempty"` // images in the content
+	Comments  []string      `json:"comments,omitempty"`
 }
 
 // toBullet converts a marker byte to a Bullet type.
@@ -123,7 +124,7 @@ func ParseContent(b []byte) (*Content, error) {
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
 				tb := v.FirstChild()
-				frags, err := toFragments(b, tb)
+				frags, images, err := toFragments(b, tb)
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -133,6 +134,7 @@ func ParseContent(b []byte) (*Content, error) {
 				if v.Offset >= 2 {
 					nesting = v.Offset/2 - 1
 				}
+				content.Images = append(content.Images, images...)
 				if len(frags) == 0 {
 					return ast.WalkContinue, nil
 				}
@@ -146,9 +148,13 @@ func ParseContent(b []byte) (*Content, error) {
 				if v.Parent() != nil && v.Parent().Kind() == ast.KindListItem {
 					return ast.WalkSkipChildren, nil
 				}
-				frags, err := toFragments(b, v)
+				frags, images, err := toFragments(b, v)
 				if err != nil {
 					return ast.WalkStop, err
+				}
+				content.Images = append(content.Images, images...)
+				if len(frags) == 0 {
+					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 					Fragments: frags,
@@ -218,18 +224,19 @@ func (contents Contents) ToSlides() deck.Slides {
 
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
+func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) {
 	var frags []*deck.Fragment
+	var images []*deck.Image
 	if n == nil {
-		return frags, nil
+		return frags, images, nil
 	}
 	var className string
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
-			children, err := toFragments(b, childNode)
+			children, childImages, err := toFragments(b, childNode)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			for _, child := range children {
 				frags = append(frags, &deck.Fragment{
@@ -242,10 +249,11 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 					ClassName:     className,
 				})
 			}
+			images = append(images, childImages...)
 		case *ast.Link:
-			children, err := toFragments(b, childNode)
+			children, childImages, err := toFragments(b, childNode)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if len(children) == 0 {
 				continue
@@ -259,6 +267,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				SoftLineBreak: children[0].SoftLineBreak,
 				ClassName:     className,
 			})
+			images = append(images, childImages...)
 		case *ast.Text:
 			v := convert(childNode.Segment.Value(b))
 			if v == "" {
@@ -273,6 +282,13 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				SoftLineBreak: childNode.SoftLineBreak(),
 				ClassName:     className,
 			})
+		case *ast.Image:
+			imageLink := childNode.Destination
+			image, err := deck.NewImage(string(imageLink))
+			if err != nil {
+				return nil, nil, err
+			}
+			images = append(images, image)
 		case *ast.RawHTML:
 			// Get the raw HTML content
 			htmlContent := string(childNode.Segments.Value(b))
@@ -336,9 +352,9 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				})
 			}
 		case *ast.CodeSpan:
-			children, err := toFragments(b, childNode)
+			children, childImages, err := toFragments(b, childNode)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			frags = append(frags, &deck.Fragment{
 				Value:         children[0].Value,
@@ -349,6 +365,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 				SoftLineBreak: children[0].SoftLineBreak,
 				ClassName:     className,
 			})
+			images = append(images, childImages...)
 		default:
 			// For all other node types, return a newline to match original behavior
 			frags = append(frags, &deck.Fragment{
@@ -358,7 +375,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, error) {
 			})
 		}
 	}
-	return frags, nil
+	return frags, images, nil
 }
 
 // classRe is a regular expression to extract class attribute from HTML tags.
