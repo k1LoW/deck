@@ -22,6 +22,7 @@ type Slide struct {
 	Titles      []string `json:"titles,omitempty"`
 	Subtitles   []string `json:"subtitles,omitempty"`
 	Bodies      []*Body  `json:"bodies,omitempty"`
+	Images      []*Image `json:"images,omitempty"`
 	SpeakerNote string   `json:"speakerNote,omitempty"`
 
 	new    bool

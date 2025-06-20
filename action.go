@@ -547,6 +547,10 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		if len(beforeSlide.Bodies) > 0 && len(afterSlide.Bodies) > 0 && bodiesEqual(beforeSlide.Bodies, afterSlide.Bodies) {
 			score += 160
 		}
+
+		if len(beforeSlide.Images) > 0 && len(afterSlide.Images) > 0 && imagesEqual(beforeSlide.Images, afterSlide.Images) {
+			score += 40
+		}
 	}
 
 	return score
@@ -852,17 +856,34 @@ func bodiesEqual(bodies1, bodies2 []*Body) bool {
 		return false
 	}
 
-	bodies1B, err1 := json.Marshal(bodies1)
-	if err1 != nil {
+	bodies1B, err := json.Marshal(bodies1)
+	if err != nil {
 		return false
 	}
 
-	bodies2B, err2 := json.Marshal(bodies2)
-	if err2 != nil {
+	bodies2B, err := json.Marshal(bodies2)
+	if err != nil {
 		return false
 	}
 
 	return bytes.Equal(bodies1B, bodies2B)
+}
+
+func imagesEqual(images1, images2 []*Image) bool {
+	if len(images1) != len(images2) {
+		return false
+	}
+
+	images1B, err := json.Marshal(images1)
+	if err != nil {
+		return false
+	}
+	images2B, err := json.Marshal(images2)
+	if err != nil {
+		return false
+	}
+
+	return bytes.Equal(images1B, images2B)
 }
 
 // applyDeleteMarks applies delete marks from after slides to corresponding before slides

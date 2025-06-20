@@ -1343,6 +1343,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	var titles []string
 	var subtitles []string
 	var bodies []*Body
+	var images []*Image
 
 	// Extract titles, subtitles, and bodies from page elements
 	for _, element := range p.PageElements {
@@ -1365,11 +1366,19 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 				}
 			}
 		}
+		if element.Image != nil {
+			image, err := NewImage(element.Image.ContentUrl)
+			if err != nil {
+				continue // Skip if image cannot be created
+			}
+			images = append(images, image)
+		}
 	}
 
 	slide.Titles = titles
 	slide.Subtitles = subtitles
 	slide.Bodies = bodies
+	slide.Images = images
 
 	// Extract speaker notes
 	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {

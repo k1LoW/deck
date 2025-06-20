@@ -216,6 +216,7 @@ func (contents Contents) ToSlides() deck.Slides {
 			Titles:      content.Titles,
 			Subtitles:   content.Subtitles,
 			Bodies:      content.Bodies,
+			Images:      content.Images,
 			SpeakerNote: strings.Join(content.Comments, "\n\n"),
 		}
 	}
