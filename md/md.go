@@ -31,15 +31,21 @@ type Config struct {
 	Freeze bool   `json:"freeze,omitempty"` // freeze the page
 }
 
+type CodeBlock struct {
+	Language string `json:"language,omitempty"`
+	Value    string `json:"value"`
+}
+
 // Content represents a single slide content.
 type Content struct {
-	Layout    string        `json:"layout"`
-	Freeze    bool          `json:"freeze,omitempty"`
-	Titles    []string      `json:"titles,omitempty"`
-	Subtitles []string      `json:"subtitles,omitempty"`
-	Bodies    []*deck.Body  `json:"bodies,omitempty"`
-	Images    []*deck.Image `json:"images,omitempty"` // images in the content
-	Comments  []string      `json:"comments,omitempty"`
+	Layout     string        `json:"layout"`
+	Freeze     bool          `json:"freeze,omitempty"`
+	Titles     []string      `json:"titles,omitempty"`
+	Subtitles  []string      `json:"subtitles,omitempty"`
+	Bodies     []*deck.Body  `json:"bodies,omitempty"`
+	Images     []*deck.Image `json:"images,omitempty"`
+	CodeBlocks []*CodeBlock  `json:"code_blocks,omitempty"`
+	Comments   []string      `json:"comments,omitempty"`
 }
 
 // toBullet converts a marker byte to a Bullet type.
@@ -190,6 +196,18 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 						Nesting: 0,
 					})
 				}
+			case *ast.CodeBlock:
+				value := v.Lines().Value(b)
+				content.CodeBlocks = append(content.CodeBlocks, &CodeBlock{
+					Value: string(value),
+				})
+			case *ast.FencedCodeBlock:
+				lang := v.Language(b)
+				value := v.Lines().Value(b)
+				content.CodeBlocks = append(content.CodeBlocks, &CodeBlock{
+					Language: string(lang),
+					Value:    string(value),
+				})
 			}
 		}
 		return ast.WalkContinue, nil
