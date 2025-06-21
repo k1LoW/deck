@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
@@ -445,9 +446,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	}
 
 	var (
-		titles    []placeholder
-		subtitles []placeholder
-		bodies    []placeholder
+		titles        []placeholder
+		subtitles     []placeholder
+		bodies        []placeholder
+		currentImages []*Image
 	)
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
@@ -481,6 +483,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 					return err
 				}
 			}
+		}
+		if element.Image != nil {
+			image, err := NewImage(element.Image.ContentUrl)
+			if err != nil {
+				return fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
+			}
+			currentImages = append(currentImages, image)
 		}
 	}
 	var speakerNotesID string
@@ -856,6 +865,58 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 				},
 			})
 		}
+	}
+
+	// set images
+	for _, image := range slide.Images {
+		found := false
+		for _, currentImage := range currentImages {
+			if CompareImages(currentImage, image) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		// upload image to Google Drive
+		df := &drive.File{
+			Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
+			MimeType: string(image.mimeType),
+		}
+		uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
+		if err != nil {
+			return fmt.Errorf("failed to upload image: %w", err)
+		}
+		if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
+			Type: "anyone",
+			Role: "reader",
+		}).Do(); err != nil {
+			return fmt.Errorf("failed to set permission for image: %w", err)
+		}
+		f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
+		if err != nil {
+			return fmt.Errorf("failed to get webContentLink for image: %w", err)
+		}
+		defer func() {
+			// Clean up the uploaded image after use
+			if err := d.driveSrv.Files.Delete(uploaded.Id).Do(); err != nil {
+				d.logger.Error("failed to delete uploaded image", slog.String("id", uploaded.Id), slog.Any("error", err))
+			}
+		}()
+		if f.WebContentLink == "" {
+			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
+		}
+
+		req.Requests = append(req.Requests, &slides.Request{
+			CreateImage: &slides.CreateImageRequest{
+				ElementProperties: &slides.PageElementProperties{
+					PageObjectId: currentSlide.ObjectId,
+				},
+				Url: f.WebContentLink,
+			},
+		})
 	}
 
 	if len(req.Requests) > 0 {

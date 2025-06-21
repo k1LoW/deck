@@ -65,12 +65,12 @@ func TestSimilarityCalculation(t *testing.T) {
 			slide1: &Slide{
 				Layout: "title",
 				Titles: []string{"Title with Image"},
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			slide2: &Slide{
 				Layout: "title",
 				Titles: []string{"Title with Image"},
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			expected: 500, // perfect match (identical slides)
 		},
@@ -79,12 +79,12 @@ func TestSimilarityCalculation(t *testing.T) {
 			slide1: &Slide{
 				Layout: "title",
 				Titles: []string{"Title with Image"},
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			slide2: &Slide{
 				Layout: "title",
 				Titles: []string{"Title with Image"},
-				Images: []*Image{newImage(t, "img/logo.jpg")},
+				Images: []*Image{newImage(t, "testdata/test.jpeg")},
 			},
 			expected: 130, // layout (50) + title (80), no image match
 		},
@@ -97,7 +97,7 @@ func TestSimilarityCalculation(t *testing.T) {
 						Fragments: []*Fragment{{Value: "Content with images"}},
 					}},
 				}},
-				Images: []*Image{newImage(t, "img/logo.png"), newImage(t, "img/logo.gif")},
+				Images: []*Image{newImage(t, "testdata/test.png"), newImage(t, "testdata/test.gif")},
 			},
 			slide2: &Slide{
 				Layout: "content",
@@ -106,7 +106,7 @@ func TestSimilarityCalculation(t *testing.T) {
 						Fragments: []*Fragment{{Value: "Content with images"}},
 					}},
 				}},
-				Images: []*Image{newImage(t, "img/logo.png"), newImage(t, "img/logo.gif")},
+				Images: []*Image{newImage(t, "testdata/test.png"), newImage(t, "testdata/test.gif")},
 			},
 			expected: 500, // perfect match (identical slides)
 		},
@@ -115,7 +115,7 @@ func TestSimilarityCalculation(t *testing.T) {
 			slide1: &Slide{
 				Layout: "title",
 				Titles: []string{"Title"},
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			slide2: &Slide{
 				Layout: "title",
@@ -128,12 +128,12 @@ func TestSimilarityCalculation(t *testing.T) {
 			slide1: &Slide{
 				Layout: "title",
 				Titles: []string{"Logo Slide"},
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			slide2: &Slide{
 				Layout: "title",
 				Titles: []string{"Logo Slide"},
-				Images: []*Image{newImage(t, "img/logo.jpg")},
+				Images: []*Image{newImage(t, "testdata/test.jpeg")},
 			},
 			expected: 130, // layout (50) + title (80), different image formats don't match
 		},
@@ -141,7 +141,7 @@ func TestSimilarityCalculation(t *testing.T) {
 			name: "same layout, different images",
 			slide1: &Slide{
 				Layout: "content",
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			slide2: &Slide{
 				Layout: "content",
@@ -154,12 +154,12 @@ func TestSimilarityCalculation(t *testing.T) {
 			slide1: &Slide{
 				Layout: "content",
 				Titles: []string{"Multiple Images"},
-				Images: []*Image{newImage(t, "img/logo.png"), newImage(t, "img/logo.jpg")},
+				Images: []*Image{newImage(t, "testdata/test.png"), newImage(t, "testdata/test.jpeg")},
 			},
 			slide2: &Slide{
 				Layout: "content",
 				Titles: []string{"Multiple Images"},
-				Images: []*Image{newImage(t, "img/logo.png")},
+				Images: []*Image{newImage(t, "testdata/test.png")},
 			},
 			expected: 130, // layout (50) + title (80), different image arrays don't match
 		},
@@ -220,16 +220,16 @@ func TestSimilarityForMapping(t *testing.T) {
 }
 
 func TestSimilarityForMappingWithImages(t *testing.T) {
-	// 画像を含むスライドでのマッピング類似度テスト
+	// Test mapping similarity for slides with images
 	slide1 := &Slide{
 		Layout: "content",
 		Titles: []string{"Image Slide"},
-		Images: []*Image{newImage(t, "img/logo.png")},
+		Images: []*Image{newImage(t, "testdata/test.png")},
 	}
 	slide2 := &Slide{
 		Layout: "content",
 		Titles: []string{"Image Slide"},
-		Images: []*Image{newImage(t, "img/logo.png")},
+		Images: []*Image{newImage(t, "testdata/test.png")},
 	}
 
 	tests := []struct {

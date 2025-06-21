@@ -25,7 +25,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/empty_list.md"},
 		{"../testdata/empty_link.md"},
 		{"../testdata/lists_with_blankline.md"},
-		{"../testdata/image.md"},
+		{"../testdata/images.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
@@ -33,7 +33,7 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contents, err := Parse(b)
+			contents, err := Parse("../testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -87,6 +87,6 @@ ref: [deck repo](https://github.com/k1LoW/deck)
 # Title
 `))
 	f.Fuzz(func(t *testing.T, in []byte) {
-		_, _ = Parse(in)
+		_, _ = Parse(".", in)
 	})
 }

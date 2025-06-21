@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/corona10/goimagehash"
 )
 
 type Slides []*Slide
@@ -71,6 +73,11 @@ const (
 	MIMETypeImageGIF  MIMEType = "image/gif"
 )
 
+type Image struct {
+	i        image.Image
+	mimeType MIMEType
+}
+
 func NewImage(pathOrURL string) (*Image, error) {
 	var b io.Reader
 	if strings.HasPrefix(pathOrURL, "http://") || strings.HasPrefix(pathOrURL, "https://") {
@@ -112,9 +119,39 @@ func NewImage(pathOrURL string) (*Image, error) {
 	}, nil
 }
 
-type Image struct {
-	i        image.Image
-	mimeType MIMEType
+func CompareImages(a, b *Image) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	if a.mimeType != b.mimeType {
+		return false
+	}
+	if a.i.Bounds().String() != b.i.Bounds().String() {
+		return false
+	}
+	if bytes.Equal(a.Bytes(), b.Bytes()) {
+		return true
+	}
+	if a.mimeType == MIMETypeImageJPEG {
+		// Only JPEG images are compressed on the Google Slides side,
+		// so we use Perceptual Hashing for comparison
+		aHash, err := goimagehash.PerceptionHash(a.i)
+		if err != nil {
+			return false
+		}
+		bHash, err := goimagehash.PerceptionHash(b.i)
+		if err != nil {
+			return false
+		}
+		distance, err := aHash.Distance(bHash)
+		if err != nil {
+			return false
+		}
+		if distance < 5 { // threshold for similarity
+			return true
+		}
+	}
+	return false
 }
 
 func (i *Image) String() string {
@@ -142,12 +179,37 @@ func (i *Image) String() string {
 	return fmt.Sprintf("data:%s;base64,%s", i.mimeType, encoded)
 }
 
+func (i *Image) Bytes() []byte {
+	if i == nil {
+		return nil
+	}
+	var buf bytes.Buffer
+	switch i.mimeType {
+	case MIMETypeImagePNG:
+		if err := png.Encode(&buf, i.i); err != nil {
+			return nil
+		}
+	case MIMETypeImageJPEG:
+		if err := jpeg.Encode(&buf, i.i, nil); err != nil {
+			return nil
+		}
+	case MIMETypeImageGIF:
+		if err := gif.Encode(&buf, i.i, nil); err != nil {
+			return nil
+		}
+	default:
+		return nil
+	}
+	return buf.Bytes()
+}
+
 func (i *Image) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + i.String() + `"`), nil
 }
 
 func (i *Image) UnmarshalJSON(data []byte) error {
-	if bytes.HasPrefix(data, []byte(`data:`)) {
+	data = bytes.Trim(data, `"`)
+	if !bytes.HasPrefix(data, []byte(`data:`)) {
 		return fmt.Errorf("invalid image data: %s", data)
 	}
 	splitted := bytes.Split(bytes.TrimPrefix(data, []byte(`data:`)), []byte(";base64,"))
@@ -157,13 +219,14 @@ func (i *Image) UnmarshalJSON(data []byte) error {
 	i.mimeType = MIMEType(splitted[0])
 	decoded, err := base64.StdEncoding.DecodeString(string(splitted[1]))
 	if err != nil {
+		fmt.Println(string(splitted[1]))
 		return fmt.Errorf("failed to decode base64 image data: %w", err)
 	}
 	img, mimeType, err := image.Decode(bytes.NewReader(decoded))
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
-	if mimeType != string(i.mimeType) {
+	if string(i.mimeType) != fmt.Sprintf("image/%s", mimeType) {
 		return fmt.Errorf("image MIME type mismatch: expected %s, got %s", i.mimeType, mimeType)
 	}
 	i.i = img
