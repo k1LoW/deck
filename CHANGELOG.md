@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.23.0](https://github.com/k1LoW/deck/compare/v0.22.1...v0.23.0) - 2025-06-21
+### New Features 🎉
+- feat(md): support image by @k1LoW in https://github.com/k1LoW/deck/pull/126
+- feat(deck): support applying image ( `![img](path/to/image.png)` ) by @k1LoW in https://github.com/k1LoW/deck/pull/128
+
 ## [v0.22.1](https://github.com/k1LoW/deck/compare/v0.22.0...v0.22.1) - 2025-06-16
 ### Fix bug 🐛
 - fix(deck): handle excess slides in ApplyPages by @k1LoW in https://github.com/k1LoW/deck/pull/124
