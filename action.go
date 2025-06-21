@@ -502,8 +502,7 @@ func copySlides(slides Slides) (Slides, error) {
 
 	// Unmarshal to new slides
 	var copied Slides
-	err = json.Unmarshal(data, &copied)
-	if err != nil {
+	if err := json.Unmarshal(data, &copied); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal slides: %w", err)
 	}
 
