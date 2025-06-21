@@ -118,9 +118,10 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Italic ( `*italic*` `__italic__` )
 - List ( `-` `*` )
 - Ordered list ( `1.` `1)` )
-- Link ( `[Link](https://example.com)`
+- Link ( `[Link](https://example.com)` )
 - Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
+- Image (`![Image](path/to/image.png)` )
 
 #### Style for syntax
 

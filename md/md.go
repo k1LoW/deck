@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -57,20 +58,25 @@ func toBullet(m byte) deck.Bullet {
 
 // ParseFile parses a markdown file into contents.
 func ParseFile(f string) (Contents, error) {
+	abs, err := filepath.Abs(f)
+	if err != nil {
+		return nil, err
+	}
 	b, err := os.ReadFile(f)
 	if err != nil {
 		return nil, err
 	}
-	return Parse(b)
+	baseDir := filepath.Dir(abs)
+	return Parse(baseDir, b)
 }
 
 // Parse parses markdown bytes into contents.
 // It splits the input by "---" delimiters and parses each section as a separate content.
-func Parse(b []byte) (Contents, error) {
+func Parse(baseDir string, b []byte) (Contents, error) {
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
 	contents := make(Contents, len(bpages))
 	for i, bpage := range bpages {
-		content, err := ParseContent(bpage)
+		content, err := ParseContent(baseDir, bpage)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +88,7 @@ func Parse(b []byte) (Contents, error) {
 
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParseContent(b []byte) (*Content, error) {
+func ParseContent(baseDir string, b []byte) (*Content, error) {
 	md := goldmark.New()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
@@ -124,7 +130,7 @@ func ParseContent(b []byte) (*Content, error) {
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
 				tb := v.FirstChild()
-				frags, images, err := toFragments(b, tb)
+				frags, images, err := toFragments(baseDir, b, tb)
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -148,7 +154,7 @@ func ParseContent(b []byte) (*Content, error) {
 				if v.Parent() != nil && v.Parent().Kind() == ast.KindListItem {
 					return ast.WalkSkipChildren, nil
 				}
-				frags, images, err := toFragments(b, v)
+				frags, images, err := toFragments(baseDir, b, v)
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -216,6 +222,7 @@ func (contents Contents) ToSlides() deck.Slides {
 			Titles:      content.Titles,
 			Subtitles:   content.Subtitles,
 			Bodies:      content.Bodies,
+			Images:      content.Images,
 			SpeakerNote: strings.Join(content.Comments, "\n\n"),
 		}
 	}
@@ -224,7 +231,7 @@ func (contents Contents) ToSlides() deck.Slides {
 
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) {
+func toFragments(baseDir string, b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) {
 	var frags []*deck.Fragment
 	var images []*deck.Image
 	if n == nil {
@@ -234,7 +241,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) 
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
-			children, childImages, err := toFragments(b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -251,7 +258,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) 
 			}
 			images = append(images, childImages...)
 		case *ast.Link:
-			children, childImages, err := toFragments(b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -283,8 +290,11 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) 
 				ClassName:     className,
 			})
 		case *ast.Image:
-			imageLink := childNode.Destination
-			image, err := deck.NewImage(string(imageLink))
+			imageLink := string(childNode.Destination)
+			if !strings.Contains(imageLink, "://") && !filepath.IsAbs(imageLink) {
+				imageLink = filepath.Join(baseDir, imageLink)
+			}
+			image, err := deck.NewImage(imageLink)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -352,7 +362,7 @@ func toFragments(b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) 
 				})
 			}
 		case *ast.CodeSpan:
-			children, childImages, err := toFragments(b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode)
 			if err != nil {
 				return nil, nil, err
 			}

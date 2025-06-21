@@ -33,6 +33,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
 		{"testdata/single_list.md"},
+		{"testdata/images.md"},
 	}
 
 	ctx := context.Background()
@@ -42,7 +43,7 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contents, err := md.Parse(b)
+			contents, err := md.Parse("testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -79,6 +80,7 @@ func TestMarkdownToSlide(t *testing.T) {
 		//{"testdata/style.md"},  // FIXME: class is not supported yet
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
+		// {"testdata/images.md"},
 	}
 
 	ctx := context.Background()
@@ -92,7 +94,7 @@ func TestMarkdownToSlide(t *testing.T) {
 
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName", "SoftLineBreak"),
-		cmpopts.IgnoreUnexported(deck.Slide{}),
+		cmpopts.IgnoreUnexported(deck.Slide{}, deck.Image{}),
 	}
 
 	for _, tt := range tests {
@@ -101,7 +103,7 @@ func TestMarkdownToSlide(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contents, err := md.Parse(b)
+			contents, err := md.Parse("testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -124,12 +126,40 @@ func TestMarkdownToSlide(t *testing.T) {
 			if diff := cmp.Diff(fromMd, applied, cmpopts...); diff != "" {
 				t.Errorf("diff after apply: %s", diff)
 			}
+			for i, slide := range applied {
+				for _, image := range slide.Images {
+					found := false
+					for _, mdImage := range fromMd[i].Images {
+						if deck.CompareImages(image, mdImage) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("image not found in slide %d", i+1)
+					}
+				}
+			}
 			if err := d.Apply(ctx, applied); err != nil {
 				t.Fatal(err)
 			}
 			applied2, err := d.DumpSlides(ctx)
 			if err != nil {
 				t.Fatal(err)
+			}
+			for i, slide := range applied2 {
+				for _, image := range slide.Images {
+					found := false
+					for _, mdImage := range applied[i].Images {
+						if deck.CompareImages(image, mdImage) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("image not found in slide %d", i+1)
+					}
+				}
 			}
 			if diff := cmp.Diff(applied, applied2, cmpopts...); diff != "" {
 				t.Errorf("diff after re-apply: %s", diff)
