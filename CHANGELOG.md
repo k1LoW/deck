@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.24.0](https://github.com/k1LoW/deck/compare/v0.23.0...v0.24.0) - 2025-06-21
+### New Features 🎉
+- feat(md): add support for code blocks in slide content by @k1LoW in https://github.com/k1LoW/deck/pull/129
+
 ## [v0.23.0](https://github.com/k1LoW/deck/compare/v0.22.1...v0.23.0) - 2025-06-21
 ### New Features 🎉
 - feat(md): support image by @k1LoW in https://github.com/k1LoW/deck/pull/126
