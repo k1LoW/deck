@@ -48,20 +48,6 @@ type Content struct {
 	Comments   []string      `json:"comments,omitempty"`
 }
 
-// toBullet converts a marker byte to a Bullet type.
-func toBullet(m byte) deck.Bullet {
-	switch m {
-	case '-', '+', '*':
-		return deck.BulletDash
-	case '.', ')':
-		return deck.BulletNumber
-	case 'a':
-		return deck.BulletAlpha
-	default:
-		return deck.BulletNone
-	}
-}
-
 // ParseFile parses a markdown file into contents.
 func ParseFile(f string) (Contents, error) {
 	abs, err := filepath.Abs(f)
@@ -521,5 +507,31 @@ func contentEqual(old, new *Content) bool {
 		}
 	}
 
+	// Compare images
+	if len(old.Images) != len(new.Images) {
+		return false
+	}
+
+	for i, oldImage := range old.Images {
+		newImage := new.Images[i]
+		if bytes.Equal(oldImage.Bytes(), newImage.Bytes()) {
+			return false
+		}
+	}
+
 	return true
+}
+
+// toBullet converts a marker byte to a Bullet type.
+func toBullet(m byte) deck.Bullet {
+	switch m {
+	case '-', '+', '*':
+		return deck.BulletDash
+	case '.', ')':
+		return deck.BulletNumber
+	case 'a':
+		return deck.BulletAlpha
+	default:
+		return deck.BulletNone
+	}
 }
