@@ -326,6 +326,21 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		return fmt.Errorf("failed to generate actions: %w", err)
 	}
 
+	var actionDetails []string
+	for _, action := range actions {
+		switch action.actionType {
+		case actionTypeAppend:
+			actionDetails = append(actionDetails, fmt.Sprintf("append slide at index %d: %s", len(d.presentation.Slides), action.slide.Titles))
+		case actionTypeInsert:
+			actionDetails = append(actionDetails, fmt.Sprintf("insert slide at index %d: %s", action.index, action.slide.Titles))
+		case actionTypeUpdate:
+			actionDetails = append(actionDetails, fmt.Sprintf("update slide at index %d: %s", action.index, action.slide.Titles))
+		case actionTypeMove:
+			actionDetails = append(actionDetails, fmt.Sprintf("move slide from index %d to %d: %s", action.index, action.moveToIndex, action.slide.Titles))
+		}
+	}
+	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
+
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:

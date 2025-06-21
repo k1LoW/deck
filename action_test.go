@@ -1410,6 +1410,57 @@ func TestGenerateActions(t *testing.T) {
 	}
 }
 
+func TestGenerateActionsWithImages(t *testing.T) {
+	var tests = []struct {
+		name   string
+		before Slides
+		after  Slides
+	}{
+		{
+			name: "new and move with image",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}, Images: []*Image{newImage(t, "testdata/test.png")}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}, Images: []*Image{newImage(t, "testdata/test.png")}},
+			},
+		},
+	}
+
+	cmpopts := cmp.Options{
+		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreUnexported(Slide{}, Image{}),
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actions, err := generateActions(tt.before, tt.after)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := actionsEmulator(t, tt.before, actions)
+			if diff := cmp.Diff(got, tt.after, cmpopts...); diff != "" {
+				t.Error(diff)
+			}
+			for i, slide := range got {
+				for _, image := range slide.Images {
+					found := false
+					for _, afterImage := range tt.after[i].Images {
+						if CompareImages(image, afterImage) {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("image not found in slide %d", i+1)
+					}
+				}
+			}
+		})
+	}
+}
+
 // TestAdjustSlideCount tests the adjustSlideCount function.
 func TestAdjustSlideCount(t *testing.T) {
 	tests := []struct {
@@ -2533,6 +2584,30 @@ func TestGenerateMoveActions(t *testing.T) {
 				{Layout: "title", Titles: []string{"B"}},
 				{Layout: "title", Titles: []string{"A"}},
 				{Layout: "title", Titles: []string{"A"}},
+			},
+		},
+		{
+			name: "new and move with image",
+			before: Slides{
+				{Layout: "title", Titles: []string{"A"}, Images: []*Image{newImage(t, "testdata/test.png")}},
+				{Layout: "title", Titles: []string{"B"}},
+			},
+			after: Slides{
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}, Images: []*Image{newImage(t, "testdata/test.png")}},
+			},
+			mapping: map[int]int{0: 1, 1: 0},
+			expectedActions: []*action{
+				{
+					actionType:  actionTypeMove,
+					index:       1,
+					moveToIndex: 0,
+					slide:       &Slide{Layout: "title", Titles: []string{"B"}},
+				},
+			},
+			expectedBefore: Slides{
+				{Layout: "title", Titles: []string{"B"}},
+				{Layout: "title", Titles: []string{"A"}, Images: []*Image{newImage(t, "testdata/test.png")}},
 			},
 		},
 	}
