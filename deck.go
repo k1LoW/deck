@@ -38,17 +38,16 @@ const (
 )
 
 type Deck struct {
-	id                   string
-	dataHomePath         string
-	stateHomePath        string
-	srv                  *slides.Service
-	driveSrv             *drive.Service
-	presentation         *slides.Presentation
-	defaultTitleLayout   string
-	defaultSectionLayout string
-	defaultLayout        string
-	styles               map[string]*slides.TextStyle
-	logger               *slog.Logger
+	id                 string
+	dataHomePath       string
+	stateHomePath      string
+	srv                *slides.Service
+	driveSrv           *drive.Service
+	presentation       *slides.Presentation
+	defaultTitleLayout string
+	defaultLayout      string
+	styles             map[string]*slides.TextStyle
+	logger             *slog.Logger
 }
 
 type Option func(*Deck) error
@@ -294,8 +293,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 			switch {
 			case i == 0:
 				slide.Layout = d.defaultTitleLayout
-			case len(slide.Bodies) == 0:
-				slide.Layout = d.defaultSectionLayout
 			default:
 				slide.Layout = d.defaultLayout
 			}
@@ -435,8 +432,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			switch {
 			case index == 0:
 				slide.Layout = d.defaultTitleLayout
-			case len(slide.Bodies) == 0:
-				slide.Layout = d.defaultSectionLayout
 			default:
 				slide.Layout = d.defaultLayout
 			}
@@ -1119,10 +1114,6 @@ func (d *Deck) refresh(ctx context.Context) error {
 			if d.defaultTitleLayout == "" {
 				d.defaultTitleLayout = l.LayoutProperties.DisplayName
 			}
-		case strings.HasPrefix(layout, "SECTION_HEADER"):
-			if d.defaultSectionLayout == "" {
-				d.defaultSectionLayout = l.LayoutProperties.DisplayName
-			}
 		}
 
 		if l.LayoutProperties.DisplayName == layoutNameForStyle {
@@ -1141,6 +1132,16 @@ func (d *Deck) refresh(ctx context.Context) error {
 					d.styles[className] = t.TextRun.Style
 				}
 			}
+		}
+	}
+	if d.defaultTitleLayout == "" {
+		d.defaultTitleLayout = d.presentation.Layouts[0].LayoutProperties.DisplayName
+	}
+	if d.defaultLayout == "" {
+		if len(d.presentation.Layouts) > 1 {
+			d.defaultLayout = d.presentation.Layouts[1].LayoutProperties.DisplayName
+		} else {
+			d.defaultLayout = d.presentation.Layouts[0].LayoutProperties.DisplayName
 		}
 	}
 
