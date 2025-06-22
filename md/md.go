@@ -3,10 +3,10 @@ package md
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/exec"
 	"github.com/k1LoW/expand"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -222,7 +223,7 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 }
 
 // ToSlides converts the contents to a slice of deck.Slide structures.
-func (contents Contents) ToSlides(codeBlockToImageCmd string) (deck.Slides, error) {
+func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (deck.Slides, error) {
 	slides := make([]*deck.Slide, len(contents))
 	for i, content := range contents {
 		images := make([]*deck.Image, len(content.Images), len(content.Images)+len(content.CodeBlocks))
@@ -250,7 +251,7 @@ func (contents Contents) ToSlides(codeBlockToImageCmd string) (deck.Slides, erro
 					if err != nil {
 						return err
 					}
-					cmd := exec.Command("bash", "-c", replacedCmd)
+					cmd := exec.CommandContext(ctx, "bash", "-c", replacedCmd)
 					cmd.Dir = dir
 					cmd.Stdin = strings.NewReader(codeBlock.Value)
 					cmd.Env = os.Environ()

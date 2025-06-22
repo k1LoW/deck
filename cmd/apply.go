@@ -88,7 +88,7 @@ var applyCmd = &cobra.Command{
 			}
 		}
 		if watch {
-			slides, err := contents.ToSlides(codeBlockToImageCmd)
+			slides, err := contents.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
 			}
@@ -103,7 +103,7 @@ var applyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			slides, err := contents.ToSlides(codeBlockToImageCmd)
+			slides, err := contents.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
 			}
@@ -273,7 +273,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
-			slides, err := newContents.ToSlides(codeBlockToImageCmd)
+			slides, err := newContents.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))
 				continue
