@@ -426,17 +426,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	}
 
 	if len(d.presentation.Slides) <= index {
-		// create new page
-		if slide.Layout == "" {
-			if index == 0 {
-				slide.Layout = d.defaultTitleLayout
-			} else {
-				slide.Layout = d.defaultLayout
-			}
-		}
-		if err := d.CreatePage(ctx, index, slide); err != nil {
-			return err
-		}
+		return fmt.Errorf("index out of range: %d", index)
 	}
 	if slide.Freeze {
 		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
