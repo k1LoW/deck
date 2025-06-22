@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.24.0](https://github.com/k1LoW/deck/compare/v0.23.0...v0.24.0) - 2025-06-22
+### New Features 🎉
+- feat(md): add support for code blocks in slide content by @k1LoW in https://github.com/k1LoW/deck/pull/129
+- feat: add support for converting code blocks to images by @k1LoW in https://github.com/k1LoW/deck/pull/133
+### Other Changes
+- fix(md): introduce Parser struct for markdown parsing by @k1LoW in https://github.com/k1LoW/deck/pull/131
+- Revert "fix(md): introduce Parser struct for markdown parsing" by @k1LoW in https://github.com/k1LoW/deck/pull/132
+- fix(deck): simplify default*Layout logic by @k1LoW in https://github.com/k1LoW/deck/pull/134
+- fix(md): use context with command by @k1LoW in https://github.com/k1LoW/deck/pull/135
+
 ## [v0.23.0](https://github.com/k1LoW/deck/compare/v0.22.1...v0.23.0) - 2025-06-21
 ### New Features 🎉
 - feat(md): support image by @k1LoW in https://github.com/k1LoW/deck/pull/126
