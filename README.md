@@ -160,7 +160,7 @@ There are three ways to receive code block information within the command:
    - `CODEBLOCK_LANG`: Language of the code block (e.g., `go`, `python`)
    - `CODEBLOCK_VALUE`: Content of the code block
 
-3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) ) **
+3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) )**
    - `{{lang}}`: Language of the code block
    - `{{value}}`: Content of the code block
    - `{{env.XXX}}`: Value of environment variable XXX

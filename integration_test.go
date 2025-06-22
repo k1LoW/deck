@@ -98,6 +98,7 @@ func TestMarkdownToSlide(t *testing.T) {
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName", "SoftLineBreak"),
 		cmpopts.IgnoreUnexported(deck.Slide{}, deck.Image{}),
+		cmpopts.EquateEmpty(),
 	}
 
 	for _, tt := range tests {
