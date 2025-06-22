@@ -98,7 +98,11 @@ func NewImage(pathOrURL string) (*Image, error) {
 		defer file.Close()
 		b = file
 	}
-	img, mimeType, err := image.Decode(b)
+	return NewImageFromBuffer(b)
+}
+
+func NewImageFromBuffer(buf io.Reader) (*Image, error) {
+	img, mimeType, err := image.Decode(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}

@@ -47,7 +47,7 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			fromMd := contents.ToSlides()
+			fromMd := contents.ToSlides("")
 			d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
 			if err != nil {
 				t.Fatal(err)
@@ -107,7 +107,7 @@ func TestMarkdownToSlide(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			fromMd := contents.ToSlides()
+			fromMd := contents.ToSlides("")
 			d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
 			if err != nil {
 				t.Fatal(err)
