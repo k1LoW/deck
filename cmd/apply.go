@@ -60,7 +60,11 @@ var applyCmd = &cobra.Command{
 		ctx := cmd.Context()
 		id := args[0]
 		f := args[1]
-		contents, err := md.ParseFile(f)
+		p, err := md.New()
+		if err != nil {
+			return err
+		}
+		contents, err := p.ParseFile(f)
 		if err != nil {
 			return err
 		}
@@ -227,7 +231,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 				continue
 			}
 
-			if event.Op&fsnotify.Write != fsnotify.Write && 
+			if event.Op&fsnotify.Write != fsnotify.Write &&
 				event.Op&fsnotify.Create != fsnotify.Create {
 				continue
 			}
@@ -238,7 +242,12 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			var parseErr error
 
 			for retry := range 3 {
-				newContents, parseErr = md.ParseFile(filePath)
+				p, err := md.New()
+				if err != nil {
+					parseErr = err
+				} else {
+					newContents, parseErr = p.ParseFile(filePath)
+				}
 				if parseErr == nil {
 					break
 				}

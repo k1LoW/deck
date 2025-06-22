@@ -48,8 +48,23 @@ type Content struct {
 	Comments   []string      `json:"comments,omitempty"`
 }
 
+type Parser struct {
+}
+
+type ParserOption func(*Parser) error
+
+func New(opts ...ParserOption) (*Parser, error) {
+	p := &Parser{}
+	for _, opt := range opts {
+		if err := opt(p); err != nil {
+			return nil, err
+		}
+	}
+	return p, nil
+}
+
 // ParseFile parses a markdown file into contents.
-func ParseFile(f string) (Contents, error) {
+func (p *Parser) ParseFile(f string) (Contents, error) {
 	abs, err := filepath.Abs(f)
 	if err != nil {
 		return nil, err
@@ -59,16 +74,16 @@ func ParseFile(f string) (Contents, error) {
 		return nil, err
 	}
 	baseDir := filepath.Dir(abs)
-	return Parse(baseDir, b)
+	return p.Parse(baseDir, b)
 }
 
 // Parse parses markdown bytes into contents.
 // It splits the input by "---" delimiters and parses each section as a separate content.
-func Parse(baseDir string, b []byte) (Contents, error) {
+func (p *Parser) Parse(baseDir string, b []byte) (Contents, error) {
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
 	contents := make(Contents, len(bpages))
 	for i, bpage := range bpages {
-		content, err := ParseContent(baseDir, bpage)
+		content, err := p.ParseContent(baseDir, bpage)
 		if err != nil {
 			return nil, err
 		}
@@ -80,7 +95,7 @@ func Parse(baseDir string, b []byte) (Contents, error) {
 
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParseContent(baseDir string, b []byte) (*Content, error) {
+func (p *Parser) ParseContent(baseDir string, b []byte) (*Content, error) {
 	md := goldmark.New()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
