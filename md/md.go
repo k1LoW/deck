@@ -4,16 +4,21 @@ package md
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/expand"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/text"
+	"golang.org/x/sync/errgroup"
 )
 
 var allowedInlineHTMLElements = []string{
@@ -217,20 +222,74 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 }
 
 // ToSlides converts the contents to a slice of deck.Slide structures.
-func (contents Contents) ToSlides() deck.Slides {
+func (contents Contents) ToSlides(codeBlockToImageCmd string) (deck.Slides, error) {
 	slides := make([]*deck.Slide, len(contents))
 	for i, content := range contents {
+		images := make([]*deck.Image, len(content.Images), len(content.Images)+len(content.CodeBlocks))
+		_ = copy(images, content.Images)
+		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
+			mu := sync.Mutex{}
+			eg := errgroup.Group{}
+			for _, codeBlock := range content.CodeBlocks {
+				eg.Go(func() error {
+					dir, err := os.MkdirTemp("", "deck")
+					if err != nil {
+						return fmt.Errorf("failed to create temporary directory: %w", err)
+					}
+					defer os.RemoveAll(dir)
+					env := environToMap()
+					env["CODEBLOCK_LANG"] = codeBlock.Language
+					env["CODEBLOCK_VALUE"] = codeBlock.Value
+					store := map[string]any{
+						"lang":  codeBlock.Language,
+						"value": codeBlock.Value,
+						"env":   env,
+					}
+					repFn := expand.ExprRepFn("{{", "}}", store)
+					replacedCmd, err := repFn(codeBlockToImageCmd)
+					if err != nil {
+						return err
+					}
+					cmd := exec.Command("bash", "-c", replacedCmd)
+					cmd.Dir = dir
+					cmd.Stdin = strings.NewReader(codeBlock.Value)
+					cmd.Env = os.Environ()
+					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_LANG=%s", codeBlock.Language))
+					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Value))
+					var (
+						stdout bytes.Buffer
+						stderr bytes.Buffer
+					)
+					cmd.Stdout = &stdout
+					cmd.Stderr = &stderr
+					if err := cmd.Run(); err != nil {
+						return fmt.Errorf("failed to run code block to image command: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
+					}
+					image, err := deck.NewImageFromBuffer(bytes.NewBuffer(stdout.Bytes()))
+					if err != nil {
+						return err
+					}
+					mu.Lock()
+					images = append(images, image)
+					mu.Unlock()
+					return nil
+				})
+			}
+			if err := eg.Wait(); err != nil {
+				return nil, fmt.Errorf("failed to convert code blocks to images: %w", err)
+			}
+		}
 		slides[i] = &deck.Slide{
 			Layout:      content.Layout,
 			Freeze:      content.Freeze,
 			Titles:      content.Titles,
 			Subtitles:   content.Subtitles,
 			Bodies:      content.Bodies,
-			Images:      content.Images,
+			Images:      images,
 			SpeakerNote: strings.Join(content.Comments, "\n\n"),
 		}
 	}
-	return slides
+	return slides, nil
 }
 
 // toFragments converts an AST node to a slice of Fragment structures.
@@ -534,4 +593,15 @@ func toBullet(m byte) deck.Bullet {
 	default:
 		return deck.BulletNone
 	}
+}
+
+func environToMap() map[string]string {
+	envMap := make(map[string]string)
+	for _, e := range os.Environ() {
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) == 2 {
+			envMap[parts[0]] = parts[1]
+		}
+	}
+	return envMap
 }

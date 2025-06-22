@@ -39,11 +39,12 @@ import (
 )
 
 var (
-	title   string
-	page    string
-	watch   bool
-	verbose bool
-	logger  *slog.Logger
+	title               string
+	page                string
+	watch               bool
+	verbose             bool
+	logger              *slog.Logger
+	codeBlockToImageCmd string
 )
 
 var applyCmd = &cobra.Command{
@@ -87,7 +88,11 @@ var applyCmd = &cobra.Command{
 			}
 		}
 		if watch {
-			if err := d.Apply(ctx, contents.ToSlides()); err != nil {
+			slides, err := contents.ToSlides(codeBlockToImageCmd)
+			if err != nil {
+				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
+			}
+			if err := d.Apply(ctx, slides); err != nil {
 				return err
 			}
 			logger.Info("initial apply completed", slog.String("presentation_id", id))
@@ -98,7 +103,11 @@ var applyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			if err := d.ApplyPages(ctx, contents.ToSlides(), pages); err != nil {
+			slides, err := contents.ToSlides(codeBlockToImageCmd)
+			if err != nil {
+				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
+			}
+			if err := d.ApplyPages(ctx, slides, pages); err != nil {
 				return err
 			}
 			logger.Info("apply completed", slog.String("presentation_id", id))
@@ -111,6 +120,7 @@ func init() {
 	rootCmd.AddCommand(applyCmd)
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
+	applyCmd.Flags().StringVarP(&codeBlockToImageCmd, "code-block-to-image-command", "c", "", "command to convert code blocks to images")
 	applyCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch for changes")
 	applyCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
 }
@@ -227,7 +237,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 				continue
 			}
 
-			if event.Op&fsnotify.Write != fsnotify.Write && 
+			if event.Op&fsnotify.Write != fsnotify.Write &&
 				event.Op&fsnotify.Create != fsnotify.Create {
 				continue
 			}
@@ -263,8 +273,12 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
-
-			if err := d.ApplyPages(ctx, newContents.ToSlides(), changedPages); err != nil {
+			slides, err := newContents.ToSlides(codeBlockToImageCmd)
+			if err != nil {
+				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))
+				continue
+			}
+			if err := d.ApplyPages(ctx, slides, changedPages); err != nil {
 				logger.Error("failed to apply changes", slog.String("error", err.Error()))
 				continue
 			}
