@@ -422,7 +422,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %s", slide.Layout)
+		return fmt.Errorf("layout not found: %q", slide.Layout)
 	}
 
 	if len(d.presentation.Slides) <= index {
@@ -945,7 +945,7 @@ func (d *Deck) CreatePage(ctx context.Context, index int, slide *Slide) error {
 
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %s", slide.Layout)
+		return fmt.Errorf("layout not found: %q", slide.Layout)
 	}
 
 	// create new page
