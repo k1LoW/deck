@@ -226,7 +226,7 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (deck.Slides, error) {
 	slides := make([]*deck.Slide, len(contents))
 	for i, content := range contents {
-		images := make([]*deck.Image, len(content.Images), len(content.Images)+len(content.CodeBlocks))
+		var images []*deck.Image
 		_ = copy(images, content.Images)
 		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
 			mu := sync.Mutex{}
