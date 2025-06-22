@@ -43,7 +43,11 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contents, err := md.Parse("testdata", b)
+			p, err := md.New()
+			if err != nil {
+				t.Fatal(err)
+			}
+			contents, err := p.Parse("testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -103,7 +107,11 @@ func TestMarkdownToSlide(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contents, err := md.Parse("testdata", b)
+			p, err := md.New()
+			if err != nil {
+				t.Fatal(err)
+			}
+			contents, err := p.Parse("testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
