@@ -10,8 +10,10 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/corona10/goimagehash"
 )
@@ -81,7 +83,16 @@ type Image struct {
 func NewImage(pathOrURL string) (*Image, error) {
 	var b io.Reader
 	if strings.HasPrefix(pathOrURL, "http://") || strings.HasPrefix(pathOrURL, "https://") {
-		res, err := http.Get(pathOrURL)
+		_, err := url.Parse(pathOrURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid URL %s: %w", pathOrURL, err)
+		}
+
+		client := &http.Client{
+			Timeout: 30 * time.Second,
+		}
+
+		res, err := client.Get(pathOrURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch image from URL %s: %w", pathOrURL, err)
 		}

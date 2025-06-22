@@ -95,7 +95,7 @@ func TestNewImageFromURL(t *testing.T) {
 				return
 			}
 			w.Header().Set("Content-Type", "image/png")
-			w.Write(data)
+			_, _ = w.Write(data)
 		case "/test.jpeg":
 			data, err := os.ReadFile("testdata/test.jpeg")
 			if err != nil {
@@ -103,7 +103,7 @@ func TestNewImageFromURL(t *testing.T) {
 				return
 			}
 			w.Header().Set("Content-Type", "image/jpeg")
-			w.Write(data)
+			_, _ = w.Write(data)
 		case "/notfound":
 			http.Error(w, "Not Found", http.StatusNotFound)
 		default:
