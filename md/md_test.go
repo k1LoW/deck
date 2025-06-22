@@ -34,11 +34,7 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			p, err := New()
-			if err != nil {
-				t.Fatal(err)
-			}
-			contents, err := p.Parse("../testdata", b)
+			contents, err := Parse("../testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -92,9 +88,6 @@ ref: [deck repo](https://github.com/k1LoW/deck)
 # Title
 `))
 	f.Fuzz(func(t *testing.T, in []byte) {
-		p, _ := New()
-		if p != nil {
-			_, _ = p.Parse(".", in)
-		}
+		_, _ = Parse(".", in)
 	})
 }
