@@ -290,10 +290,9 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 			continue
 		}
 		if slide.Layout == "" {
-			switch {
-			case i == 0:
+			if i == 0 {
 				slide.Layout = d.defaultTitleLayout
-			default:
+			} else {
 				slide.Layout = d.defaultLayout
 			}
 		}
@@ -429,10 +428,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	if len(d.presentation.Slides) <= index {
 		// create new page
 		if slide.Layout == "" {
-			switch {
-			case index == 0:
+			if index == 0 {
 				slide.Layout = d.defaultTitleLayout
-			default:
+			} else {
 				slide.Layout = d.defaultLayout
 			}
 		}
