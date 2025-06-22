@@ -137,6 +137,53 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `code` | style for `code`. |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
+#### Code blocks to images
+
+By using the `--code-block-to-image-command (-c)` option, you can convert [Markdown code blocks](testdata/codeblock.md) to images. The specified command is executed for each code block, and its standard output is treated as an image.
+
+```console
+$ deck apply --code-block-to-image-command "some-command" xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
+The command is executed with `bash -c`.
+The command must output image data (PNG, JPEG, GIF) to standard output.
+
+##### How to receive values
+
+There are three ways to receive code block information within the command:
+
+1. **Receive from standard input**
+   - The content of the code block is passed as standard input
+   - Language information cannot be obtained, so use it in combination with other methods
+
+2. **Receive as environment variables**
+   - `CODEBLOCK_LANG`: Language of the code block (e.g., `go`, `python`)
+   - `CODEBLOCK_VALUE`: Content of the code block
+
+3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) ) **
+   - `{{lang}}`: Language of the code block
+   - `{{value}}`: Content of the code block
+   - `{{env.XXX}}`: Value of environment variable XXX
+
+These methods can be used in combination, and you can choose the appropriate method according to the command requirements.
+
+##### Examples
+
+```console
+# Convert Mermaid diagrams to images
+$ deck apply -c "mmdc -i - -o output.png --quiet; cat output.png" xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
+```console
+# Generate code images with syntax highlighting (e.g., silicon)
+$ deck apply -c "silicon -l {{lang == "" ? "-l md" : "-l " + lang}} -o output.png; cat output.png" xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
+```console
+# Use different tools depending on the language
+$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o output.png --quet; else silicon {{lang == "" ? "-l md" : "-l " + lang}} --output output.png; fi; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
 ### Comment
 
 The comments `<!--` `-->` are used as a speaker notes or page config.

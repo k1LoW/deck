@@ -20,6 +20,10 @@
         "value": "const anExampleVariable = \"Hello World\"\nconsole.log(anExampleVariable)\n"
       },
       {
+        "language": "mermaid",
+        "value": "graph TD\n    A[md.Contents] --\u003e B[deck.Slide];\n    B --\u003e C[Google Slides];\n"
+      },
+      {
         "value": "Hello World\n"
       }
     ]
