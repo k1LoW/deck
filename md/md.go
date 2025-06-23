@@ -135,8 +135,19 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 				// Calculate nesting level based on indentation
 				// Assuming 2 spaces per indentation level and subtracting 1 for the base level
 				nesting := 0
-				if v.Offset >= 2 {
-					nesting = v.Offset/2 - 1
+				vv := v
+				for {
+					pv := vv.Parent()
+					if pv == nil || pv.Kind() != ast.KindList {
+						break
+					}
+					ppv := pv.Parent()
+					if ppv != nil && ppv.Kind() == ast.KindListItem {
+						nesting++
+						vv = ppv.(*ast.ListItem)
+					} else {
+						break
+					}
 				}
 				content.Images = append(content.Images, images...)
 				if len(frags) == 0 {
