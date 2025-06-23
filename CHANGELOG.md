@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.24.1](https://github.com/k1LoW/deck/compare/v0.24.0...v0.24.1) - 2025-06-23
+### New Features 🎉
+- feat(deck): add functionality to copy images between (create/delete) slides when update by @k1LoW in https://github.com/k1LoW/deck/pull/139
+### Fix bug 🐛
+- fix(md): correct nested list parsing by @k1LoW in https://github.com/k1LoW/deck/pull/140
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/137
+
 ## [v0.24.0](https://github.com/k1LoW/deck/compare/v0.23.0...v0.24.0) - 2025-06-22
 ### New Features 🎉
 - feat(md): add support for code blocks in slide content by @k1LoW in https://github.com/k1LoW/deck/pull/129
