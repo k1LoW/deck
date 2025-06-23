@@ -9,7 +9,7 @@ require (
 	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/google/go-cmp v0.7.0
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/k1LoW/exec v0.3.0
 	github.com/k1LoW/expand v0.16.2
 	github.com/mattn/go-colorable v0.1.14
@@ -19,7 +19,7 @@ require (
 	github.com/yuin/goldmark v1.7.12
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.15.0
-	google.golang.org/api v0.237.0
+	google.golang.org/api v0.238.0
 )
 
 require (
