@@ -438,6 +438,32 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 		if err := d.CreatePage(ctx, index+1, slide); err != nil {
 			return err
 		}
+
+		// copy images from the current slide to the new slide
+		newSlide := d.presentation.Slides[index+1]
+		req := &slides.BatchUpdatePresentationRequest{
+			Requests: []*slides.Request{},
+		}
+		for _, element := range currentSlide.PageElements {
+			if element.Image != nil {
+				req.Requests = append(req.Requests, &slides.Request{
+					CreateImage: &slides.CreateImageRequest{
+						ElementProperties: &slides.PageElementProperties{
+							Size:         element.Size,
+							Transform:    element.Transform,
+							PageObjectId: newSlide.ObjectId,
+						},
+						Url: element.Image.ContentUrl,
+					},
+				})
+			}
+		}
+		if len(req.Requests) > 0 {
+			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+				return fmt.Errorf("failed to copy images: %w", err)
+			}
+		}
+
 		if err := d.DeletePage(ctx, index); err != nil {
 			return err
 		}
