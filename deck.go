@@ -601,8 +601,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			plen := 0
 			if paragraph.Bullet != BulletNone {
 				if paragraph.Nesting > 0 {
-					text += "\t"
-					plen++
+					text += strings.Repeat("\t", paragraph.Nesting)
+					plen += paragraph.Nesting
 				}
 			}
 			for _, fragment := range paragraph.Fragments {
