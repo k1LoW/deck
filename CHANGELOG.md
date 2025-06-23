@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.24.2](https://github.com/k1LoW/deck/compare/v0.24.1...v0.24.2) - 2025-06-23
+### Fix bug 🐛
+- fix(deck): correct indentation handling for nested paragraphs by @k1LoW in https://github.com/k1LoW/deck/pull/142
+
 ## [v0.24.1](https://github.com/k1LoW/deck/compare/v0.24.0...v0.24.1) - 2025-06-23
 ### New Features 🎉
 - feat(deck): add functionality to copy images between (create/delete) slides when update by @k1LoW in https://github.com/k1LoW/deck/pull/139
