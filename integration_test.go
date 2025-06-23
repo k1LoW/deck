@@ -33,6 +33,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
 		{"testdata/single_list.md"},
+		{"testdata/nested_list.md"},
 		{"testdata/images.md"},
 	}
 
@@ -83,6 +84,7 @@ func TestMarkdownToSlide(t *testing.T) {
 		//{"testdata/style.md"},  // FIXME: class is not supported yet
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
+		// {"testdata/nested_list.md"}, // FIXME
 		// {"testdata/images.md"},
 	}
 
