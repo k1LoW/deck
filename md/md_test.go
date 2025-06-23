@@ -25,6 +25,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/empty_list.md"},
 		{"../testdata/empty_link.md"},
 		{"../testdata/lists_with_blankline.md"},
+		{"../testdata/nested_list.md"},
 		{"../testdata/images.md"},
 		{"../testdata/codeblock.md"},
 	}
