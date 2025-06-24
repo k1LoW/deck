@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
@@ -439,12 +440,20 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			return err
 		}
 
-		// copy images from the current slide to the new slide
 		newSlide := d.presentation.Slides[index+1]
 		req := &slides.BatchUpdatePresentationRequest{
 			Requests: []*slides.Request{},
 		}
+		insertReq := &slides.BatchUpdatePresentationRequest{
+			Requests: []*slides.Request{},
+		}
+		var (
+			styleReqs  []*slides.Request
+			bulletReqs []*slides.Request // FIXME: bulletReqs for bullet styles
+		)
+
 		for _, element := range currentSlide.PageElements {
+			// copy images from the current slide to the new slide
 			if element.Image != nil {
 				req.Requests = append(req.Requests, &slides.Request{
 					CreateImage: &slides.CreateImageRequest{
@@ -457,10 +466,63 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 					},
 				})
 			}
+			// copy shapes from the current slide to the new slide
+			if element.Shape != nil && element.Shape.Placeholder == nil {
+				text := ""
+				shapeObjectID := uuid.New().String()
+				for _, textElement := range element.Shape.Text.TextElements {
+					if textElement.TextRun != nil {
+						text += textElement.TextRun.Content
+						if textElement.TextRun.Style != nil {
+							styleReqs = append(styleReqs, &slides.Request{
+								UpdateTextStyle: &slides.UpdateTextStyleRequest{
+									ObjectId: shapeObjectID,
+									Style:    textElement.TextRun.Style,
+									TextRange: &slides.Range{
+										Type:       "FIXED_RANGE",
+										StartIndex: ptrInt64(textElement.StartIndex),
+										EndIndex:   ptrInt64(textElement.EndIndex),
+									},
+									Fields: "*",
+								},
+							})
+						}
+					}
+				}
+				req.Requests = append(req.Requests, &slides.Request{
+					CreateShape: &slides.CreateShapeRequest{
+						ObjectId: shapeObjectID,
+						ElementProperties: &slides.PageElementProperties{
+							Size:         element.Size,
+							Transform:    element.Transform,
+							PageObjectId: newSlide.ObjectId,
+						},
+						ShapeType: element.Shape.ShapeType,
+					},
+				})
+				insertReq.Requests = append(insertReq.Requests, &slides.Request{
+					InsertText: &slides.InsertTextRequest{
+						ObjectId: shapeObjectID,
+						Text:     strings.TrimSuffix(text, "\n"),
+					},
+				})
+				if len(styleReqs) > 0 {
+					insertReq.Requests = append(insertReq.Requests, bulletReqs...)
+					insertReq.Requests = append(insertReq.Requests, styleReqs...)
+					styleReqs = nil  // reset after adding to requests
+					bulletReqs = nil // reset after adding to requests
+				}
+			}
 		}
+
 		if len(req.Requests) > 0 {
 			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
 				return fmt.Errorf("failed to copy images: %w", err)
+			}
+		}
+		if len(insertReq.Requests) > 0 {
+			if _, err := d.srv.Presentations.BatchUpdate(d.id, insertReq).Context(ctx).Do(); err != nil {
+				return fmt.Errorf("failed to insert text: %w", err)
 			}
 		}
 
