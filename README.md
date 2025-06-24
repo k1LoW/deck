@@ -152,18 +152,30 @@ The command must output image data (PNG, JPEG, GIF) to standard output.
 
 ##### How to receive values
 
+From code blocks like the following, you can obtain the optional language identifier `go` and the content within the code block.
+
+    ```go
+    package main
+
+    import "fmt"
+
+    func main() {
+    	fmt.Println("Hello, 世界")
+    }
+    ```
+
 There are three ways to receive code block information within the command:
 
 1. **Receive from standard input**
    - The content of the code block is passed as standard input
-   - Language information cannot be obtained, so use it in combination with other methods
+   - The optional language identifier cannot be obtained, so use it in combination with other methods
 
 2. **Receive as environment variables**
-   - `CODEBLOCK_LANG`: Language of the code block (e.g., `go`, `python`)
+   - `CODEBLOCK_LANG`: Optional language identifier of the code block (e.g., `go`, `python`)
    - `CODEBLOCK_VALUE`: Content of the code block
 
 3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) )**
-   - `{{lang}}`: Language of the code block
+   - `{{lang}}`: Optional language identifier of the code block
    - `{{value}}`: Content of the code block
    - `{{env.XXX}}`: Value of environment variable XXX
 
