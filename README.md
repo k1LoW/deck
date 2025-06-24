@@ -171,12 +171,12 @@ These methods can be used in combination, and you can choose the appropriate met
 
 ```console
 # Convert Mermaid diagrams to images
-$ deck apply -c "mmdc -i - -o output.png --quiet; cat output.png" xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'mmdc -i - -o output.png --quiet; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Generate code images with syntax highlighting (e.g., silicon)
-$ deck apply -c "silicon -l {{lang == "" ? "-l md" : "-l " + lang}} -o output.png; cat output.png" xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'silicon -l {{lang == "" ? "-l md" : "-l " + lang}} -o output.png; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
