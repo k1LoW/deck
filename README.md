@@ -172,11 +172,11 @@ There are three ways to receive code block information within the command:
 
 2. **Receive as environment variables**
    - `CODEBLOCK_LANG`: Optional language identifier of the code block (e.g., `go`, `python`)
-   - `CODEBLOCK_VALUE`: Content of the code block
+   - `CODEBLOCK_CONTENT`: Content of the code block
 
 3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) )**
    - `{{lang}}`: Optional language identifier of the code block
-   - `{{value}}`: Content of the code block
+   - `{{content}}`: Content of the code block
    - `{{env.XXX}}`: Value of environment variable XXX
 
 These methods can be used in combination, and you can choose the appropriate method according to the command requirements.
