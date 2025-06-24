@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.25.0](https://github.com/k1LoW/deck/compare/v0.24.2...v0.25.0) - 2025-06-24
+### New Features 🎉
+- feat(deck): add support for copying shapes between slides (create/delete) by @k1LoW in https://github.com/k1LoW/deck/pull/145
+### Other Changes
+- fix(md): rename `value` to `content` in code block by @k1LoW in https://github.com/k1LoW/deck/pull/144
+
 ## [v0.24.2](https://github.com/k1LoW/deck/compare/v0.24.1...v0.24.2) - 2025-06-23
 ### Fix bug 🐛
 - fix(deck): correct indentation handling for nested paragraphs by @k1LoW in https://github.com/k1LoW/deck/pull/142
