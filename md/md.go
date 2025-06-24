@@ -39,7 +39,7 @@ type Config struct {
 
 type CodeBlock struct {
 	Language string `json:"language,omitempty"`
-	Value    string `json:"value"`
+	Content  string `json:"content"`
 }
 
 // Content represents a single slide content.
@@ -200,16 +200,16 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 					})
 				}
 			case *ast.CodeBlock:
-				value := v.Lines().Value(b)
+				c := v.Lines().Value(b)
 				content.CodeBlocks = append(content.CodeBlocks, &CodeBlock{
-					Value: string(value),
+					Content: string(c),
 				})
 			case *ast.FencedCodeBlock:
 				lang := v.Language(b)
-				value := v.Lines().Value(b)
+				c := v.Lines().Value(b)
 				content.CodeBlocks = append(content.CodeBlocks, &CodeBlock{
 					Language: string(lang),
-					Value:    string(value),
+					Content:  string(c),
 				})
 			}
 		}
@@ -251,11 +251,13 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 					defer os.RemoveAll(dir)
 					env := environToMap()
 					env["CODEBLOCK_LANG"] = codeBlock.Language
-					env["CODEBLOCK_VALUE"] = codeBlock.Value
+					env["CODEBLOCK_CONTENT"] = codeBlock.Content
+					env["CODEBLOCK_VALUE"] = codeBlock.Content // Deprecated, use CODEBLOCK_CONTENT.
 					store := map[string]any{
-						"lang":  codeBlock.Language,
-						"value": codeBlock.Value,
-						"env":   env,
+						"lang":    codeBlock.Language,
+						"content": codeBlock.Content,
+						"value":   codeBlock.Content, // Deprecated, use `content`.
+						"env":     env,
 					}
 					repFn := expand.ExprRepFn("{{", "}}", store)
 					replacedCmd, err := repFn(codeBlockToImageCmd)
@@ -264,10 +266,10 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 					}
 					cmd := exec.CommandContext(ctx, "bash", "-c", replacedCmd)
 					cmd.Dir = dir
-					cmd.Stdin = strings.NewReader(codeBlock.Value)
+					cmd.Stdin = strings.NewReader(codeBlock.Content)
 					cmd.Env = os.Environ()
 					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_LANG=%s", codeBlock.Language))
-					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Value))
+					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Content))
 					var (
 						stdout bytes.Buffer
 						stderr bytes.Buffer
