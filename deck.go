@@ -500,6 +500,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 						ShapeType: element.Shape.ShapeType,
 					},
 				})
+				styleReqs = append(styleReqs, &slides.Request{
+					UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
+						ObjectId:        shapeObjectID,
+						ShapeProperties: element.Shape.ShapeProperties,
+						Fields:          "contentAlignment,link,outline,shadow,shapeBackgroundFill",
+					},
+				})
 				insertReq.Requests = append(insertReq.Requests, &slides.Request{
 					InsertText: &slides.InsertTextRequest{
 						ObjectId: shapeObjectID,
