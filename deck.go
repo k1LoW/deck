@@ -75,8 +75,8 @@ type placeholder struct {
 
 type bulletRange struct {
 	bullet Bullet
-	start  int
-	end    int
+	start  int64
+	end    int64
 }
 
 // Presentation represents a Google Slides presentation.
@@ -585,11 +585,11 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 					if br == nil {
 						br = &bulletRange{
 							bullet: getBulletPresetFromSlidesBullet(pInfo.bullet),
-							start:  int(pInfo.startIndex),
-							end:    int(pInfo.endIndex),
+							start:  pInfo.startIndex,
+							end:    pInfo.endIndex,
 						}
 					} else {
-						br.end = int(pInfo.endIndex)
+						br.end = pInfo.endIndex
 					}
 				}
 				if br != nil {
@@ -754,13 +754,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 		}
 		return bodies[i].y < bodies[j].y
 	})
-	var bulletStartIndex, bulletEndIndex int
+	var bulletStartIndex, bulletEndIndex int64
 	bulletRanges := map[int]*bulletRange{}
 	for i, body := range slide.Bodies {
 		if len(bodies) <= i {
 			continue
 		}
-		count := 0
+		count := int64(0)
 		text := ""
 		bulletStartIndex = 0 // reset per body
 		bulletEndIndex = 0   // reset per body
@@ -776,8 +776,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			}
 			for _, fragment := range paragraph.Fragments {
 				flen := countString(fragment.Value)
-				startIndex := ptrInt64(int64(count + plen))
-				endIndex := ptrInt64(int64(count + plen + flen))
+				startIndex := ptrInt64(count + int64(plen))
+				endIndex := ptrInt64(count + int64(plen+flen))
 
 				// code
 				if fragment.Code {
@@ -1011,17 +1011,17 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
 					bulletStartIndex = count
 					bulletEndIndex = count
-					bulletRanges[bulletStartIndex] = &bulletRange{
+					bulletRanges[int(bulletStartIndex)] = &bulletRange{
 						bullet: paragraph.Bullet,
 						start:  bulletStartIndex,
 						end:    bulletEndIndex,
 					}
 				}
-				bulletEndIndex += plen
-				bulletRanges[bulletStartIndex].end = bulletEndIndex
+				bulletEndIndex += int64(plen)
+				bulletRanges[int(bulletStartIndex)].end = bulletEndIndex
 			}
 			currentBullet = paragraph.Bullet
-			count += plen
+			count += int64(plen)
 		}
 
 		req.Requests = append(req.Requests, &slides.Request{
