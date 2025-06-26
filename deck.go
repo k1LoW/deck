@@ -75,8 +75,8 @@ type placeholder struct {
 
 type bulletRange struct {
 	bullet Bullet
-	start  int
-	end    int
+	start  int64
+	end    int64
 }
 
 // Presentation represents a Google Slides presentation.
@@ -468,25 +468,73 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			}
 			// copy shapes from the current slide to the new slide
 			if element.Shape != nil && element.Shape.Placeholder == nil {
+				type paragraphInfo struct {
+					startIndex   int64
+					endIndex     int64
+					bullet       *slides.Bullet
+					nestingLevel int64
+				}
+
+				var paragraphInfos []paragraphInfo
+				currentIndex := int64(0)
 				text := ""
 				shapeObjectID := uuid.New().String()
+
 				for _, textElement := range element.Shape.Text.TextElements {
+					if textElement.ParagraphMarker != nil {
+						pInfo := paragraphInfo{
+							startIndex: currentIndex,
+						}
+						if textElement.ParagraphMarker.Bullet != nil {
+							pInfo.bullet = textElement.ParagraphMarker.Bullet
+							pInfo.nestingLevel = textElement.ParagraphMarker.Bullet.NestingLevel
+						}
+						paragraphInfos = append(paragraphInfos, pInfo)
+					}
+
 					if textElement.TextRun != nil {
-						text += textElement.TextRun.Content
+						runText := textElement.TextRun.Content
+
+						// Handle nesting by adding tabs
+						if len(paragraphInfos) > 0 && currentIndex == paragraphInfos[len(paragraphInfos)-1].startIndex {
+							// This is the start of a bulleted paragraph
+							if paragraphInfos[len(paragraphInfos)-1].nestingLevel > 0 {
+								// Add tabs for nesting
+								tabs := strings.Repeat("\t", int(paragraphInfos[len(paragraphInfos)-1].nestingLevel))
+								text += tabs
+								currentIndex += int64(countString(tabs))
+							}
+						}
+
+						text += runText
+
+						// Adjust style indices based on actual position in new text
 						if textElement.TextRun.Style != nil {
+							startIdx := currentIndex
+							endIdx := currentIndex + int64(countString(runText))
 							styleReqs = append(styleReqs, &slides.Request{
 								UpdateTextStyle: &slides.UpdateTextStyleRequest{
 									ObjectId: shapeObjectID,
 									Style:    textElement.TextRun.Style,
 									TextRange: &slides.Range{
 										Type:       "FIXED_RANGE",
-										StartIndex: ptrInt64(textElement.StartIndex),
-										EndIndex:   ptrInt64(textElement.EndIndex),
+										StartIndex: ptrInt64(startIdx),
+										EndIndex:   ptrInt64(endIdx),
 									},
 									Fields: "*",
 								},
 							})
 						}
+						currentIndex += int64(countString(runText))
+					}
+				}
+
+				// Update end indices for paragraphs
+				for i := range paragraphInfos {
+					if i < len(paragraphInfos)-1 {
+						paragraphInfos[i].endIndex = paragraphInfos[i+1].startIndex - 1
+					} else {
+						paragraphInfos[i].endIndex = currentIndex - 1
 					}
 				}
 				req.Requests = append(req.Requests, &slides.Request{
@@ -507,15 +555,67 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 						Fields:          "contentAlignment,link,outline,shadow,shapeBackgroundFill",
 					},
 				})
+
 				insertReq.Requests = append(insertReq.Requests, &slides.Request{
 					InsertText: &slides.InsertTextRequest{
 						ObjectId: shapeObjectID,
 						Text:     strings.TrimSuffix(text, "\n"),
 					},
 				})
-				if len(styleReqs) > 0 {
-					insertReq.Requests = append(insertReq.Requests, bulletReqs...)
+
+				var br *bulletRange
+				for _, pInfo := range paragraphInfos {
+					if pInfo.bullet == nil {
+						if br != nil {
+							bulletReqs = append(bulletReqs, &slides.Request{
+								CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+									ObjectId:     shapeObjectID,
+									BulletPreset: convertBullet(br.bullet),
+									TextRange: &slides.Range{
+										Type:       "FIXED_RANGE",
+										StartIndex: ptrInt64(int64(br.start)),
+										EndIndex:   ptrInt64(int64(br.end)),
+									},
+								},
+							})
+							br = nil
+						}
+						continue
+					}
+					if br == nil {
+						br = &bulletRange{
+							bullet: getBulletPresetFromSlidesBullet(pInfo.bullet),
+							start:  pInfo.startIndex,
+							end:    pInfo.endIndex,
+						}
+					} else {
+						br.end = pInfo.endIndex
+					}
+				}
+				if br != nil {
+					bulletReqs = append(bulletReqs, &slides.Request{
+						CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+							ObjectId:     shapeObjectID,
+							BulletPreset: convertBullet(br.bullet),
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: ptrInt64(int64(br.start)),
+								EndIndex:   ptrInt64(int64(br.end)),
+							},
+						},
+					})
+				}
+
+				// reverse sort
+				// Because the Range changes each time it is converted to a list, convert from the end to a list.
+				sort.Slice(bulletReqs, func(i, j int) bool {
+					return *bulletReqs[i].CreateParagraphBullets.TextRange.StartIndex > *bulletReqs[j].CreateParagraphBullets.TextRange.StartIndex
+				})
+
+				if len(styleReqs) > 0 || len(bulletReqs) > 0 {
+					// Apply styles first, then bullets (important for correct rendering)
 					insertReq.Requests = append(insertReq.Requests, styleReqs...)
+					insertReq.Requests = append(insertReq.Requests, bulletReqs...)
 					styleReqs = nil  // reset after adding to requests
 					bulletReqs = nil // reset after adding to requests
 				}
@@ -654,13 +754,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 		}
 		return bodies[i].y < bodies[j].y
 	})
-	var bulletStartIndex, bulletEndIndex int
+	var bulletStartIndex, bulletEndIndex int64
 	bulletRanges := map[int]*bulletRange{}
 	for i, body := range slide.Bodies {
 		if len(bodies) <= i {
 			continue
 		}
-		count := 0
+		count := int64(0)
 		text := ""
 		bulletStartIndex = 0 // reset per body
 		bulletEndIndex = 0   // reset per body
@@ -676,8 +776,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			}
 			for _, fragment := range paragraph.Fragments {
 				flen := countString(fragment.Value)
-				startIndex := ptrInt64(int64(count + plen))
-				endIndex := ptrInt64(int64(count + plen + flen))
+				startIndex := ptrInt64(count + int64(plen))
+				endIndex := ptrInt64(count + int64(plen+flen))
 
 				// code
 				if fragment.Code {
@@ -911,17 +1011,17 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
 					bulletStartIndex = count
 					bulletEndIndex = count
-					bulletRanges[bulletStartIndex] = &bulletRange{
+					bulletRanges[int(bulletStartIndex)] = &bulletRange{
 						bullet: paragraph.Bullet,
 						start:  bulletStartIndex,
 						end:    bulletEndIndex,
 					}
 				}
-				bulletEndIndex += plen
-				bulletRanges[bulletStartIndex].end = bulletEndIndex
+				bulletEndIndex += int64(plen)
+				bulletRanges[int(bulletStartIndex)].end = bulletEndIndex
 			}
 			currentBullet = paragraph.Bullet
-			count += plen
+			count += int64(plen)
 		}
 
 		req.Requests = append(req.Requests, &slides.Request{
@@ -1486,6 +1586,29 @@ func convertBullet(b Bullet) string {
 	default:
 		return "UNRECOGNIZED"
 	}
+}
+
+// getBulletPresetFromSlidesBullet converts a slides.Bullet to a BulletPreset string
+func getBulletPresetFromSlidesBullet(bullet *slides.Bullet) Bullet {
+	if bullet == nil || bullet.Glyph == "" {
+		return BulletNone
+	}
+
+	glyph := bullet.Glyph
+	// Check for numbered bullets (1, 2, 3, etc.)
+	for _, digit := range "0123456789" {
+		if strings.Contains(glyph, string(digit)) {
+			return BulletNumber
+		}
+	}
+
+	// Check for alphabetic bullets (a., A., etc.)
+	if strings.ContainsAny(glyph, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") {
+		return BulletAlpha
+	}
+
+	// Default to disc/circle/square bullets
+	return BulletDash
 }
 
 func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *Slide {
