@@ -449,7 +449,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 		}
 		var (
 			styleReqs  []*slides.Request
-			bulletReqs []*slides.Request // FIXME: bulletReqs for bullet styles
+			bulletReqs []*slides.Request
 		)
 
 		for _, element := range currentSlide.PageElements {
