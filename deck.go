@@ -435,205 +435,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	}
 	currentSlide := d.presentation.Slides[index]
 	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
-		// create new page
-		if err := d.CreatePage(ctx, index+1, slide); err != nil {
-			return err
-		}
-
-		newSlide := d.presentation.Slides[index+1]
-		req := &slides.BatchUpdatePresentationRequest{
-			Requests: []*slides.Request{},
-		}
-		insertReq := &slides.BatchUpdatePresentationRequest{
-			Requests: []*slides.Request{},
-		}
-		var (
-			styleReqs  []*slides.Request
-			bulletReqs []*slides.Request
-		)
-
-		for _, element := range currentSlide.PageElements {
-			// copy images from the current slide to the new slide
-			if element.Image != nil {
-				req.Requests = append(req.Requests, &slides.Request{
-					CreateImage: &slides.CreateImageRequest{
-						ElementProperties: &slides.PageElementProperties{
-							Size:         element.Size,
-							Transform:    element.Transform,
-							PageObjectId: newSlide.ObjectId,
-						},
-						Url: element.Image.ContentUrl,
-					},
-				})
-			}
-			// copy shapes from the current slide to the new slide
-			if element.Shape != nil && element.Shape.Placeholder == nil {
-				type paragraphInfo struct {
-					startIndex   int64
-					endIndex     int64
-					bullet       *slides.Bullet
-					nestingLevel int64
-				}
-
-				var paragraphInfos []paragraphInfo
-				currentIndex := int64(0)
-				text := ""
-				shapeObjectID := uuid.New().String()
-
-				for _, textElement := range element.Shape.Text.TextElements {
-					if textElement.ParagraphMarker != nil {
-						pInfo := paragraphInfo{
-							startIndex: currentIndex,
-						}
-						if textElement.ParagraphMarker.Bullet != nil {
-							pInfo.bullet = textElement.ParagraphMarker.Bullet
-							pInfo.nestingLevel = textElement.ParagraphMarker.Bullet.NestingLevel
-						}
-						paragraphInfos = append(paragraphInfos, pInfo)
-					}
-
-					if textElement.TextRun != nil {
-						runText := textElement.TextRun.Content
-
-						// Handle nesting by adding tabs
-						if len(paragraphInfos) > 0 && currentIndex == paragraphInfos[len(paragraphInfos)-1].startIndex {
-							// This is the start of a bulleted paragraph
-							if paragraphInfos[len(paragraphInfos)-1].nestingLevel > 0 {
-								// Add tabs for nesting
-								tabs := strings.Repeat("\t", int(paragraphInfos[len(paragraphInfos)-1].nestingLevel))
-								text += tabs
-								currentIndex += int64(countString(tabs))
-							}
-						}
-
-						text += runText
-
-						// Adjust style indices based on actual position in new text
-						if textElement.TextRun.Style != nil {
-							startIdx := currentIndex
-							endIdx := currentIndex + int64(countString(runText))
-							styleReqs = append(styleReqs, &slides.Request{
-								UpdateTextStyle: &slides.UpdateTextStyleRequest{
-									ObjectId: shapeObjectID,
-									Style:    textElement.TextRun.Style,
-									TextRange: &slides.Range{
-										Type:       "FIXED_RANGE",
-										StartIndex: ptrInt64(startIdx),
-										EndIndex:   ptrInt64(endIdx),
-									},
-									Fields: "*",
-								},
-							})
-						}
-						currentIndex += int64(countString(runText))
-					}
-				}
-
-				// Update end indices for paragraphs
-				for i := range paragraphInfos {
-					if i < len(paragraphInfos)-1 {
-						paragraphInfos[i].endIndex = paragraphInfos[i+1].startIndex - 1
-					} else {
-						paragraphInfos[i].endIndex = currentIndex - 1
-					}
-				}
-				req.Requests = append(req.Requests, &slides.Request{
-					CreateShape: &slides.CreateShapeRequest{
-						ObjectId: shapeObjectID,
-						ElementProperties: &slides.PageElementProperties{
-							Size:         element.Size,
-							Transform:    element.Transform,
-							PageObjectId: newSlide.ObjectId,
-						},
-						ShapeType: element.Shape.ShapeType,
-					},
-				})
-				styleReqs = append(styleReqs, &slides.Request{
-					UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
-						ObjectId:        shapeObjectID,
-						ShapeProperties: element.Shape.ShapeProperties,
-						Fields:          "contentAlignment,link,outline,shadow,shapeBackgroundFill",
-					},
-				})
-
-				insertReq.Requests = append(insertReq.Requests, &slides.Request{
-					InsertText: &slides.InsertTextRequest{
-						ObjectId: shapeObjectID,
-						Text:     strings.TrimSuffix(text, "\n"),
-					},
-				})
-
-				var br *bulletRange
-				for _, pInfo := range paragraphInfos {
-					if pInfo.bullet == nil {
-						if br != nil {
-							bulletReqs = append(bulletReqs, &slides.Request{
-								CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
-									ObjectId:     shapeObjectID,
-									BulletPreset: convertBullet(br.bullet),
-									TextRange: &slides.Range{
-										Type:       "FIXED_RANGE",
-										StartIndex: ptrInt64(int64(br.start)),
-										EndIndex:   ptrInt64(int64(br.end)),
-									},
-								},
-							})
-							br = nil
-						}
-						continue
-					}
-					if br == nil {
-						br = &bulletRange{
-							bullet: getBulletPresetFromSlidesBullet(pInfo.bullet),
-							start:  pInfo.startIndex,
-							end:    pInfo.endIndex,
-						}
-					} else {
-						br.end = pInfo.endIndex
-					}
-				}
-				if br != nil {
-					bulletReqs = append(bulletReqs, &slides.Request{
-						CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
-							ObjectId:     shapeObjectID,
-							BulletPreset: convertBullet(br.bullet),
-							TextRange: &slides.Range{
-								Type:       "FIXED_RANGE",
-								StartIndex: ptrInt64(int64(br.start)),
-								EndIndex:   ptrInt64(int64(br.end)),
-							},
-						},
-					})
-				}
-
-				// reverse sort
-				// Because the Range changes each time it is converted to a list, convert from the end to a list.
-				sort.Slice(bulletReqs, func(i, j int) bool {
-					return *bulletReqs[i].CreateParagraphBullets.TextRange.StartIndex > *bulletReqs[j].CreateParagraphBullets.TextRange.StartIndex
-				})
-
-				if len(styleReqs) > 0 || len(bulletReqs) > 0 {
-					// Apply styles first, then bullets (important for correct rendering)
-					insertReq.Requests = append(insertReq.Requests, styleReqs...)
-					insertReq.Requests = append(insertReq.Requests, bulletReqs...)
-					styleReqs = nil  // reset after adding to requests
-					bulletReqs = nil // reset after adding to requests
-				}
-			}
-		}
-
-		if len(req.Requests) > 0 {
-			if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-				return fmt.Errorf("failed to copy images: %w", err)
-			}
-		}
-		if len(insertReq.Requests) > 0 {
-			if _, err := d.srv.Presentations.BatchUpdate(d.id, insertReq).Context(ctx).Do(); err != nil {
-				return fmt.Errorf("failed to insert text: %w", err)
-			}
-		}
-
-		if err := d.DeletePage(ctx, index); err != nil {
+		if err := d.updateLayout(ctx, index, slide); err != nil {
 			return err
 		}
 	}
@@ -1609,6 +1411,212 @@ func getBulletPresetFromSlidesBullet(bullet *slides.Bullet) Bullet {
 
 	// Default to disc/circle/square bullets
 	return BulletDash
+}
+
+func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) error {
+	currentSlide := d.presentation.Slides[index]
+	// create new page
+	if err := d.CreatePage(ctx, index+1, slide); err != nil {
+		return err
+	}
+
+	newSlide := d.presentation.Slides[index+1]
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{},
+	}
+	insertReq := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{},
+	}
+	var (
+		styleReqs  []*slides.Request
+		bulletReqs []*slides.Request
+	)
+
+	for _, element := range currentSlide.PageElements {
+		// copy images from the current slide to the new slide
+		if element.Image != nil {
+			req.Requests = append(req.Requests, &slides.Request{
+				CreateImage: &slides.CreateImageRequest{
+					ElementProperties: &slides.PageElementProperties{
+						Size:         element.Size,
+						Transform:    element.Transform,
+						PageObjectId: newSlide.ObjectId,
+					},
+					Url: element.Image.ContentUrl,
+				},
+			})
+		}
+		// copy shapes from the current slide to the new slide
+		if element.Shape != nil && element.Shape.Placeholder == nil {
+			type paragraphInfo struct {
+				startIndex   int64
+				endIndex     int64
+				bullet       *slides.Bullet
+				nestingLevel int64
+			}
+
+			var paragraphInfos []paragraphInfo
+			currentIndex := int64(0)
+			text := ""
+			shapeObjectID := uuid.New().String()
+
+			for _, textElement := range element.Shape.Text.TextElements {
+				if textElement.ParagraphMarker != nil {
+					pInfo := paragraphInfo{
+						startIndex: currentIndex,
+					}
+					if textElement.ParagraphMarker.Bullet != nil {
+						pInfo.bullet = textElement.ParagraphMarker.Bullet
+						pInfo.nestingLevel = textElement.ParagraphMarker.Bullet.NestingLevel
+					}
+					paragraphInfos = append(paragraphInfos, pInfo)
+				}
+
+				if textElement.TextRun != nil {
+					runText := textElement.TextRun.Content
+
+					// Handle nesting by adding tabs
+					if len(paragraphInfos) > 0 && currentIndex == paragraphInfos[len(paragraphInfos)-1].startIndex {
+						// This is the start of a bulleted paragraph
+						if paragraphInfos[len(paragraphInfos)-1].nestingLevel > 0 {
+							// Add tabs for nesting
+							tabs := strings.Repeat("\t", int(paragraphInfos[len(paragraphInfos)-1].nestingLevel))
+							text += tabs
+							currentIndex += int64(countString(tabs))
+						}
+					}
+
+					text += runText
+
+					// Adjust style indices based on actual position in new text
+					if textElement.TextRun.Style != nil {
+						startIdx := currentIndex
+						endIdx := currentIndex + int64(countString(runText))
+						styleReqs = append(styleReqs, &slides.Request{
+							UpdateTextStyle: &slides.UpdateTextStyleRequest{
+								ObjectId: shapeObjectID,
+								Style:    textElement.TextRun.Style,
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: ptrInt64(startIdx),
+									EndIndex:   ptrInt64(endIdx),
+								},
+								Fields: "*",
+							},
+						})
+					}
+					currentIndex += int64(countString(runText))
+				}
+			}
+
+			// Update end indices for paragraphs
+			for i := range paragraphInfos {
+				if i < len(paragraphInfos)-1 {
+					paragraphInfos[i].endIndex = paragraphInfos[i+1].startIndex - 1
+				} else {
+					paragraphInfos[i].endIndex = currentIndex - 1
+				}
+			}
+			req.Requests = append(req.Requests, &slides.Request{
+				CreateShape: &slides.CreateShapeRequest{
+					ObjectId: shapeObjectID,
+					ElementProperties: &slides.PageElementProperties{
+						Size:         element.Size,
+						Transform:    element.Transform,
+						PageObjectId: newSlide.ObjectId,
+					},
+					ShapeType: element.Shape.ShapeType,
+				},
+			})
+			styleReqs = append(styleReqs, &slides.Request{
+				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
+					ObjectId:        shapeObjectID,
+					ShapeProperties: element.Shape.ShapeProperties,
+					Fields:          "contentAlignment,link,outline,shadow,shapeBackgroundFill",
+				},
+			})
+
+			insertReq.Requests = append(insertReq.Requests, &slides.Request{
+				InsertText: &slides.InsertTextRequest{
+					ObjectId: shapeObjectID,
+					Text:     strings.TrimSuffix(text, "\n"),
+				},
+			})
+
+			var br *bulletRange
+			for _, pInfo := range paragraphInfos {
+				if pInfo.bullet == nil {
+					if br != nil {
+						bulletReqs = append(bulletReqs, &slides.Request{
+							CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+								ObjectId:     shapeObjectID,
+								BulletPreset: convertBullet(br.bullet),
+								TextRange: &slides.Range{
+									Type:       "FIXED_RANGE",
+									StartIndex: ptrInt64(int64(br.start)),
+									EndIndex:   ptrInt64(int64(br.end)),
+								},
+							},
+						})
+						br = nil
+					}
+					continue
+				}
+				if br == nil {
+					br = &bulletRange{
+						bullet: getBulletPresetFromSlidesBullet(pInfo.bullet),
+						start:  pInfo.startIndex,
+						end:    pInfo.endIndex,
+					}
+				} else {
+					br.end = pInfo.endIndex
+				}
+			}
+			if br != nil {
+				bulletReqs = append(bulletReqs, &slides.Request{
+					CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+						ObjectId:     shapeObjectID,
+						BulletPreset: convertBullet(br.bullet),
+						TextRange: &slides.Range{
+							Type:       "FIXED_RANGE",
+							StartIndex: ptrInt64(int64(br.start)),
+							EndIndex:   ptrInt64(int64(br.end)),
+						},
+					},
+				})
+			}
+
+			// reverse sort
+			// Because the Range changes each time it is converted to a list, convert from the end to a list.
+			sort.Slice(bulletReqs, func(i, j int) bool {
+				return *bulletReqs[i].CreateParagraphBullets.TextRange.StartIndex > *bulletReqs[j].CreateParagraphBullets.TextRange.StartIndex
+			})
+
+			if len(styleReqs) > 0 || len(bulletReqs) > 0 {
+				// Apply styles first, then bullets (important for correct rendering)
+				insertReq.Requests = append(insertReq.Requests, styleReqs...)
+				insertReq.Requests = append(insertReq.Requests, bulletReqs...)
+				styleReqs = nil  // reset after adding to requests
+				bulletReqs = nil // reset after adding to requests
+			}
+		}
+	}
+
+	if len(req.Requests) > 0 {
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to copy images: %w", err)
+		}
+	}
+	if len(insertReq.Requests) > 0 {
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, insertReq).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to insert text: %w", err)
+		}
+	}
+
+	if err := d.DeletePage(ctx, index); err != nil {
+		return err
+	}
+	return nil
 }
 
 func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *Slide {
