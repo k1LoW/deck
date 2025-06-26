@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.26.0](https://github.com/k1LoW/deck/compare/v0.25.0...v0.26.0) - 2025-06-26
+### New Features 🎉
+- feat: support bullet in shape by @k1LoW in https://github.com/k1LoW/deck/pull/147
+
 ## [v0.25.0](https://github.com/k1LoW/deck/compare/v0.24.2...v0.25.0) - 2025-06-24
 ### New Features 🎉
 - feat(deck): add support for copying shapes between slides (create/delete) by @k1LoW in https://github.com/k1LoW/deck/pull/145
