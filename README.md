@@ -251,6 +251,32 @@ It is possible to skip the operation of the target page.
 
 - [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Creating deck using Markdown and Google Slides.
 
+## With AI agent
+
+By collaborating with AI agents to create Markdown-formatted slides, you may be able to create effective presentations.
+
+For example, it is a good idea to provide the following rules for creating deck slides in the prompt.
+
+    Create a presentation in Markdown according to the following rules.
+
+    # Rules for describing presentations using Markdown
+
+    Unless otherwise specified, please follow the rules below.
+
+    - Use `---` to indicate page breaks in slides.
+    - Only `#` and `##` can be used for headings. Do not use headings with `###` or higher. It is recommended to use only one heading per page.
+    - The following syntax can be used in the page body. Note that it cannot be used in headings.
+        - Bold ( `**bold**` )
+        - Italic ( `*italic*` `__italic__` )
+        - List ( `-` `*` ) - Ordered list ( `1.` `1)` )
+        - Link ( `[Link](https://example.com)` )
+        - Code ( <code>\`code\`</code> )
+        - `<br>` (for newline)
+        - Code Block
+    - Speaker notes for each page should be written in comments ( `<!--` `-->` ). However, if the comment is JSON, it is a page setting, so do not overwrite it. Instead, write the speaker notes in a new comment.
+    - If the comment ( `<!--` `-->` ) is JSON, it is a page setting. If the value `“freeze”:true` is present, do not modify the page content at all.
+
+
 ## Install
 
 **homebrew tap:**
