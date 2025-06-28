@@ -13,6 +13,8 @@ import (
 var (
 	yellow = color.New(color.FgYellow, color.Bold).SprintFunc()
 	cyan   = color.New(color.FgCyan).SprintFunc()
+	gray   = color.New(color.FgHiBlack).SprintFunc()
+	green  = color.New(color.FgGreen).SprintFunc()
 )
 
 var _ slog.Handler = (*dotHandler)(nil)
@@ -36,6 +38,22 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 	if r.Message == "applied page" {
 		_, _ = h.stdout.Write([]byte(yellow(".")))
+		return nil
+	}
+	if r.Message == "deleted page" {
+		_, _ = h.stdout.Write([]byte(gray("x")))
+		return nil
+	}
+	if r.Message == "appended page" {
+		_, _ = h.stdout.Write([]byte(yellow("+")))
+		return nil
+	}
+	if r.Message == "moved page" {
+		_, _ = h.stdout.Write([]byte(green("-")))
+		return nil
+	}
+	if r.Message == "inserted page" {
+		_, _ = h.stdout.Write([]byte(yellow("+")))
 		return nil
 	}
 	if strings.Contains(r.Message, "because freeze:true") {

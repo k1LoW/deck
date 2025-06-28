@@ -148,7 +148,7 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 		return nil, err
 	}
 	// create first slide
-	if err := d.CreatePage(ctx, 0, &Slide{
+	if err := d.createPage(ctx, 0, &Slide{
 		Layout: d.defaultTitleLayout,
 	}); err != nil {
 		return nil, err
@@ -341,19 +341,21 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
-			if err := d.appendPage(ctx, action.slide); err != nil {
+			if err := d.AppendPage(ctx, action.slide); err != nil {
 				return fmt.Errorf("failed to append slide: %w", err)
 			}
 		case actionTypeInsert:
-			if err := d.insertPage(ctx, action.index, action.slide); err != nil {
+			if err := d.InsertPage(ctx, action.index, action.slide); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}
 		case actionTypeUpdate:
+			d.logger.Info("appling page", slog.Int("index", action.index))
 			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}
+			d.logger.Info("applied page", slog.Int("index", action.index))
 		case actionTypeMove:
-			if err := d.movePage(ctx, action.index, action.moveToIndex); err != nil {
+			if err := d.MovePage(ctx, action.index, action.moveToIndex); err != nil {
 				return fmt.Errorf("failed to move page: %w", err)
 			}
 		case actionTypeDelete:
@@ -415,7 +417,6 @@ func (d *Deck) DumpSlides(ctx context.Context) (Slides, error) {
 }
 
 func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
-	d.logger.Info("appling page", slog.Int("index", index))
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
@@ -920,11 +921,71 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 		}
 	}
 
-	d.logger.Info("applied page", slog.Int("index", index))
 	return nil
 }
 
-func (d *Deck) CreatePage(ctx context.Context, index int, slide *Slide) error {
+func (d *Deck) DeletePage(ctx context.Context, index int) error {
+	d.logger.Info("deleting page", slog.Int("index", index))
+	if err := d.deletePage(ctx, index); err != nil {
+		return err
+	}
+	d.logger.Info("deleted page", slog.Int("index", index))
+	return nil
+}
+
+func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
+	if len(d.presentation.Slides) <= index {
+		return nil
+	}
+	req := &slides.BatchUpdatePresentationRequest{}
+	for i := index + 1; i < len(d.presentation.Slides); i++ {
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: d.presentation.Slides[i].ObjectId,
+			},
+		})
+	}
+	if len(req.Requests) == 0 {
+		return nil
+	}
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		return err
+	}
+	if err := d.refresh(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Deck) AppendPage(ctx context.Context, slide *Slide) error {
+	d.logger.Info("appending new page")
+	index := len(d.presentation.Slides)
+	if err := d.createPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	d.logger.Info("appended page")
+	return nil
+}
+
+func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) error {
+	d.logger.Info("moving page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
+	if err := d.movePage(ctx, from_index, to_index); err != nil {
+		return err
+	}
+	d.logger.Info("moved page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
+	return nil
+}
+
+func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) error {
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
@@ -960,7 +1021,33 @@ func (d *Deck) CreatePage(ctx context.Context, index int, slide *Slide) error {
 	return nil
 }
 
-func (d *Deck) DeletePage(ctx context.Context, index int) error {
+func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) error {
+	d.logger.Info("inserting page", slog.Int("index", index))
+	if len(d.presentation.Slides) <= index {
+		return fmt.Errorf("index out of range: %d", index)
+	}
+	if err := d.createPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if index == 0 {
+		if err := d.movePage(ctx, 1, 0); err != nil {
+			return fmt.Errorf("failed to move page: %w", err)
+		}
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	d.logger.Info("inserted page", slog.Int("index", index))
+	return nil
+}
+
+func (d *Deck) deletePage(ctx context.Context, index int) error {
 	if len(d.presentation.Slides) <= index {
 		return nil
 	}
@@ -983,80 +1070,15 @@ func (d *Deck) DeletePage(ctx context.Context, index int) error {
 	return nil
 }
 
-func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
-	if len(d.presentation.Slides) <= index {
-		return nil
-	}
-	req := &slides.BatchUpdatePresentationRequest{}
-	for i := index + 1; i < len(d.presentation.Slides); i++ {
-		req.Requests = append(req.Requests, &slides.Request{
-			DeleteObject: &slides.DeleteObjectRequest{
-				ObjectId: d.presentation.Slides[i].ObjectId,
-			},
-		})
-	}
-	if len(req.Requests) == 0 {
-		return nil
-	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-		return err
-	}
-	if err := d.refresh(ctx); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *Deck) appendPage(ctx context.Context, slide *Slide) error {
-	index := len(d.presentation.Slides)
-	if err := d.CreatePage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	return nil
-}
-
-func (d *Deck) insertPage(ctx context.Context, index int, slide *Slide) error {
-	if len(d.presentation.Slides) <= index {
-		return fmt.Errorf("index out of range: %d", index)
-	}
-	if err := d.CreatePage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
-	}
-	if index == 0 {
-		if err := d.movePage(ctx, 1, 0); err != nil {
-			return fmt.Errorf("failed to move page: %w", err)
-		}
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	return nil
-}
-
-func (d *Deck) movePage(ctx context.Context, fromIndex, toIndex int) error {
-	if fromIndex == toIndex || fromIndex < 0 || toIndex < 0 || fromIndex >= len(d.presentation.Slides) || toIndex >= len(d.presentation.Slides) {
+func (d *Deck) movePage(ctx context.Context, from_index, to_index int) error {
+	if from_index == to_index || from_index < 0 || to_index < 0 || from_index >= len(d.presentation.Slides) || to_index >= len(d.presentation.Slides) {
 		return nil
 	}
 
-	currentSlide := d.presentation.Slides[fromIndex]
+	currentSlide := d.presentation.Slides[from_index]
 
-	if fromIndex < toIndex {
-		toIndex++
+	if from_index < to_index {
+		to_index++
 	}
 
 	req := &slides.BatchUpdatePresentationRequest{
@@ -1064,7 +1086,7 @@ func (d *Deck) movePage(ctx context.Context, fromIndex, toIndex int) error {
 			{
 				UpdateSlidesPosition: &slides.UpdateSlidesPositionRequest{
 					SlideObjectIds:  []string{currentSlide.ObjectId},
-					InsertionIndex:  int64(toIndex),
+					InsertionIndex:  int64(to_index),
 					ForceSendFields: []string{"InsertionIndex"},
 				},
 			},
@@ -1416,7 +1438,7 @@ func getBulletPresetFromSlidesBullet(bullet *slides.Bullet) Bullet {
 func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) error {
 	currentSlide := d.presentation.Slides[index]
 	// create new page
-	if err := d.CreatePage(ctx, index+1, slide); err != nil {
+	if err := d.createPage(ctx, index+1, slide); err != nil {
 		return err
 	}
 
