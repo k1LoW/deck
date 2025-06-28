@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.27.0](https://github.com/k1LoW/deck/compare/v0.26.0...v0.27.0) - 2025-06-28
+### New Features 🎉
+- feat(dot): display a spinner when retrying a Google Slides API call by @k1LoW in https://github.com/k1LoW/deck/pull/151
+- feat(logger): enhance dot handler for deleted/moved pages by @k1LoW in https://github.com/k1LoW/deck/pull/154
+### Other Changes
+- fix(deck): rename methods and add logging for page operations by @k1LoW in https://github.com/k1LoW/deck/pull/150
+- fix: rename package by @k1LoW in https://github.com/k1LoW/deck/pull/152
+- fix(deck): correct log levels for debug and warn messages by @k1LoW in https://github.com/k1LoW/deck/pull/153
+- docs: correct `-l` option usage by @lacolaco in https://github.com/k1LoW/deck/pull/155
+- feat(dot): enhance spinner handling by @k1LoW in https://github.com/k1LoW/deck/pull/156
+
 ## [v0.26.0](https://github.com/k1LoW/deck/compare/v0.25.0...v0.26.0) - 2025-06-26
 ### New Features 🎉
 - feat: support bullet in shape by @k1LoW in https://github.com/k1LoW/deck/pull/147
