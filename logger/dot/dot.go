@@ -50,7 +50,7 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 		return nil
 	}
 	if r.Message == "deleted page" {
-		_, _ = h.stdout.Write([]byte(gray("x")))
+		_, _ = h.stdout.Write([]byte(gray("-")))
 		return nil
 	}
 	if r.Message == "appended page" {
@@ -58,7 +58,22 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 		return nil
 	}
 	if r.Message == "moved page" {
-		_, _ = h.stdout.Write([]byte(green("-")))
+		var from, to int64
+		r.Attrs(func(attr slog.Attr) bool {
+			if attr.Key == "from_index" {
+				from = attr.Value.Int64()
+			}
+			if attr.Key == "to_index" {
+				to = attr.Value.Int64()
+			}
+			return true
+		})
+		switch {
+		case from < to:
+			_, _ = h.stdout.Write([]byte(green("↓")))
+		case from > to:
+			_, _ = h.stdout.Write([]byte(green("↑")))
+		}
 		return nil
 	}
 	if r.Message == "inserted page" {
