@@ -190,12 +190,12 @@ $ deck apply -c 'mmdc -i - -o output.png --quiet; cat output.png' xxxxxXXXXxxxxx
 
 ```console
 # Generate code images with syntax highlighting (e.g., silicon)
-$ deck apply -c 'silicon -l {{lang == "" ? "-l md" : "-l " + lang}} -o output.png; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'silicon -l {{lang == "" ? "md" : lang}} -o output.png; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Use different tools depending on the language
-$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o output.png --quet; else silicon {{lang == "" ? "-l md" : "-l " + lang}} --output output.png; fi; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o output.png --quet; else silicon -l {{lang == "" ? "md" : lang}} --output output.png; fi; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ### Comment
