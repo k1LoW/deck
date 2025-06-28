@@ -70,9 +70,11 @@ var applyCmd = &cobra.Command{
 				slog.NewTextHandler(os.Stdout, nil),
 			)
 		} else {
-			logger = slog.New(
-				dot.New(slog.NewTextHandler(os.Stdout, nil)),
-			)
+			h, err := dot.New(slog.NewTextHandler(os.Stdout, nil))
+			if err != nil {
+				return fmt.Errorf("failed to create dot handler: %w", err)
+			}
+			logger = slog.New(h)
 		}
 		opts := []deck.Option{
 			deck.WithPresentationID(id),

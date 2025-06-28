@@ -29,6 +29,8 @@ import (
 	"google.golang.org/api/slides/v1"
 )
 
+var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
+
 const (
 	layoutNameForStyle    = "style"
 	styleCode             = "code"
@@ -87,14 +89,16 @@ type Presentation struct {
 
 // New creates a new Deck.
 func New(ctx context.Context, opts ...Option) (*Deck, error) {
-	d, err := initialize(ctx)
-	if err != nil {
-		return nil, err
+	d := &Deck{
+		styles: map[string]*slides.TextStyle{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
 			return nil, err
 		}
+	}
+	if err := d.initialize(ctx); err != nil {
+		return nil, err
 	}
 	if err := d.refresh(ctx); err != nil {
 		return nil, err
@@ -104,8 +108,10 @@ func New(ctx context.Context, opts ...Option) (*Deck, error) {
 
 // Create Google Slides presentation.
 func Create(ctx context.Context) (*Deck, error) {
-	d, err := initialize(ctx)
-	if err != nil {
+	d := &Deck{
+		styles: map[string]*slides.TextStyle{},
+	}
+	if err := d.initialize(ctx); err != nil {
 		return nil, err
 	}
 	title := "Untitled"
@@ -126,8 +132,10 @@ func Create(ctx context.Context) (*Deck, error) {
 
 // CreateFrom creates a new Deck from the presentation ID.
 func CreateFrom(ctx context.Context, id string) (*Deck, error) {
-	d, err := initialize(ctx)
-	if err != nil {
+	d := &Deck{
+		styles: map[string]*slides.TextStyle{},
+	}
+	if err := d.initialize(ctx); err != nil {
 		return nil, err
 	}
 	// copy presentation
@@ -158,8 +166,10 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 
 // List Google Slides presentations.
 func List(ctx context.Context) ([]*Presentation, error) {
-	d, err := initialize(ctx)
-	if err != nil {
+	d := &Deck{
+		styles: map[string]*slides.TextStyle{},
+	}
+	if err := d.initialize(ctx); err != nil {
 		return nil, err
 	}
 	var presentations []*Presentation
@@ -179,10 +189,9 @@ func List(ctx context.Context) ([]*Presentation, error) {
 	return presentations, nil
 }
 
-func initialize(ctx context.Context) (*Deck, error) {
-	d := &Deck{
-		logger: slog.New(slog.NewJSONHandler(io.Discard, nil)),
-		styles: map[string]*slides.TextStyle{},
+func (d *Deck) initialize(ctx context.Context) error {
+	if d.logger == nil {
+		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
 	if os.Getenv("XDG_DATA_HOME") != "" {
 		d.dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
@@ -195,38 +204,38 @@ func initialize(ctx context.Context) (*Deck, error) {
 		d.stateHomePath = filepath.Join(os.Getenv("HOME"), ".local", "state", "deck")
 	}
 	if err := os.MkdirAll(d.dataHomePath, 0700); err != nil {
-		return nil, err
+		return err
 	}
 	if err := os.MkdirAll(d.stateHomePath, 0700); err != nil {
-		return nil, err
+		return err
 	}
 
 	creds := filepath.Join(d.dataHomePath, "credentials.json")
 	b, err := os.ReadFile(creds)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	client, err := d.getHTTPClient(ctx, config)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	d.srv = srv
 	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	d.driveSrv = driveSrv
-	return d, nil
+	return nil
 }
 
 // ID returns the ID of the presentation.
@@ -1246,7 +1255,7 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.
 	retryClient.RetryMax = 10
 	retryClient.RetryWaitMin = 1 * time.Second
 	retryClient.RetryWaitMax = 30 * time.Second
-	retryClient.Logger = nil
+	retryClient.Logger = newAPILogger(d.logger)
 
 	return retryClient.StandardClient(), nil
 }
@@ -1874,4 +1883,29 @@ func convertToBody(text *slides.TextContent) *Body {
 	}
 
 	return body
+}
+
+var _ retryablehttp.LeveledLogger = (*apiLogger)(nil)
+
+type apiLogger struct {
+	l *slog.Logger
+}
+
+func (l *apiLogger) Error(msg string, keysAndValues ...any) {
+	l.l.Error(msg, append([]any{slog.String("original_log_level", "error")}, keysAndValues...)...)
+}
+func (l *apiLogger) Info(msg string, keysAndValues ...any) {
+	l.l.Info(msg, append([]any{slog.String("original_log_level", "info")}, keysAndValues...)...)
+}
+func (l *apiLogger) Debug(msg string, keysAndValues ...any) {
+	l.l.Info(msg, append([]any{slog.String("original_log_level", "debug")}, keysAndValues...)...)
+}
+func (l *apiLogger) Warn(msg string, keysAndValues ...any) {
+	l.l.Info(msg, append([]any{slog.String("original_log_level", "warn")}, keysAndValues...)...)
+}
+
+func newAPILogger(l *slog.Logger) retryablehttp.LeveledLogger {
+	return &apiLogger{
+		l: l.WithGroup("api"),
+	}
 }
