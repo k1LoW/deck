@@ -1390,7 +1390,7 @@ func convertBullet(b Bullet) string {
 	}
 }
 
-// getBulletPresetFromSlidesBullet converts a slides.Bullet to a BulletPreset string
+// getBulletPresetFromSlidesBullet converts a slides.Bullet to a BulletPreset string.
 func getBulletPresetFromSlidesBullet(bullet *slides.Bullet) Bullet {
 	if bullet == nil || bullet.Glyph == "" {
 		return BulletNone

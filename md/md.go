@@ -144,7 +144,11 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 					ppv := pv.Parent()
 					if ppv != nil && ppv.Kind() == ast.KindListItem {
 						nesting++
-						vv = ppv.(*ast.ListItem)
+						listItem, ok := ppv.(*ast.ListItem)
+						if !ok {
+							break
+						}
+						vv = listItem
 					} else {
 						break
 					}
