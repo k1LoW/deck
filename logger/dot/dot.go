@@ -25,17 +25,21 @@ type dotHandler struct {
 	handler slog.Handler
 	spinner *spinner.Spinner
 	stdout  io.Writer
+	prefix  []byte
 }
 
 func New(h slog.Handler) (*dotHandler, error) {
-	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	stdout := colorable.NewColorableStdout()
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond, spinner.WithWriter(stdout))
 	if err := s.Color("yellow"); err != nil {
 		return nil, err
 	}
+	s.Start()
+	s.Disable()
 	return &dotHandler{
 		handler: h,
 		spinner: s,
-		stdout:  colorable.NewColorableStdout(),
+		stdout:  stdout,
 	}, nil
 }
 
@@ -44,17 +48,32 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
-	h.spinner.Stop()
+	if strings.HasPrefix(r.Message, "retrying") {
+		if !h.spinner.Enabled() {
+			h.spinner.Enable()
+		}
+		return nil
+	}
+	if h.spinner.Enabled() {
+		h.spinner.Disable()
+		_, _ = h.stdout.Write(h.prefix)
+	}
 	if r.Message == "applied page" {
-		_, _ = h.stdout.Write([]byte(yellow(".")))
+		if err := h.write([]byte(yellow("."))); err != nil {
+			return err
+		}
 		return nil
 	}
 	if r.Message == "deleted page" {
-		_, _ = h.stdout.Write([]byte(gray("-")))
+		if err := h.write([]byte(gray("-"))); err != nil {
+			return err
+		}
 		return nil
 	}
 	if r.Message == "appended page" {
-		_, _ = h.stdout.Write([]byte(yellow("+")))
+		if err := h.write([]byte(yellow("+"))); err != nil {
+			return err
+		}
 		return nil
 	}
 	if r.Message == "moved page" {
@@ -70,22 +89,26 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 		})
 		switch {
 		case from < to:
-			_, _ = h.stdout.Write([]byte(green("↓")))
+			if err := h.write([]byte(green("↓"))); err != nil {
+				return err
+			}
 		case from > to:
-			_, _ = h.stdout.Write([]byte(green("↑")))
+			if err := h.write([]byte(green("↑"))); err != nil {
+				return err
+			}
 		}
 		return nil
 	}
 	if r.Message == "inserted page" {
-		_, _ = h.stdout.Write([]byte(yellow("+")))
-		return nil
-	}
-	if strings.HasPrefix(r.Message, "retrying") {
-		h.spinner.Start()
+		if err := h.write([]byte(yellow("+"))); err != nil {
+			return err
+		}
 		return nil
 	}
 	if strings.Contains(r.Message, "because freeze:true") {
-		_, _ = h.stdout.Write([]byte(cyan("*")))
+		if err := h.write([]byte(cyan("*"))); err != nil {
+			return err
+		}
 		return nil
 	}
 	if r.Message == "apply completed" {
@@ -101,4 +124,13 @@ func (h *dotHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 func (h *dotHandler) WithGroup(name string) slog.Handler {
 	return &dotHandler{handler: h.handler.WithGroup(name), spinner: h.spinner, stdout: h.stdout}
+}
+
+func (h *dotHandler) write(s []byte) error {
+	_, err := h.stdout.Write(s)
+	if err != nil {
+		return err
+	}
+	h.prefix = append(h.prefix, s...)
+	return nil
 }
