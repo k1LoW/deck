@@ -32,7 +32,7 @@ func TestApplyAction(t *testing.T) {
 				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
 			},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.appendPage(ctx, &Slide{Layout: "title-and-body", Titles: []string{"Slide 2"}}); err != nil {
+				if err := d.AppendPage(ctx, &Slide{Layout: "title-and-body", Titles: []string{"Slide 2"}}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -45,7 +45,7 @@ func TestApplyAction(t *testing.T) {
 			name:   "append slide (index 0)",
 			before: Slides{},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.appendPage(ctx, &Slide{Layout: "title-and-body", Titles: []string{"Slide 1"}}); err != nil {
+				if err := d.AppendPage(ctx, &Slide{Layout: "title-and-body", Titles: []string{"Slide 1"}}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -59,7 +59,7 @@ func TestApplyAction(t *testing.T) {
 				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
 			},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.insertPage(ctx, 0, &Slide{Layout: "title-and-body", Titles: []string{"Slide 2"}}); err != nil {
+				if err := d.InsertPage(ctx, 0, &Slide{Layout: "title-and-body", Titles: []string{"Slide 2"}}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -75,7 +75,7 @@ func TestApplyAction(t *testing.T) {
 				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
 			},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.insertPage(ctx, 1, &Slide{Layout: "title-and-body", Titles: []string{"Slide 1.5"}}); err != nil {
+				if err := d.InsertPage(ctx, 1, &Slide{Layout: "title-and-body", Titles: []string{"Slide 1.5"}}); err != nil {
 					t.Fatal(err)
 				}
 			},
