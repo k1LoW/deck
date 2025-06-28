@@ -33,7 +33,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/k1LoW/deck"
-	"github.com/k1LoW/deck/handler/dot"
+	"github.com/k1LoW/deck/logger/dot"
 	"github.com/k1LoW/deck/md"
 	"github.com/spf13/cobra"
 )
