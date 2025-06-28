@@ -1898,10 +1898,16 @@ func (l *apiLogger) Info(msg string, keysAndValues ...any) {
 	l.l.Info(msg, append([]any{slog.String("original_log_level", "info")}, keysAndValues...)...)
 }
 func (l *apiLogger) Debug(msg string, keysAndValues ...any) {
-	l.l.Info(msg, append([]any{slog.String("original_log_level", "debug")}, keysAndValues...)...)
+	if strings.HasPrefix(msg, "retrying") {
+		// If the message starts with "retrying", log it as info instead of debug
+		// For displaying spinner messages in the console
+		l.l.Info(msg, append([]any{slog.String("original_log_level", "debug")}, keysAndValues...)...)
+		return
+	}
+	l.l.Debug(msg, append([]any{slog.String("original_log_level", "debug")}, keysAndValues...)...)
 }
 func (l *apiLogger) Warn(msg string, keysAndValues ...any) {
-	l.l.Info(msg, append([]any{slog.String("original_log_level", "warn")}, keysAndValues...)...)
+	l.l.Warn(msg, append([]any{slog.String("original_log_level", "warn")}, keysAndValues...)...)
 }
 
 func newAPILogger(l *slog.Logger) retryablehttp.LeveledLogger {
