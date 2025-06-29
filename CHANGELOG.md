@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.28.0](https://github.com/k1LoW/deck/compare/v0.27.1...v0.28.0) - 2025-06-29
+### New Features 🎉
+- feat: add global image caching mechanism by @k1LoW in https://github.com/k1LoW/deck/pull/160
+
 ## [v0.27.1](https://github.com/k1LoW/deck/compare/v0.27.0...v0.27.1) - 2025-06-29
 ### New Features 🎉
 - fix: cache calculated checksums and pHash values for image comparison by @k1LoW in https://github.com/k1LoW/deck/pull/157
