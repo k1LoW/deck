@@ -77,12 +77,13 @@ const (
 )
 
 type Image struct {
-	i        image.Image
-	mimeType MIMEType
-	url      string                 // URL if the image was fetched from a URL
-	checksum uint32                 // Checksum for the image data
-	pHash    *goimagehash.ImageHash // Perceptual hash for JPEG images
-	modTime  time.Time              // Modification time of the image file, if applicable
+	i            image.Image
+	mimeType     MIMEType
+	url          string // URL if the image was fetched from a URL
+	fromMarkdown bool
+	checksum     uint32                 // Checksum for the image data
+	pHash        *goimagehash.ImageHash // Perceptual hash for JPEG images
+	modTime      time.Time              // Modification time of the image file, if applicable
 }
 
 func NewImage(pathOrURL string) (*Image, error) {
@@ -129,7 +130,7 @@ func NewImage(pathOrURL string) (*Image, error) {
 		defer file.Close()
 		b = file
 	}
-	i, err := NewImageFromBuffer(b)
+	i, err := newImageFromBuffer(b)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image from buffer: %w", err)
 	}
@@ -139,7 +140,25 @@ func NewImage(pathOrURL string) (*Image, error) {
 	return i, nil
 }
 
-func NewImageFromBuffer(buf io.Reader) (*Image, error) {
+func NewImageFromMarkdown(pathOrURL string) (*Image, error) {
+	i, err := NewImage(pathOrURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create image from code block: %w", err)
+	}
+	i.fromMarkdown = true
+	return i, nil
+}
+
+func NewImageFromMarkdownBuffer(buf io.Reader) (*Image, error) {
+	i, err := newImageFromBuffer(buf)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create image from code block: %w", err)
+	}
+	i.fromMarkdown = true
+	return i, nil
+}
+
+func newImageFromBuffer(buf io.Reader) (*Image, error) {
 	img, mimeType, err := image.Decode(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
@@ -161,27 +180,27 @@ func NewImageFromBuffer(buf io.Reader) (*Image, error) {
 	}, nil
 }
 
-func CompareImages(a, b *Image) bool {
-	if a == nil || b == nil {
+func (i *Image) Compare(ii *Image) bool {
+	if i == nil || ii == nil {
 		return false
 	}
-	if a.mimeType != b.mimeType {
+	if i.mimeType != ii.mimeType {
 		return false
 	}
-	if a.i.Bounds().String() != b.i.Bounds().String() {
+	if i.i.Bounds().String() != ii.i.Bounds().String() {
 		return false
 	}
-	if a.Checksum() == b.Checksum() {
+	if i.Checksum() == i.Checksum() {
 		return true
 	}
-	if a.mimeType == MIMETypeImageJPEG {
+	if i.mimeType == MIMETypeImageJPEG {
 		// Only JPEG images are compressed on the Google Slides side,
 		// so we use Perceptual Hashing for comparison
-		aHash, err := a.PHash()
+		aHash, err := i.PHash()
 		if err != nil {
 			return false
 		}
-		bHash, err := b.PHash()
+		bHash, err := ii.PHash()
 		if err != nil {
 			return false
 		}
@@ -231,7 +250,7 @@ func (i *Image) String() string {
 			return ""
 		}
 	case MIMETypeImageJPEG:
-		if err := jpeg.Encode(&buf, i.i, nil); err != nil {
+		if err := jpeg.Encode(&buf, i.i, &jpeg.Options{Quality: 100}); err != nil {
 			return ""
 		}
 	case MIMETypeImageGIF:
@@ -256,7 +275,7 @@ func (i *Image) Bytes() []byte {
 			return nil
 		}
 	case MIMETypeImageJPEG:
-		if err := jpeg.Encode(&buf, i.i, nil); err != nil {
+		if err := jpeg.Encode(&buf, i.i, &jpeg.Options{Quality: 100}); err != nil {
 			return nil
 		}
 	case MIMETypeImageGIF:

@@ -139,7 +139,7 @@ func TestMarkdownToSlide(t *testing.T) {
 				for _, image := range slide.Images {
 					found := false
 					for _, mdImage := range fromMd[i].Images {
-						if deck.CompareImages(image, mdImage) {
+						if image.Compare(mdImage) {
 							found = true
 							break
 						}
@@ -160,7 +160,7 @@ func TestMarkdownToSlide(t *testing.T) {
 				for _, image := range slide.Images {
 					found := false
 					for _, mdImage := range applied[i].Images {
-						if deck.CompareImages(image, mdImage) {
+						if image.Compare(mdImage) {
 							found = true
 							break
 						}

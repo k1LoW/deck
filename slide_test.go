@@ -239,7 +239,7 @@ func TestImageBytes(t *testing.T) {
 	}
 }
 
-func TestCompareImages(t *testing.T) {
+func TestCompare(t *testing.T) {
 	tests := []struct {
 		name     string
 		imageA   string
@@ -284,9 +284,9 @@ func TestCompareImages(t *testing.T) {
 				t.Fatalf("failed to load image B: %v", err)
 			}
 
-			result := CompareImages(imgA, imgB)
+			result := imgA.Compare(imgB)
 			if result != tt.expected {
-				t.Errorf("CompareImages() = %v, expected %v", result, tt.expected)
+				t.Errorf("Compare() = %v, expected %v", result, tt.expected)
 			}
 		})
 	}

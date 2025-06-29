@@ -32,12 +32,13 @@ import (
 var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
 
 const (
-	layoutNameForStyle    = "style"
-	styleCode             = "code"
-	styleBold             = "bold"
-	styleItalic           = "italic"
-	styleLink             = "link"
-	defaultCodeFontFamily = "Noto Sans Mono"
+	layoutNameForStyle           = "style"
+	styleCode                    = "code"
+	styleBold                    = "bold"
+	styleItalic                  = "italic"
+	styleLink                    = "link"
+	defaultCodeFontFamily        = "Noto Sans Mono"
+	descriptionImageFromMarkdown = "Image generated from markdown"
 )
 
 type Deck struct {
@@ -454,10 +455,11 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	}
 
 	var (
-		titles        []placeholder
-		subtitles     []placeholder
-		bodies        []placeholder
-		currentImages []*Image
+		titles                  []placeholder
+		subtitles               []placeholder
+		bodies                  []placeholder
+		currentImages           []*Image
+		currentImageObjectIDMap = map[*Image]string{} // key: *Image, value: objectID
 	)
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
@@ -493,11 +495,23 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			}
 		}
 		if element.Image != nil {
-			image, err := NewImage(element.Image.ContentUrl)
-			if err != nil {
-				return fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
+			var (
+				image *Image
+				err   error
+			)
+			if element.Description == descriptionImageFromMarkdown {
+				image, err = NewImageFromMarkdown(element.Image.ContentUrl)
+				if err != nil {
+					return fmt.Errorf("failed to create image from code block %s: %w", element.Image.ContentUrl, err)
+				}
+			} else {
+				image, err = NewImage(element.Image.ContentUrl)
+				if err != nil {
+					return fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
+				}
 			}
 			currentImages = append(currentImages, image)
+			currentImageObjectIDMap[image] = element.ObjectId
 		}
 	}
 	var speakerNotesID string
@@ -879,7 +893,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	for _, image := range slide.Images {
 		found := false
 		for _, currentImage := range currentImages {
-			if CompareImages(currentImage, image) {
+			if currentImage.Compare(image) {
 				found = true
 				break
 			}
@@ -917,12 +931,47 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
 		}
 
+		imageObjectID := uuid.New().String()
 		req.Requests = append(req.Requests, &slides.Request{
 			CreateImage: &slides.CreateImageRequest{
+				ObjectId: imageObjectID,
 				ElementProperties: &slides.PageElementProperties{
 					PageObjectId: currentSlide.ObjectId,
 				},
 				Url: f.WebContentLink,
+			},
+		})
+		if image.fromMarkdown {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
+					ObjectId:    imageObjectID,
+					Description: descriptionImageFromMarkdown,
+				},
+			})
+		}
+	}
+	// prune unmatched images via markdown
+	for _, currentImage := range currentImages {
+		if !currentImage.fromMarkdown {
+			continue
+		}
+		found := false
+		for _, image := range slide.Images {
+			if currentImage.Compare(image) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		imageObjectID, ok := currentImageObjectIDMap[currentImage]
+		if !ok {
+			return fmt.Errorf("image object ID not found for image: %s", currentImage.url)
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: imageObjectID,
 			},
 		})
 	}
@@ -1692,9 +1741,20 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 			}
 		}
 		if element.Image != nil {
-			image, err := NewImage(element.Image.ContentUrl)
-			if err != nil {
-				continue // Skip if image cannot be created
+			var (
+				image *Image
+				err   error
+			)
+			if element.Description == descriptionImageFromMarkdown {
+				image, err = NewImageFromMarkdown(element.Image.ContentUrl)
+				if err != nil {
+					continue // Skip if image cannot be created
+				}
+			} else {
+				image, err = NewImage(element.Image.ContentUrl)
+				if err != nil {
+					continue // Skip if image cannot be created
+				}
 			}
 			images = append(images, image)
 		}
