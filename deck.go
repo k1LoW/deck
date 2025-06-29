@@ -378,12 +378,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		}
 	}
 
-	// Note: DeletePageAfter is still needed to handle cases where slides are reduced
-	// but not explicitly deleted through diff actions (e.g., when the new slide count is less)
-	if err := d.DeletePageAfter(ctx, len(ss)-1); err != nil {
-		return err
-	}
-
 	return nil
 }
 
