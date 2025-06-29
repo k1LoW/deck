@@ -82,6 +82,13 @@ type bulletRange struct {
 	end    int64
 }
 
+type actionDetail struct {
+	ActionType  actionType `json:"action_type"`
+	Titles      []string   `json:"titles,omitempty"`
+	Index       *int       `json:"index,omitempty"`
+	MoveToIndex *int       `json:"move_to_index,omitempty"`
+}
+
 // Presentation represents a Google Slides presentation.
 type Presentation struct {
 	ID    string
@@ -336,17 +343,37 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 		return fmt.Errorf("failed to generate actions: %w", err)
 	}
 
-	var actionDetails []string
+	var actionDetails []actionDetail
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
-			actionDetails = append(actionDetails, fmt.Sprintf("append slide at index %d: %s", len(d.presentation.Slides), action.slide.Titles))
+			actionDetails = append(actionDetails, actionDetail{
+				ActionType:  actionTypeAppend,
+				Titles:      action.slide.Titles,
+				Index:       nil,
+				MoveToIndex: nil,
+			})
 		case actionTypeInsert:
-			actionDetails = append(actionDetails, fmt.Sprintf("insert slide at index %d: %s", action.index, action.slide.Titles))
+			actionDetails = append(actionDetails, actionDetail{
+				ActionType:  actionTypeInsert,
+				Titles:      action.slide.Titles,
+				Index:       &action.index,
+				MoveToIndex: nil,
+			})
 		case actionTypeUpdate:
-			actionDetails = append(actionDetails, fmt.Sprintf("update slide at index %d: %s", action.index, action.slide.Titles))
+			actionDetails = append(actionDetails, actionDetail{
+				ActionType:  actionTypeUpdate,
+				Titles:      action.slide.Titles,
+				Index:       &action.index,
+				MoveToIndex: nil,
+			})
 		case actionTypeMove:
-			actionDetails = append(actionDetails, fmt.Sprintf("move slide from index %d to %d: %s", action.index, action.moveToIndex, action.slide.Titles))
+			actionDetails = append(actionDetails, actionDetail{
+				ActionType:  actionTypeMove,
+				Titles:      action.slide.Titles,
+				Index:       &action.index,
+				MoveToIndex: &action.moveToIndex,
+			})
 		}
 	}
 	d.logger.Info("applying actions", slog.Any("actions", actionDetails))

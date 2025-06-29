@@ -67,7 +67,7 @@ var applyCmd = &cobra.Command{
 		}
 		if verbose {
 			logger = slog.New(
-				slog.NewTextHandler(os.Stdout, nil),
+				slog.NewJSONHandler(os.Stdout, nil),
 			)
 		} else {
 			h, err := dot.New(slog.NewTextHandler(os.Stdout, nil))
