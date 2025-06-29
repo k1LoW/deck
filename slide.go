@@ -93,8 +93,7 @@ func NewImage(pathOrURL string) (*Image, error) {
 		if ok {
 			return i, nil
 		}
-		_, err := url.Parse(pathOrURL)
-		if err != nil {
+		if _, err := url.Parse(pathOrURL); err != nil {
 			return nil, fmt.Errorf("invalid URL %s: %w", pathOrURL, err)
 		}
 
