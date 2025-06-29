@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.29.0](https://github.com/k1LoW/deck/compare/v0.28.0...v0.29.0) - 2025-06-29
+### New Features 🎉
+- fix: prune old images via markdown by @k1LoW in https://github.com/k1LoW/deck/pull/165
+### Fix bug 🐛
+- fix: optimize markdown content comparisons by @k1LoW in https://github.com/k1LoW/deck/pull/162
+- fix: respond when images are manually deleted in Google Slides by @k1LoW in https://github.com/k1LoW/deck/pull/164
+
 ## [v0.28.0](https://github.com/k1LoW/deck/compare/v0.27.1...v0.28.0) - 2025-06-29
 ### New Features 🎉
 - feat: add global image caching mechanism by @k1LoW in https://github.com/k1LoW/deck/pull/160
