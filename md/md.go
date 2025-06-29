@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -533,65 +533,72 @@ func contentEqual(old, new *Content) bool {
 	}
 
 	// Compare titles
-	if !reflect.DeepEqual(old.Titles, new.Titles) {
+	if !slices.Equal(old.Titles, new.Titles) {
 		return false
 	}
 
 	// Compare subtitles
-	if !reflect.DeepEqual(old.Subtitles, new.Subtitles) {
+	if !slices.Equal(old.Subtitles, new.Subtitles) {
 		return false
 	}
 
 	// Compare comments
-	if !reflect.DeepEqual(old.Comments, new.Comments) {
+	if !slices.Equal(old.Comments, new.Comments) {
 		return false
+	}
+
+	// Compare code blocks
+	{
+		a, err := json.Marshal(old.CodeBlocks)
+		if err != nil {
+			return false
+		}
+		b, err := json.Marshal(new.CodeBlocks)
+		if err != nil {
+			return false
+		}
+		if !bytes.Equal(a, b) {
+			return false
+		}
 	}
 
 	// Compare bodies
-	if len(old.Bodies) != len(new.Bodies) {
-		return false
-	}
-
-	for i, oldBody := range old.Bodies {
-		newBody := new.Bodies[i]
-
-		if len(oldBody.Paragraphs) != len(newBody.Paragraphs) {
+	{
+		a, err := json.Marshal(old.Bodies)
+		if err != nil {
 			return false
 		}
-
-		for j, oldPara := range oldBody.Paragraphs {
-			newPara := newBody.Paragraphs[j]
-
-			if oldPara.Bullet != newPara.Bullet || oldPara.Nesting != newPara.Nesting {
-				return false
-			}
-
-			if len(oldPara.Fragments) != len(newPara.Fragments) {
-				return false
-			}
-
-			for k, oldFrag := range oldPara.Fragments {
-				newFrag := newPara.Fragments[k]
-
-				if oldFrag.Value != newFrag.Value ||
-					oldFrag.Bold != newFrag.Bold ||
-					oldFrag.Italic != newFrag.Italic ||
-					oldFrag.Link != newFrag.Link ||
-					oldFrag.SoftLineBreak != newFrag.SoftLineBreak {
-					return false
-				}
-			}
+		b, err := json.Marshal(new.Bodies)
+		if err != nil {
+			return false
+		}
+		if !bytes.Equal(a, b) {
+			return false
 		}
 	}
 
 	// Compare images
-	if len(old.Images) != len(new.Images) {
-		return false
-	}
-
-	for i, oldImage := range old.Images {
-		newImage := new.Images[i]
-		if bytes.Equal(oldImage.Bytes(), newImage.Bytes()) {
+	{
+		if len(old.Images) != len(new.Images) {
+			return false
+		}
+		var imageChecksums1 []uint32
+		var imageChecksums2 []uint32
+		for _, img := range old.Images {
+			if img == nil {
+				continue // Skip nil images
+			}
+			imageChecksums1 = append(imageChecksums1, img.Checksum())
+		}
+		for _, img := range new.Images {
+			if img == nil {
+				continue // Skip nil images
+			}
+			imageChecksums2 = append(imageChecksums2, img.Checksum())
+		}
+		slices.Sort(imageChecksums1)
+		slices.Sort(imageChecksums2)
+		if !slices.Equal(imageChecksums1, imageChecksums2) {
 			return false
 		}
 	}
