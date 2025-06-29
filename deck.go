@@ -282,6 +282,9 @@ func (d *Deck) Apply(ctx context.Context, slides Slides) error {
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
 func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
 	layoutObjectIdMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutObjectIdMap[l.ObjectId] = l
