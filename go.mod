@@ -19,7 +19,7 @@ require (
 	github.com/yuin/goldmark v1.7.12
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.15.0
-	google.golang.org/api v0.238.0
+	google.golang.org/api v0.239.0
 )
 
 require (
