@@ -931,7 +931,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
 		}
 
-		imageObjectID := uuid.New().String()
+		imageObjectID := fmt.Sprintf("image-%s", uuid.New().String())
 		req.Requests = append(req.Requests, &slides.Request{
 			CreateImage: &slides.CreateImageRequest{
 				ObjectId: imageObjectID,
@@ -1541,7 +1541,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) error 
 			var paragraphInfos []paragraphInfo
 			currentIndex := int64(0)
 			text := ""
-			shapeObjectID := uuid.New().String()
+			shapeObjectID := fmt.Sprintf("shape-%s", uuid.New().String())
 
 			for _, textElement := range element.Shape.Text.TextElements {
 				if textElement.ParagraphMarker != nil {
