@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.27.1](https://github.com/k1LoW/deck/compare/v0.27.0...v0.27.1) - 2025-06-29
+### New Features 🎉
+- fix: cache calculated checksums and pHash values for image comparison by @k1LoW in https://github.com/k1LoW/deck/pull/157
+### Fix bug 🐛
+- fix(md): correct image copying logic in ToSlides by @k1LoW in https://github.com/k1LoW/deck/pull/159
+
 ## [v0.27.0](https://github.com/k1LoW/deck/compare/v0.26.0...v0.27.0) - 2025-06-28
 ### New Features 🎉
 - feat(dot): display a spinner when retrying a Google Slides API call by @k1LoW in https://github.com/k1LoW/deck/pull/151
