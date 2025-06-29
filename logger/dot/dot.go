@@ -17,6 +17,7 @@ var (
 	cyan   = color.New(color.FgCyan).SprintFunc()
 	gray   = color.New(color.FgHiBlack).SprintFunc()
 	green  = color.New(color.FgGreen).SprintFunc()
+	red    = color.New(color.FgRed).SprintFunc()
 )
 
 var _ slog.Handler = (*dotHandler)(nil)
@@ -107,6 +108,12 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 	if strings.Contains(r.Message, "because freeze:true") {
 		if err := h.write([]byte(cyan("*"))); err != nil {
+			return err
+		}
+		return nil
+	}
+	if strings.Contains(r.Message, "failed to") {
+		if err := h.write([]byte(red("!"))); err != nil {
 			return err
 		}
 		return nil
