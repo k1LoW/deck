@@ -242,7 +242,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 	slides := make([]*deck.Slide, len(contents))
 	for i, content := range contents {
 		var images []*deck.Image
-		_ = copy(images, content.Images)
+		images = append(images, content.Images...)
 		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
 			mu := sync.Mutex{}
 			eg := errgroup.Group{}
