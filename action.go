@@ -872,17 +872,23 @@ func imagesEqual(images1, images2 []*Image) bool {
 	if len(images1) != len(images2) {
 		return false
 	}
-
-	images1B, err := json.Marshal(images1)
-	if err != nil {
-		return false
+	var imageChecksums1 []uint32
+	var imageChecksums2 []uint32
+	for _, img := range images1 {
+		if img == nil {
+			continue // Skip nil images
+		}
+		imageChecksums1 = append(imageChecksums1, img.Checksum())
 	}
-	images2B, err := json.Marshal(images2)
-	if err != nil {
-		return false
+	for _, img := range images2 {
+		if img == nil {
+			continue // Skip nil images
+		}
+		imageChecksums2 = append(imageChecksums2, img.Checksum())
 	}
-
-	return bytes.Equal(images1B, images2B)
+	slices.Sort(imageChecksums1)
+	slices.Sort(imageChecksums2)
+	return slices.Equal(imageChecksums1, imageChecksums2)
 }
 
 // applyDeleteMarks applies delete marks from after slides to corresponding before slides

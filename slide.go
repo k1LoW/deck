@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"hash/crc32"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -78,6 +79,9 @@ const (
 type Image struct {
 	i        image.Image
 	mimeType MIMEType
+	url      string                 // URL if the image was fetched from a URL
+	checksum uint32                 // Checksum for the image data
+	pHash    *goimagehash.ImageHash // Perceptual hash for JPEG images
 }
 
 func NewImage(pathOrURL string) (*Image, error) {
@@ -109,7 +113,12 @@ func NewImage(pathOrURL string) (*Image, error) {
 		defer file.Close()
 		b = file
 	}
-	return NewImageFromBuffer(b)
+	i, err := NewImageFromBuffer(b)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create image from buffer: %w", err)
+	}
+	i.url = pathOrURL
+	return i, nil
 }
 
 func NewImageFromBuffer(buf io.Reader) (*Image, error) {
@@ -144,17 +153,17 @@ func CompareImages(a, b *Image) bool {
 	if a.i.Bounds().String() != b.i.Bounds().String() {
 		return false
 	}
-	if bytes.Equal(a.Bytes(), b.Bytes()) {
+	if a.Checksum() == b.Checksum() {
 		return true
 	}
 	if a.mimeType == MIMETypeImageJPEG {
 		// Only JPEG images are compressed on the Google Slides side,
 		// so we use Perceptual Hashing for comparison
-		aHash, err := goimagehash.PerceptionHash(a.i)
+		aHash, err := a.PHash()
 		if err != nil {
 			return false
 		}
-		bHash, err := goimagehash.PerceptionHash(b.i)
+		bHash, err := b.PHash()
 		if err != nil {
 			return false
 		}
@@ -167,6 +176,30 @@ func CompareImages(a, b *Image) bool {
 		}
 	}
 	return false
+}
+
+func (i *Image) Checksum() uint32 {
+	if i == nil {
+		return 0
+	}
+	if i.checksum == 0 {
+		i.checksum = crc32.ChecksumIEEE(i.Bytes())
+	}
+	return i.checksum
+}
+
+func (i *Image) PHash() (*goimagehash.ImageHash, error) {
+	if i == nil {
+		return nil, fmt.Errorf("image is nil")
+	}
+	if i.pHash == nil {
+		pHash, err := goimagehash.PerceptionHash(i.i)
+		if err != nil {
+			return nil, fmt.Errorf("failed to compute perceptual hash: %w", err)
+		}
+		i.pHash = pHash
+	}
+	return i.pHash, nil
 }
 
 func (i *Image) String() string {
