@@ -485,6 +485,17 @@ func copySlide(slide *Slide) *Slide {
 	copied.new = slide.new
 	copied.delete = slide.delete
 
+	for _, image := range slide.Images {
+		if image == nil {
+			continue
+		}
+		for _, copiedImage := range copied.Images {
+			if image.Compare(copiedImage) {
+				copiedImage.fromMarkdown = image.fromMarkdown
+				copiedImage.modTime = image.modTime
+			}
+		}
+	}
 	return copied
 }
 
@@ -504,6 +515,17 @@ func copySlides(slides Slides) (Slides, error) {
 	var copied Slides
 	if err := json.Unmarshal(data, &copied); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal slides: %w", err)
+	}
+
+	for i, slide := range slides {
+		for _, image := range slide.Images {
+			for _, copiedImage := range copied[i].Images {
+				if image.Compare(copiedImage) {
+					copiedImage.fromMarkdown = image.fromMarkdown
+					copiedImage.modTime = image.modTime
+				}
+			}
+		}
 	}
 
 	return copied, nil

@@ -1447,7 +1447,7 @@ func TestGenerateActionsWithImages(t *testing.T) {
 				for _, image := range slide.Images {
 					found := false
 					for _, afterImage := range tt.after[i].Images {
-						if CompareImages(image, afterImage) {
+						if image.Compare(afterImage) {
 							found = true
 							break
 						}

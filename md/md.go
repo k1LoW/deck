@@ -283,7 +283,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 					if err := cmd.Run(); err != nil {
 						return fmt.Errorf("failed to run code block to image command: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
 					}
-					image, err := deck.NewImageFromBuffer(bytes.NewBuffer(stdout.Bytes()))
+					image, err := deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(stdout.Bytes()))
 					if err != nil {
 						return err
 					}
@@ -375,7 +375,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) ([]*deck.Fragment, []*dec
 			if !strings.Contains(imageLink, "://") && !filepath.IsAbs(imageLink) {
 				imageLink = filepath.Join(baseDir, imageLink)
 			}
-			image, err := deck.NewImage(imageLink)
+			image, err := deck.NewImageFromMarkdown(imageLink)
 			if err != nil {
 				return nil, nil, err
 			}
