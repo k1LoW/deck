@@ -82,11 +82,17 @@ type Image struct {
 	url      string                 // URL if the image was fetched from a URL
 	checksum uint32                 // Checksum for the image data
 	pHash    *goimagehash.ImageHash // Perceptual hash for JPEG images
+	modTime  time.Time              // Modification time of the image file, if applicable
 }
 
 func NewImage(pathOrURL string) (*Image, error) {
 	var b io.Reader
+	var modTime time.Time
 	if strings.HasPrefix(pathOrURL, "http://") || strings.HasPrefix(pathOrURL, "https://") {
+		i, ok := LoadImageCache(pathOrURL)
+		if ok {
+			return i, nil
+		}
 		_, err := url.Parse(pathOrURL)
 		if err != nil {
 			return nil, fmt.Errorf("invalid URL %s: %w", pathOrURL, err)
@@ -106,6 +112,17 @@ func NewImage(pathOrURL string) (*Image, error) {
 		}
 		b = res.Body
 	} else {
+		fi, err := os.Stat(pathOrURL)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat image file %s: %w", pathOrURL, err)
+		}
+		modTime = fi.ModTime()
+		i, ok := LoadImageCache(pathOrURL)
+		if ok {
+			if modTime.Equal(i.modTime) {
+				return i, nil
+			}
+		}
 		file, err := os.Open(pathOrURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open image file %s: %w", pathOrURL, err)
@@ -118,6 +135,8 @@ func NewImage(pathOrURL string) (*Image, error) {
 		return nil, fmt.Errorf("failed to create image from buffer: %w", err)
 	}
 	i.url = pathOrURL
+	i.modTime = modTime
+	StoreImageCache(pathOrURL, i)
 	return i, nil
 }
 
