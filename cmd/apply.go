@@ -51,23 +51,40 @@ var (
 )
 
 var applyCmd = &cobra.Command{
-	Use:   "apply [PRESENTATION_ID] [DECK_FILE]",
+	Use:   "apply [PRESENTATION_ID] DECK_FILE",
 	Short: "apply desk written in markdown to Google Slides presentation",
 	Long:  `apply desk written in markdown to Google Slides presentation.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if page != "" && watch {
 			return fmt.Errorf("cannot use --page and --watch together")
 		}
-		return cobra.ExactArgs(2)(cmd, args)
+		return cobra.RangeArgs(1, 2)(cmd, args)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		id := args[0]
-		f := args[1]
+		var id, f string
+
+		if len(args) == 1 {
+			// Single argument case: use frontmatter presentationID
+			f = args[0]
+		} else {
+			// Two argument case: traditional usage
+			id = args[0]
+			f = args[1]
+		}
+
 		markdownData, err := md.ParseFile(f)
 		if err != nil {
 			return err
 		}
+
+		if len(args) == 1 {
+			if markdownData.Frontmatter == nil || markdownData.Frontmatter.PresentationID == "" {
+				return fmt.Errorf("presentationID is required in frontmatter")
+			}
+			id = markdownData.Frontmatter.PresentationID
+		}
+
 		contents := markdownData.Contents
 		tailHandler := slog.NewJSONHandler(tb, &slog.HandlerOptions{
 			Level: slog.LevelDebug,

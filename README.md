@@ -60,12 +60,24 @@ The slide pages are represented by dividing them with horizontal lines `---`.
 $ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
+If your markdown file includes `presentationID` in the frontmatter, you can use the simplified syntax:
+
+```console
+$ deck apply deck.md
+```
+
 #### Watch mode
 
 You can use the `--watch` flag to continuously monitor changes to your markdown file and automatically apply them to the presentation:
 
 ```console
 $ deck apply --watch xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+```
+
+Or with frontmatter:
+
+```console
+$ deck apply --watch deck.md
 ```
 
 This is useful during the content creation process as it allows you to see your changes reflected in the presentation in real-time as you edit the markdown file.
@@ -77,11 +89,11 @@ This is useful during the content creation process as it allows you to see your 
 
 ### YAML Frontmatter
 
-`deck` accepts YAML frontmatter at the beginning of your markdown file for future extensibility. Currently, all field content is parsed but not used.
+`deck` accepts YAML frontmatter at the beginning of your markdown file for future extensibility.
 
 ```markdown
 ---
-title: My Presentation
+presentationID: xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ---
 
 # First Slide
@@ -93,6 +105,10 @@ The frontmatter must be:
 - At the very beginning of the file
 - Enclosed between `---` delimiters
 - Valid YAML syntax
+
+#### Available fields
+
+- `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
 
 Note: This feature is reserved for future enhancements.
 
