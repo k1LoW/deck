@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/goccy/go-yaml"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/errors"
 	"github.com/k1LoW/exec"
@@ -28,6 +29,16 @@ var allowedInlineHTMLElements = []string{
 	"<mark", "<q", "<rp", "<rt", "<ruby", "<s", "<samp", "<small", "<span",
 	"<strong", "<sub", "<sup", "<time", "<u", "<var",
 }
+
+// MD represents a markdown presentation.
+type MD struct {
+	Frontmatter *Frontmatter
+	Contents    Contents
+}
+
+// Frontmatter represents YAML frontmatter data.
+// All YAML fields are ignored during unmarshaling for now.
+type Frontmatter struct{}
 
 // Contents represents a collection of slide contents.
 type Contents []*Content
@@ -56,7 +67,7 @@ type Content struct {
 }
 
 // ParseFile parses a markdown file into contents.
-func ParseFile(f string) (_ Contents, err error) {
+func ParseFile(f string) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -75,22 +86,39 @@ func ParseFile(f string) (_ Contents, err error) {
 
 // Parse parses markdown bytes into contents.
 // It splits the input by "---" delimiters and parses each section as a separate content.
-func Parse(baseDir string, b []byte) (_ Contents, err error) {
+func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
 
+	// Extract YAML frontmatter if present
+	var frontmatter *Frontmatter
+	mayHaveFrontmatter := bytes.HasPrefix(b, []byte("---\n"))
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
+
+	if mayHaveFrontmatter && len(bpages) > 0 {
+		maybeYAMLContent := bpages[0]
+		frontmatter = &Frontmatter{}
+		if err := yaml.Unmarshal(maybeYAMLContent, frontmatter); err == nil {
+			bpages = bpages[1:] // Remove the first page if it contains frontmatter
+		} else {
+			frontmatter = nil
+		}
+	}
+
 	contents := make(Contents, len(bpages))
 	for i, bpage := range bpages {
-		content, err := ParseContent(baseDir, bpage)
+		c, err := ParseContent(baseDir, bpage)
 		if err != nil {
 			return nil, err
 		}
-		contents[i] = content
+		contents[i] = c
 	}
 
-	return contents, nil
+	return &MD{
+		Frontmatter: frontmatter,
+		Contents:    contents,
+	}, nil
 }
 
 // ParseContent parses a single markdown content into a Content structure.

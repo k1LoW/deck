@@ -28,6 +28,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/nested_list.md"},
 		{"../testdata/images.md"},
 		{"../testdata/codeblock.md"},
+		{"../testdata/frontmatter.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
@@ -35,11 +36,11 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contents, err := Parse("../testdata", b)
+			md, err := Parse("../testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := json.MarshalIndent(contents, "", "  ")
+			got, err := json.MarshalIndent(md.Contents, "", "  ")
 			if err != nil {
 				t.Fatal(err)
 			}

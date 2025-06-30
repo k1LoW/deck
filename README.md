@@ -75,6 +75,27 @@ This is useful during the content creation process as it allows you to see your 
 
 ## Support markdown rules
 
+### YAML Frontmatter
+
+`deck` accepts YAML frontmatter at the beginning of your markdown file for future extensibility. Currently, all field content is parsed but not used.
+
+```markdown
+---
+title: My Presentation
+---
+
+# First Slide
+
+Content...
+```
+
+The frontmatter must be:
+- At the very beginning of the file
+- Enclosed between `---` delimiters
+- Valid YAML syntax
+
+Note: This feature is reserved for future enhancements.
+
 ### Insertion rule
 
 `deck` inserts values according to the following rules regardless of the slide layout.
