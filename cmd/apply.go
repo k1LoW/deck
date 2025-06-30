@@ -61,10 +61,11 @@ var applyCmd = &cobra.Command{
 		ctx := cmd.Context()
 		id := args[0]
 		f := args[1]
-		contents, err := md.ParseFile(f)
+		presentation, err := md.ParseFile(f)
 		if err != nil {
 			return err
 		}
+		contents := presentation.Contents
 		if verbose {
 			logger = slog.New(
 				slog.NewJSONHandler(os.Stdout, nil),
@@ -250,8 +251,10 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			var parseErr error
 
 			for retry := range 3 {
-				newContents, parseErr = md.ParseFile(filePath)
+				var newPresentation *md.Presentation
+				newPresentation, parseErr = md.ParseFile(filePath)
 				if parseErr == nil {
+					newContents = newPresentation.Contents
 					break
 				}
 

@@ -1,0 +1,67 @@
+[
+  {
+    "layout": "title",
+    "titles": [
+      "Title with Frontmatter"
+    ],
+    "subtitles": [
+      "Subtitle"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is a test slide with YAML frontmatter."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Second Slide"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Item 1"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Item 2"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Item 3"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "The frontmatter should only be available in the first slide."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
