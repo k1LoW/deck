@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.29.1](https://github.com/k1LoW/deck/compare/v0.29.0...v0.29.1) - 2025-06-30
+### Other Changes
+- refactor(deck): remove redundant DeletePageAfter call in ApplyPages function by @k1LoW in https://github.com/k1LoW/deck/pull/166
+- refactor: prepend identifiers with type in object ID generation by @k1LoW in https://github.com/k1LoW/deck/pull/167
+- feat(logger): add red color for failure messages by @k1LoW in https://github.com/k1LoW/deck/pull/169
+- feat(apply): switch to JSON logging when `--verbose` and enhance action details structure by @k1LoW in https://github.com/k1LoW/deck/pull/170
+- chore(deps): bump google.golang.org/api from 0.238.0 to 0.239.0 in the dependencies group by @dependabot in https://github.com/k1LoW/deck/pull/171
+
 ## [v0.29.0](https://github.com/k1LoW/deck/compare/v0.28.0...v0.29.0) - 2025-06-29
 ### New Features 🎉
 - fix: prune old images via markdown by @k1LoW in https://github.com/k1LoW/deck/pull/165
