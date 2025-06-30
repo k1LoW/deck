@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.30.0](https://github.com/k1LoW/deck/compare/v0.29.1...v0.30.0) - 2025-06-30
+### New Features 🎉
+- feat: create error.json if deck fails by @k1LoW in https://github.com/k1LoW/deck/pull/172
+- feat: integrate tail-based logging and enhance error reporting by @k1LoW in https://github.com/k1LoW/deck/pull/174
+
 ## [v0.29.1](https://github.com/k1LoW/deck/compare/v0.29.0...v0.29.1) - 2025-06-30
 ### Other Changes
 - refactor(deck): remove redundant DeletePageAfter call in ApplyPages function by @k1LoW in https://github.com/k1LoW/deck/pull/166
