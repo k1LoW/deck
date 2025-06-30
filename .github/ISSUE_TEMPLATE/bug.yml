@@ -1,6 +1,6 @@
 name: Bug Report
-description: File a bug report with error.json
-title: "FIXME"
+description: A Bug report with error.json
+title: " "
 labels: ["bug"]
 assignees:
   - k1LoW
@@ -17,7 +17,7 @@ body:
       description: Please paste the result of running `deck -v`.
       placeholder: 0.0.0
     validations:
-      required: false
+      required: true
 
   - type: textarea
     id: what-happened
