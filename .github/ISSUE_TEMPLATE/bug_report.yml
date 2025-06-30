@@ -1,0 +1,39 @@
+name: Bug Report
+description: File a bug report with error.json
+title: ""
+labels: ["bug"]
+assignees:
+  - k1LoW
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+  - type: input
+    id: verson
+    attributes:
+      label: Version
+      description: Please paste the result of running `deck -v`.
+      placeholder: 0.0.0
+    validations:
+      required: false
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+
+  - type: textarea
+    id: error-json
+    attributes:
+      label: error.json
+      description: If an error occurred during deck execution, please paste the contents of `$XDG_STATE_HOME/deck/error.json` or `$HOME/.local/share/deck/error.json`.
+      placeholder: Paste the error.json content here
+      render: json
+    validations:
+      required: false
