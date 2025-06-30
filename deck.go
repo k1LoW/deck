@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/k1LoW/errors"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -96,7 +97,10 @@ type Presentation struct {
 }
 
 // New creates a new Deck.
-func New(ctx context.Context, opts ...Option) (*Deck, error) {
+func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 	}
@@ -115,7 +119,10 @@ func New(ctx context.Context, opts ...Option) (*Deck, error) {
 }
 
 // Create Google Slides presentation.
-func Create(ctx context.Context) (*Deck, error) {
+func Create(ctx context.Context) (_ *Deck, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 	}
@@ -139,7 +146,10 @@ func Create(ctx context.Context) (*Deck, error) {
 }
 
 // CreateFrom creates a new Deck from the presentation ID.
-func CreateFrom(ctx context.Context, id string) (*Deck, error) {
+func CreateFrom(ctx context.Context, id string) (_ *Deck, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 	}
@@ -173,7 +183,10 @@ func CreateFrom(ctx context.Context, id string) (*Deck, error) {
 }
 
 // List Google Slides presentations.
-func List(ctx context.Context) ([]*Presentation, error) {
+func List(ctx context.Context) (_ []*Presentation, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 	}
@@ -197,7 +210,10 @@ func List(ctx context.Context) ([]*Presentation, error) {
 	return presentations, nil
 }
 
-func (d *Deck) initialize(ctx context.Context) error {
+func (d *Deck) initialize(ctx context.Context) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if d.logger == nil {
 		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
@@ -252,7 +268,10 @@ func (d *Deck) ID() string {
 }
 
 // List Google Slides presentations.
-func (d *Deck) List() ([]*Presentation, error) {
+func (d *Deck) List() (_ []*Presentation, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	var presentations []*Presentation
 
 	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
@@ -280,7 +299,10 @@ func (d *Deck) ListLayouts() []string {
 }
 
 // Apply the markdown slides to the presentation.
-func (d *Deck) Apply(ctx context.Context, slides Slides) error {
+func (d *Deck) Apply(ctx context.Context, slides Slides) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	pages := make([]int, 0, len(slides))
 	for i := range len(slides) {
 		pages = append(pages, i+1)
@@ -289,7 +311,10 @@ func (d *Deck) Apply(ctx context.Context, slides Slides) error {
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
+func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
@@ -409,7 +434,10 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) error {
 }
 
 // UpdateTitle updates the title of the presentation.
-func (d *Deck) UpdateTitle(ctx context.Context, title string) error {
+func (d *Deck) UpdateTitle(ctx context.Context, title string) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	file := &drive.File{
 		Name: title,
 	}
@@ -420,7 +448,10 @@ func (d *Deck) UpdateTitle(ctx context.Context, title string) error {
 }
 
 // Export the presentation as PDF.
-func (d *Deck) Export(ctx context.Context, w io.Writer) error {
+func (d *Deck) Export(ctx context.Context, w io.Writer) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	req, err := d.driveSrv.Files.Export(d.id, "application/pdf").Context(ctx).Download()
 	if err != nil {
 		return err
@@ -431,7 +462,10 @@ func (d *Deck) Export(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (d *Deck) DumpSlides(ctx context.Context) (Slides, error) {
+func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if err := d.refresh(ctx); err != nil {
 		return nil, fmt.Errorf("failed to refresh presentation: %w", err)
 	}
@@ -450,7 +484,10 @@ func (d *Deck) DumpSlides(ctx context.Context) (Slides, error) {
 	return slides, nil
 }
 
-func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
+func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
@@ -1006,7 +1043,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) error {
 	return nil
 }
 
-func (d *Deck) DeletePage(ctx context.Context, index int) error {
+func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d.logger.Info("deleting page", slog.Int("index", index))
 	if err := d.deletePage(ctx, index); err != nil {
 		return err
@@ -1015,7 +1055,10 @@ func (d *Deck) DeletePage(ctx context.Context, index int) error {
 	return nil
 }
 
-func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
+func (d *Deck) DeletePageAfter(ctx context.Context, index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if len(d.presentation.Slides) <= index {
 		return nil
 	}
@@ -1039,7 +1082,10 @@ func (d *Deck) DeletePageAfter(ctx context.Context, index int) error {
 	return nil
 }
 
-func (d *Deck) AppendPage(ctx context.Context, slide *Slide) error {
+func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d.logger.Info("appending new page")
 	index := len(d.presentation.Slides)
 	if err := d.createPage(ctx, index, slide); err != nil {
@@ -1058,7 +1104,10 @@ func (d *Deck) AppendPage(ctx context.Context, slide *Slide) error {
 	return nil
 }
 
-func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) error {
+func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d.logger.Info("moving page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
 	if err := d.movePage(ctx, from_index, to_index); err != nil {
 		return err
@@ -1067,7 +1116,10 @@ func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) error {
 	return nil
 }
 
-func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) error {
+func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	layoutMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutMap[l.LayoutProperties.DisplayName] = l
@@ -1103,7 +1155,10 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) error {
 	return nil
 }
 
-func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) error {
+func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	d.logger.Info("inserting page", slog.Int("index", index))
 	if len(d.presentation.Slides) <= index {
 		return fmt.Errorf("index out of range: %d", index)
@@ -1129,7 +1184,10 @@ func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) error {
 	return nil
 }
 
-func (d *Deck) deletePage(ctx context.Context, index int) error {
+func (d *Deck) deletePage(ctx context.Context, index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if len(d.presentation.Slides) <= index {
 		return nil
 	}
@@ -1152,7 +1210,10 @@ func (d *Deck) deletePage(ctx context.Context, index int) error {
 	return nil
 }
 
-func (d *Deck) movePage(ctx context.Context, from_index, to_index int) error {
+func (d *Deck) movePage(ctx context.Context, from_index, to_index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if from_index == to_index || from_index < 0 || to_index < 0 || from_index >= len(d.presentation.Slides) || to_index >= len(d.presentation.Slides) {
 		return nil
 	}
@@ -1184,7 +1245,10 @@ func (d *Deck) movePage(ctx context.Context, from_index, to_index int) error {
 	return nil
 }
 
-func (d *Deck) refresh(ctx context.Context) error {
+func (d *Deck) refresh(ctx context.Context) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	presentation, err := d.srv.Presentations.Get(d.id).Context(ctx).Do()
 	if err != nil {
 		return err
@@ -1237,7 +1301,10 @@ func (d *Deck) refresh(ctx context.Context) error {
 	return nil
 }
 
-func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) error {
+func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	req := &slides.BatchUpdatePresentationRequest{
 		Requests: []*slides.Request{
 			{
@@ -1276,7 +1343,10 @@ func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) error
 	return nil
 }
 
-func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.Client, error) {
+func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (_ *http.Client, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	tokenPath := filepath.Join(d.stateHomePath, "token.json")
 	token, err := d.tokenFromFile(tokenPath)
 	if err != nil {
@@ -1333,7 +1403,10 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (*http.
 	return retryClient.StandardClient(), nil
 }
 
-func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oauth2.Token, error) {
+func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (_ *oauth2.Token, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	// Generate code verifier and challenge for PKCE
 	codeVerifier, err := generateCodeVerifier()
 	if err != nil {
@@ -1419,7 +1492,10 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (*oau
 	return token, nil
 }
 
-func (d *Deck) tokenFromFile(file string) (*oauth2.Token, error) {
+func (d *Deck) tokenFromFile(file string) (_ *oauth2.Token, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	f, err := os.Open(file)
 	if err != nil {
 		return nil, err
@@ -1432,7 +1508,10 @@ func (d *Deck) tokenFromFile(file string) (*oauth2.Token, error) {
 	return token, err
 }
 
-func (d *Deck) saveToken(path string, token *oauth2.Token) error {
+func (d *Deck) saveToken(path string, token *oauth2.Token) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return fmt.Errorf("unable to cache oauth token: %w", err)
@@ -1446,7 +1525,10 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) error {
 
 // generateCodeVerifier generates a code verifier for PKCE.
 // Generates a random string of 43-128 characters in compliance with RFC7636.
-func generateCodeVerifier() (string, error) {
+func generateCodeVerifier() (_ string, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	// Generate 64 bytes (512 bits) of random data
 	b := make([]byte, 64)
 	if _, err := rand.Read(b); err != nil {
@@ -1517,7 +1599,10 @@ func getBulletPresetFromSlidesBullet(bullet *slides.Bullet) Bullet {
 	return BulletDash
 }
 
-func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) error {
+func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	currentSlide := d.presentation.Slides[index]
 	// create new page
 	if err := d.createPage(ctx, index+1, slide); err != nil {

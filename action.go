@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+
+	"github.com/k1LoW/errors"
 )
 
 type actionType int
@@ -41,7 +43,11 @@ type action struct {
 	slide       *Slide
 }
 
-func generateActions(before, after Slides) ([]*action, error) {
+func generateActions(before, after Slides) (_ []*action, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	// First, deep copy before and after slides
 	beforeCopy, err := copySlides(before)
 	if err != nil {
@@ -96,7 +102,11 @@ func generateActions(before, after Slides) ([]*action, error) {
 // mapSlides maps before and after slides 1:1
 // Prerequisite: before and after have the same length (adjusted by adjustSlideCount)
 // Returns: map[int]int - mapping with before index as key and after index as value.
-func mapSlides(before, after Slides) (map[int]int, error) {
+func mapSlides(before, after Slides) (_ map[int]int, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	if len(before) != len(after) {
 		return nil, fmt.Errorf("before and after slides must have the same length: before=%d, after=%d", len(before), len(after))
 	}
@@ -352,7 +362,11 @@ type slideScore struct {
 
 // adjustSlideCount adjusts the count of before and after slides to be equal
 // for Hungarian algorithm application.
-func adjustSlideCount(before, after Slides) (Slides, Slides, error) {
+func adjustSlideCount(before, after Slides) (_ Slides, _ Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	if len(before) == len(after) {
 		// No adjustment needed
 		return before, after, nil
@@ -379,7 +393,11 @@ func adjustSlideCount(before, after Slides) (Slides, Slides, error) {
 }
 
 // adjustShorterAfter adds slides to after when it's shorter than before.
-func adjustShorterAfter(before, after Slides) (Slides, Slides, error) {
+func adjustShorterAfter(before, after Slides) (_ Slides, _ Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	needed := len(before) - len(after)
 
 	// Calculate similarity scores for each before slide
@@ -407,7 +425,11 @@ func adjustShorterAfter(before, after Slides) (Slides, Slides, error) {
 }
 
 // adjustShorterBefore adds slides to before when it's shorter than after.
-func adjustShorterBefore(before, after Slides) (Slides, Slides, error) {
+func adjustShorterBefore(before, after Slides) (_ Slides, _ Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	needed := len(after) - len(before)
 
 	// Calculate similarity scores for each after slide
@@ -500,7 +522,11 @@ func copySlide(slide *Slide) *Slide {
 }
 
 // copySlides creates a deep copy of slides using JSON marshal/unmarshal.
-func copySlides(slides Slides) (Slides, error) {
+func copySlides(slides Slides) (_ Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	if slides == nil {
 		return nil, nil
 	}

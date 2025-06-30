@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/errors"
 	"github.com/k1LoW/exec"
 	"github.com/k1LoW/expand"
 	"github.com/yuin/goldmark"
@@ -55,7 +56,11 @@ type Content struct {
 }
 
 // ParseFile parses a markdown file into contents.
-func ParseFile(f string) (Contents, error) {
+func ParseFile(f string) (_ Contents, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	abs, err := filepath.Abs(f)
 	if err != nil {
 		return nil, err
@@ -70,7 +75,11 @@ func ParseFile(f string) (Contents, error) {
 
 // Parse parses markdown bytes into contents.
 // It splits the input by "---" delimiters and parses each section as a separate content.
-func Parse(baseDir string, b []byte) (Contents, error) {
+func Parse(baseDir string, b []byte) (_ Contents, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
 	contents := make(Contents, len(bpages))
 	for i, bpage := range bpages {
@@ -86,7 +95,11 @@ func Parse(baseDir string, b []byte) (Contents, error) {
 
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParseContent(baseDir string, b []byte) (*Content, error) {
+func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	md := goldmark.New()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
@@ -238,7 +251,11 @@ func ParseContent(baseDir string, b []byte) (*Content, error) {
 }
 
 // ToSlides converts the contents to a slice of deck.Slide structures.
-func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (deck.Slides, error) {
+func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	slides := make([]*deck.Slide, len(contents))
 	for i, content := range contents {
 		var images []*deck.Image
@@ -312,7 +329,11 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(baseDir string, b []byte, n ast.Node) ([]*deck.Fragment, []*deck.Image, error) {
+func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []*deck.Image, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	var frags []*deck.Fragment
 	var images []*deck.Image
 	if n == nil {

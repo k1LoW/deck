@@ -9,6 +9,7 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/fatih/color"
+	"github.com/k1LoW/errors"
 	"github.com/mattn/go-colorable"
 )
 
@@ -29,7 +30,11 @@ type dotHandler struct {
 	prefix  []byte
 }
 
-func New(h slog.Handler) (*dotHandler, error) {
+func New(h slog.Handler) (_ *dotHandler, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	stdout := colorable.NewColorableStdout()
 	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond, spinner.WithWriter(stdout))
 	if err := s.Color("yellow"); err != nil {
@@ -48,7 +53,11 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.handler.Enabled(ctx, level)
 }
 
-func (h *dotHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
 	if strings.HasPrefix(r.Message, "retrying") {
 		if !h.spinner.Enabled() {
 			h.spinner.Enable()
@@ -133,8 +142,12 @@ func (h *dotHandler) WithGroup(name string) slog.Handler {
 	return &dotHandler{handler: h.handler.WithGroup(name), spinner: h.spinner, stdout: h.stdout}
 }
 
-func (h *dotHandler) write(s []byte) error {
-	_, err := h.stdout.Write(s)
+func (h *dotHandler) write(s []byte) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
+	_, err = h.stdout.Write(s)
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/corona10/goimagehash"
+	"github.com/k1LoW/errors"
 )
 
 type Slides []*Slide
@@ -86,7 +87,10 @@ type Image struct {
 	modTime      time.Time              // Modification time of the image file, if applicable
 }
 
-func NewImage(pathOrURL string) (*Image, error) {
+func NewImage(pathOrURL string) (_ *Image, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	var b io.Reader
 	var modTime time.Time
 	if strings.HasPrefix(pathOrURL, "http://") || strings.HasPrefix(pathOrURL, "https://") {
@@ -140,7 +144,10 @@ func NewImage(pathOrURL string) (*Image, error) {
 	return i, nil
 }
 
-func NewImageFromMarkdown(pathOrURL string) (*Image, error) {
+func NewImageFromMarkdown(pathOrURL string) (_ *Image, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	i, err := NewImage(pathOrURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image from code block: %w", err)
@@ -149,7 +156,10 @@ func NewImageFromMarkdown(pathOrURL string) (*Image, error) {
 	return i, nil
 }
 
-func NewImageFromMarkdownBuffer(buf io.Reader) (*Image, error) {
+func NewImageFromMarkdownBuffer(buf io.Reader) (_ *Image, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	i, err := newImageFromBuffer(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image from code block: %w", err)
@@ -158,7 +168,10 @@ func NewImageFromMarkdownBuffer(buf io.Reader) (*Image, error) {
 	return i, nil
 }
 
-func newImageFromBuffer(buf io.Reader) (*Image, error) {
+func newImageFromBuffer(buf io.Reader) (_ *Image, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	img, mimeType, err := image.Decode(buf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
@@ -225,7 +238,10 @@ func (i *Image) Checksum() uint32 {
 	return i.checksum
 }
 
-func (i *Image) PHash() (*goimagehash.ImageHash, error) {
+func (i *Image) PHash() (_ *goimagehash.ImageHash, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	if i == nil {
 		return nil, fmt.Errorf("image is nil")
 	}
@@ -288,11 +304,17 @@ func (i *Image) Bytes() []byte {
 	return buf.Bytes()
 }
 
-func (i *Image) MarshalJSON() ([]byte, error) {
+func (i *Image) MarshalJSON() (_ []byte, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	return []byte(`"` + i.String() + `"`), nil
 }
 
-func (i *Image) UnmarshalJSON(data []byte) error {
+func (i *Image) UnmarshalJSON(data []byte) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
 	data = bytes.Trim(data, `"`)
 	if !bytes.HasPrefix(data, []byte(`data:`)) {
 		return fmt.Errorf("invalid image data: %s", data)
