@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.31.0](https://github.com/k1LoW/deck/compare/v0.30.0...v0.31.0) - 2025-06-30
+### New Features 🎉
+- feat: add YAML frontmatter support with new md.MD type by @Songmu in https://github.com/k1LoW/deck/pull/177
+- feat: add presentationID support in frontmatter for simplified apply command by @Songmu in https://github.com/k1LoW/deck/pull/178
+
 ## [v0.30.0](https://github.com/k1LoW/deck/compare/v0.29.1...v0.30.0) - 2025-06-30
 ### New Features 🎉
 - feat: create error.json if deck fails by @k1LoW in https://github.com/k1LoW/deck/pull/172
