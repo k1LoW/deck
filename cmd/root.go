@@ -22,9 +22,15 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
+	"path/filepath"
+	"time"
 
+	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/deck/version"
+	"github.com/k1LoW/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -36,8 +42,29 @@ var rootCmd = &cobra.Command{
 	Version:      version.Version,
 }
 
+type errorData struct {
+	StackTraces any       `json:"stack_traces"`
+	CreatedAt   time.Time `json:"created_at"`
+	Version     string    `json:"version"`
+}
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
+		// Write stack trace log to state directory
+		dumpPath := filepath.Join(config.StateHomePath(), "error.json")
+		d := &errorData{
+			StackTraces: errors.StackTraces(err),
+			CreatedAt:   time.Now(),
+			Version:     version.Version,
+		}
+		b, err := json.Marshal(d)
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+		} else {
+			if err := os.WriteFile(dumpPath, b, 0o600); err != nil {
+				_, _ = fmt.Fprintf(os.Stderr, "failed to write error.json to %s: %v\n", dumpPath, err)
+			}
+		}
 		os.Exit(1)
 	}
 }
