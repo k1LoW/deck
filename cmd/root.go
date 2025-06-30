@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 
 	"github.com/k1LoW/deck/config"
@@ -43,16 +44,32 @@ var rootCmd = &cobra.Command{
 }
 
 type errorData struct {
+	LatestLogs  []any     `json:"latest_logs"`
 	StackTraces any       `json:"stack_traces"`
 	CreatedAt   time.Time `json:"created_at"`
 	Version     string    `json:"version"`
 }
 
+// https://slides.googleapis.com/v1/presentations/xxxxxx
+// https://www.googleapis.com/drive/v3/files/xxxxxx
+var googleAPIURLRe = regexp.MustCompile(`(https://(?:slides.googleapis.com/v1/presentations|www.googleapis.com/drive/v3/files)/)([^\?"]+)`)
+
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		// Write stack trace log to state directory
-		dumpPath := filepath.Join(config.StateHomePath(), "error.json")
+		var latestLogs []any
+		for _, line := range tb.Lines() {
+			// replace Google API URL last key with a placeholder
+			line = googleAPIURLRe.ReplaceAllString(line, "${1}**********************")
+			var m map[string]any
+			if err := json.Unmarshal([]byte(line), &m); err != nil {
+				latestLogs = append(latestLogs, line)
+			} else {
+				latestLogs = append(latestLogs, m)
+			}
+		}
 		d := &errorData{
+			LatestLogs:  latestLogs,
 			StackTraces: errors.StackTraces(err),
 			CreatedAt:   time.Now(),
 			Version:     version.Version,
@@ -61,6 +78,7 @@ func Execute() {
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		} else {
+			dumpPath := filepath.Join(config.StateHomePath(), "error.json")
 			if err := os.WriteFile(dumpPath, b, 0o600); err != nil {
 				_, _ = fmt.Fprintf(os.Stderr, "failed to write error.json to %s: %v\n", dumpPath, err)
 			}
