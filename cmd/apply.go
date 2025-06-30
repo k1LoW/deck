@@ -35,6 +35,8 @@ import (
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/logger/dot"
 	"github.com/k1LoW/deck/md"
+	"github.com/k1LoW/tail"
+	slogmulti "github.com/samber/slog-multi"
 	"github.com/spf13/cobra"
 )
 
@@ -45,6 +47,7 @@ var (
 	verbose             bool
 	logger              *slog.Logger
 	codeBlockToImageCmd string
+	tb                  = tail.New(30)
 )
 
 var applyCmd = &cobra.Command{
@@ -65,16 +68,27 @@ var applyCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		tailHandler := slog.NewJSONHandler(tb, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		})
 		if verbose {
 			logger = slog.New(
-				slog.NewJSONHandler(os.Stdout, nil),
+				slogmulti.Fanout(
+					slog.NewJSONHandler(os.Stdout, nil),
+					tailHandler,
+				),
 			)
 		} else {
 			h, err := dot.New(slog.NewTextHandler(os.Stdout, nil))
 			if err != nil {
 				return fmt.Errorf("failed to create dot handler: %w", err)
 			}
-			logger = slog.New(h)
+			logger = slog.New(
+				slogmulti.Fanout(
+					h,
+					tailHandler,
+				),
+			)
 		}
 		opts := []deck.Option{
 			deck.WithPresentationID(id),
