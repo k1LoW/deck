@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/errors"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
@@ -44,8 +45,6 @@ const (
 
 type Deck struct {
 	id                 string
-	dataHomePath       string
-	stateHomePath      string
 	srv                *slides.Service
 	driveSrv           *drive.Service
 	presentation       *slides.Presentation
@@ -217,24 +216,14 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	if d.logger == nil {
 		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
-	if os.Getenv("XDG_DATA_HOME") != "" {
-		d.dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
-	} else {
-		d.dataHomePath = filepath.Join(os.Getenv("HOME"), ".local", "share", "deck")
-	}
-	if os.Getenv("XDG_STATE_HOME") != "" {
-		d.stateHomePath = filepath.Join(os.Getenv("XDG_STATE_HOME"), "deck")
-	} else {
-		d.stateHomePath = filepath.Join(os.Getenv("HOME"), ".local", "state", "deck")
-	}
-	if err := os.MkdirAll(d.dataHomePath, 0700); err != nil {
+	if err := os.MkdirAll(config.DataHomePath(), 0700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(d.stateHomePath, 0700); err != nil {
+	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
 		return err
 	}
 
-	creds := filepath.Join(d.dataHomePath, "credentials.json")
+	creds := filepath.Join(config.DataHomePath(), "credentials.json")
 	b, err := os.ReadFile(creds)
 	if err != nil {
 		return err
@@ -1343,14 +1332,14 @@ func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err 
 	return nil
 }
 
-func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (_ *http.Client, err error) {
+func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.Client, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	tokenPath := filepath.Join(d.stateHomePath, "token.json")
+	tokenPath := filepath.Join(config.StateHomePath(), "token.json")
 	token, err := d.tokenFromFile(tokenPath)
 	if err != nil {
-		token, err = d.getTokenFromWeb(ctx, config)
+		token, err = d.getTokenFromWeb(ctx, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -1361,12 +1350,12 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (_ *htt
 		// Token has expired, refresh it using the refresh token
 		d.logger.Info("token has expired, refreshing")
 		if token.RefreshToken != "" {
-			tokenSource := config.TokenSource(ctx, token)
+			tokenSource := cfg.TokenSource(ctx, token)
 			newToken, err := tokenSource.Token()
 			if err != nil {
 				d.logger.Info("failed to refresh token, getting new token from web", slog.String("error", err.Error()))
 				// If refresh fails, get a new token from the web
-				newToken, err = d.getTokenFromWeb(ctx, config)
+				newToken, err = d.getTokenFromWeb(ctx, cfg)
 				if err != nil {
 					return nil, err
 				}
@@ -1382,7 +1371,7 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (_ *htt
 		} else {
 			// No refresh token available, get a new token from the web
 			d.logger.Info("no refresh token available, getting new token from web")
-			token, err = d.getTokenFromWeb(ctx, config)
+			token, err = d.getTokenFromWeb(ctx, cfg)
 			if err != nil {
 				return nil, err
 			}
@@ -1391,7 +1380,7 @@ func (d *Deck) getHTTPClient(ctx context.Context, config *oauth2.Config) (_ *htt
 			}
 		}
 	}
-	client := config.Client(ctx, token)
+	client := cfg.Client(ctx, token)
 
 	retryClient := retryablehttp.NewClient()
 	retryClient.HTTPClient = client
