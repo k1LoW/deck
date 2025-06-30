@@ -13,8 +13,10 @@ require (
 	github.com/k1LoW/errors v1.0.0
 	github.com/k1LoW/exec v0.3.0
 	github.com/k1LoW/expand v0.16.2
+	github.com/k1LoW/tail v0.1.0
 	github.com/mattn/go-colorable v0.1.14
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
+	github.com/samber/slog-multi v1.4.1
 	github.com/spf13/cobra v1.9.1
 	github.com/tenntenn/golden v0.5.5
 	github.com/yuin/goldmark v1.7.12
@@ -42,6 +44,8 @@ require (
 	github.com/josharian/txtarfs v0.0.0-20240408113805-5dc76b8fe6bf // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
+	github.com/samber/lo v1.51.0 // indirect
+	github.com/samber/slog-common v0.19.0 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
