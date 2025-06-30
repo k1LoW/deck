@@ -37,8 +37,9 @@ type MD struct {
 }
 
 // Frontmatter represents YAML frontmatter data.
-// All YAML fields are ignored during unmarshaling for now.
-type Frontmatter struct{}
+type Frontmatter struct {
+	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"`
+}
 
 // Contents represents a collection of slide contents.
 type Contents []*Content
