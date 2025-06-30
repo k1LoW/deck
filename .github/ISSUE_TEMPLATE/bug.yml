@@ -1,6 +1,6 @@
 name: Bug Report
 description: A Bug report with error.json
-title: " "
+title: "(Please update title)"
 labels: ["bug"]
 assignees:
   - k1LoW
