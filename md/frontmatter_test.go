@@ -67,16 +67,16 @@ tags:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			presentation, err := Parse(".", []byte(tt.markdown))
+			md, err := Parse(".", []byte(tt.markdown))
 			if err != nil {
 				t.Fatalf("Parse() error = %v", err)
 			}
 
-			if presentation == nil {
-				t.Fatal("Parse() returned nil presentation")
+			if md == nil {
+				t.Fatal("Parse() returned nil md")
 			}
 
-			got := presentation.Frontmatter
+			got := md.Frontmatter
 
 			// Check if frontmatter matches expected value
 			if tt.want == nil {

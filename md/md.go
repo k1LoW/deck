@@ -30,8 +30,8 @@ var allowedInlineHTMLElements = []string{
 	"<strong", "<sub", "<sup", "<time", "<u", "<var",
 }
 
-// Presentation represents a markdown presentation.
-type Presentation struct {
+// MD represents a markdown presentation.
+type MD struct {
 	Frontmatter *Frontmatter
 	Contents    Contents
 }
@@ -67,7 +67,7 @@ type Content struct {
 }
 
 // ParseFile parses a markdown file into contents.
-func ParseFile(f string) (_ *Presentation, err error) {
+func ParseFile(f string) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -86,7 +86,7 @@ func ParseFile(f string) (_ *Presentation, err error) {
 
 // Parse parses markdown bytes into contents.
 // It splits the input by "---" delimiters and parses each section as a separate content.
-func Parse(baseDir string, b []byte) (_ *Presentation, err error) {
+func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -115,7 +115,7 @@ func Parse(baseDir string, b []byte) (_ *Presentation, err error) {
 		contents[i] = c
 	}
 
-	return &Presentation{
+	return &MD{
 		Frontmatter: frontmatter,
 		Contents:    contents,
 	}, nil

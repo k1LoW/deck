@@ -36,11 +36,11 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			presentation, err := Parse("../testdata", b)
+			md, err := Parse("../testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := json.MarshalIndent(presentation.Contents, "", "  ")
+			got, err := json.MarshalIndent(md.Contents, "", "  ")
 			if err != nil {
 				t.Fatal(err)
 			}
