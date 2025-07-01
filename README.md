@@ -57,7 +57,7 @@ The slide pages are represented by dividing them with horizontal lines `---`.
 ### Apply desk written in markdown to Google Slides presentation
 
 ```console
-$ deck apply xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply deck.md --presentation-id xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
 If your markdown file includes `presentationID` in the frontmatter, you can use the simplified syntax:
@@ -71,7 +71,7 @@ $ deck apply deck.md
 You can use the `--watch` flag to continuously monitor changes to your markdown file and automatically apply them to the presentation:
 
 ```console
-$ deck apply --watch xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply --watch deck.md --presentation-id xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
 Or with frontmatter:
@@ -94,6 +94,7 @@ This is useful during the content creation process as it allows you to see your 
 ```markdown
 ---
 presentationID: xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+title: Talk about deck
 ---
 
 # First Slide
@@ -109,6 +110,7 @@ The frontmatter must be:
 #### Available fields
 
 - `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
+- `title`: title of the presentation. When specified, you can use the simplified command syntax.
 
 Note: This feature is reserved for future enhancements.
 
@@ -189,7 +191,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 By using the `--code-block-to-image-command (-c)` option, you can convert [Markdown code blocks](testdata/codeblock.md) to images. The specified command is executed for each code block, and its standard output is treated as an image.
 
 ```console
-$ deck apply --code-block-to-image-command "some-command" xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply --code-block-to-image-command "some-command" -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 The command is executed with `bash -c`.
@@ -230,17 +232,17 @@ These methods can be used in combination, and you can choose the appropriate met
 
 ```console
 # Convert Mermaid diagrams to images
-$ deck apply -c 'mmdc -i - -o output.png --quiet; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'mmdc -i - -o output.png --quiet; cat output.png' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Generate code images with syntax highlighting (e.g., silicon)
-$ deck apply -c 'silicon -l {{lang == "" ? "md" : lang}} -o output.png; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'silicon -l {{lang == "" ? "md" : lang}} -o output.png; cat output.png' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Use different tools depending on the language
-$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o output.png --quet; else silicon -l {{lang == "" ? "md" : lang}} --output output.png; fi; cat output.png' xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o output.png --quet; else silicon -l {{lang == "" ? "md" : lang}} --output output.png; fi; cat output.png' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ### Comment
@@ -271,7 +273,7 @@ The layout name (e.g. `title-and-body`) is specified.
 > With `deck ls-layouts` it is possible to obtain a list of the layout names for a specific presentation.
 >
 > ```console
-> $ deck ls-layouts xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+> $ deck ls-layouts -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 > title
 > section
 > section-dark
