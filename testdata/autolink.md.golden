@@ -1,0 +1,86 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Autolink Test Cases"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is a normal link: "
+              },
+              {
+                "value": "example",
+                "link": "https://example.com"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Bracketed autolinks (should be converted):"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "https://example.com",
+                "link": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Naked URLs (should NOT be converted):"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Mixed content:"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Visit "
+              },
+              {
+                "value": "https://github.com",
+                "link": "https://github.com"
+              },
+              {
+                "value": " for more info"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Or go to https://github.com directly"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  }
+]
