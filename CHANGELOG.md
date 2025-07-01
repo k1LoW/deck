@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.31.1](https://github.com/k1LoW/deck/compare/v0.31.0...v0.31.1) - 2025-07-01
+### Fix bug 🐛
+- fix: check sum comparison of images by @Songmu in https://github.com/k1LoW/deck/pull/179
+
 ## [v0.31.0](https://github.com/k1LoW/deck/compare/v0.30.0...v0.31.0) - 2025-06-30
 ### New Features 🎉
 - feat: add YAML frontmatter support with new md.MD type by @Songmu in https://github.com/k1LoW/deck/pull/177
