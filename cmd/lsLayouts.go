@@ -24,18 +24,36 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/fatih/color"
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/md"
 	"github.com/spf13/cobra"
 )
 
 var lsLayoutsCmd = &cobra.Command{
-	Use:   "ls-layouts [PRESENTATION_ID]",
+	Use:   "ls-layouts [DECK_FILE]",
 	Short: "list layouts of Google Slides presentation",
 	Long:  `list layouts of Google Slides presentation.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		id := args[0]
-		d, err := deck.New(cmd.Context(), deck.WithPresentationID(id))
+		ctx := cmd.Context()
+		if len(args) > 0 {
+			f := args[0]
+			markdownData, err := md.ParseFile(f)
+			if err != nil {
+				// Deprecated
+				presentationID = f
+				cmd.Println(color.YellowString("WARNING: The argument is deprecated. Use --presentation-id instead."))
+				// return err
+			}
+			if presentationID == "" && markdownData.Frontmatter != nil && markdownData.Frontmatter.PresentationID != "" {
+				presentationID = markdownData.Frontmatter.PresentationID
+			}
+		}
+		if presentationID == "" {
+			return fmt.Errorf("presentation ID is required. Use --presentation-id or set it in the frontmatter of the markdown file.")
+		}
+		d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
 		if err != nil {
 			return err
 		}
@@ -49,4 +67,5 @@ var lsLayoutsCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(lsLayoutsCmd)
+	lsLayoutsCmd.Flags().StringVarP(&presentationID, "presentation-id", "i", "", "Google Slides presentation ID")
 }

@@ -22,23 +22,42 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/md"
 	"github.com/spf13/cobra"
 )
 
 var out string
 
 var exportCmd = &cobra.Command{
-	Use:   "export [PRESENTATION_ID]",
+	Use:   "export [DECK_FILE]",
 	Short: "export deck",
 	Long:  `export deck.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		id := args[0]
-		d, err := deck.New(ctx, deck.WithPresentationID(id))
+		if len(args) > 0 {
+			f := args[0]
+			markdownData, err := md.ParseFile(f)
+			if err != nil {
+				// Deprecated
+				presentationID = f
+				cmd.Println(color.YellowString("WARNING: The argument is deprecated. Use --presentation-id instead."))
+				// return err
+			}
+			if presentationID == "" && markdownData.Frontmatter != nil && markdownData.Frontmatter.PresentationID != "" {
+				presentationID = markdownData.Frontmatter.PresentationID
+			}
+		}
+		if presentationID == "" {
+			return fmt.Errorf("presentation ID is required. Use --presentation-id or set it in the frontmatter of the markdown file.")
+		}
+
+		d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
 		if err != nil {
 			return err
 		}
@@ -56,5 +75,6 @@ var exportCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(exportCmd)
+	exportCmd.Flags().StringVarP(&presentationID, "presentation-id", "i", "", "Google Slides presentation ID")
 	exportCmd.Flags().StringVarP(&out, "out", "o", "deck.pdf", "output file")
 }

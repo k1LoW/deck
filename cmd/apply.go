@@ -31,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/logger/dot"
@@ -41,6 +42,7 @@ import (
 )
 
 var (
+	presentationID      string
 	title               string
 	page                string
 	watch               bool
@@ -51,25 +53,29 @@ var (
 )
 
 var applyCmd = &cobra.Command{
-	Use:   "apply [PRESENTATION_ID] DECK_FILE",
+	Use:   "apply DECK_FILE",
 	Short: "apply desk written in markdown to Google Slides presentation",
 	Long:  `apply desk written in markdown to Google Slides presentation.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if page != "" && watch {
 			return fmt.Errorf("cannot use --page and --watch together")
 		}
+		if len(args) == 2 && presentationID != "" {
+			return fmt.Errorf("cannot use --presentation-id with two arguments")
+		}
 		return cobra.RangeArgs(1, 2)(cmd, args)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		var id, f string
+		var f string
 
 		if len(args) == 1 {
 			// Single argument case: use frontmatter presentationID
 			f = args[0]
 		} else {
-			// Two argument case: traditional usage
-			id = args[0]
+			// Deprecated: Two argument case: traditional usage
+			cmd.Println(color.YellowString("WARNING: Two arguments are deprecated. Please use --presentation-id flag instead."))
+			presentationID = args[0]
 			f = args[1]
 		}
 
@@ -79,10 +85,13 @@ var applyCmd = &cobra.Command{
 		}
 
 		if len(args) == 1 {
-			if markdownData.Frontmatter == nil || markdownData.Frontmatter.PresentationID == "" {
-				return fmt.Errorf("presentationID is required in frontmatter")
+			if presentationID == "" && markdownData.Frontmatter != nil && markdownData.Frontmatter.PresentationID != "" {
+				presentationID = markdownData.Frontmatter.PresentationID
 			}
-			id = markdownData.Frontmatter.PresentationID
+		}
+
+		if presentationID == "" {
+			return fmt.Errorf("presentation ID is required, please specify it with --presentation-id or in the frontmatter of the markdown file")
 		}
 
 		contents := markdownData.Contents
@@ -109,7 +118,7 @@ var applyCmd = &cobra.Command{
 			)
 		}
 		opts := []deck.Option{
-			deck.WithPresentationID(id),
+			deck.WithPresentationID(presentationID),
 			deck.WithLogger(logger),
 		}
 		d, err := deck.New(ctx, opts...)
@@ -129,7 +138,7 @@ var applyCmd = &cobra.Command{
 			if err := d.Apply(ctx, slides); err != nil {
 				return err
 			}
-			logger.Info("initial apply completed", slog.String("presentation_id", id))
+			logger.Info("initial apply completed", slog.String("presentation_id", presentationID))
 
 			return watchFile(cmd.Context(), f, contents, d)
 		} else {
@@ -144,7 +153,7 @@ var applyCmd = &cobra.Command{
 			if err := d.ApplyPages(ctx, slides, pages); err != nil {
 				return err
 			}
-			logger.Info("apply completed", slog.String("presentation_id", id))
+			logger.Info("apply completed", slog.String("presentation_id", presentationID), slog.Any("pages", pages))
 		}
 		return nil
 	},
@@ -152,6 +161,7 @@ var applyCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(applyCmd)
+	applyCmd.Flags().StringVarP(&presentationID, "presentation-id", "i", "", "Google Slides presentation ID")
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
 	applyCmd.Flags().StringVarP(&codeBlockToImageCmd, "code-block-to-image-command", "c", "", "command to convert code blocks to images")
