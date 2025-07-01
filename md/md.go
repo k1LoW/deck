@@ -319,7 +319,8 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 					cmd.Stdin = strings.NewReader(codeBlock.Content)
 					cmd.Env = os.Environ()
 					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_LANG=%s", codeBlock.Language))
-					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Content))
+					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_CONTENT=%s", codeBlock.Content))
+					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Content)) // Deprecated, use CODEBLOCK_CONTENT.
 					var (
 						stdout bytes.Buffer
 						stderr bytes.Buffer
