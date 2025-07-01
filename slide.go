@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"hash/crc32"
 	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"net/http"
 	"net/url"
@@ -79,6 +79,7 @@ const (
 
 type Image struct {
 	i            image.Image
+	b            []byte // Raw image data
 	mimeType     MIMEType
 	url          string // URL if the image was fetched from a URL
 	fromMarkdown bool
@@ -156,11 +157,11 @@ func NewImageFromMarkdown(pathOrURL string) (_ *Image, err error) {
 	return i, nil
 }
 
-func NewImageFromMarkdownBuffer(buf io.Reader) (_ *Image, err error) {
+func NewImageFromMarkdownBuffer(r io.Reader) (_ *Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	i, err := newImageFromBuffer(buf)
+	i, err := newImageFromBuffer(r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create image from code block: %w", err)
 	}
@@ -168,11 +169,15 @@ func NewImageFromMarkdownBuffer(buf io.Reader) (_ *Image, err error) {
 	return i, nil
 }
 
-func newImageFromBuffer(buf io.Reader) (_ *Image, err error) {
+func newImageFromBuffer(r io.Reader) (_ *Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	img, mimeType, err := image.Decode(buf)
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image data: %w", err)
+	}
+	_, mimeType, err := image.DecodeConfig(bytes.NewReader(b))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode image: %w", err)
 	}
@@ -188,7 +193,7 @@ func newImageFromBuffer(buf io.Reader) (_ *Image, err error) {
 		return nil, fmt.Errorf("unsupported image MIME type: %s", mimeType)
 	}
 	return &Image{
-		i:        img,
+		b:        b,
 		mimeType: mt,
 	}, nil
 }
@@ -198,9 +203,6 @@ func (i *Image) Compare(ii *Image) bool {
 		return false
 	}
 	if i.mimeType != ii.mimeType {
-		return false
-	}
-	if i.i.Bounds().String() != ii.i.Bounds().String() {
 		return false
 	}
 	if i.Checksum() == ii.Checksum() {
@@ -233,9 +235,23 @@ func (i *Image) Checksum() uint32 {
 		return 0
 	}
 	if i.checksum == 0 {
-		i.checksum = crc32.ChecksumIEEE(i.Bytes())
+		i.checksum = crc32.ChecksumIEEE(i.b)
 	}
 	return i.checksum
+}
+
+func (i *Image) Image() (image.Image, error) {
+	if i == nil {
+		return nil, fmt.Errorf("image is nil")
+	}
+	if i.i == nil {
+		img, _, err := image.Decode(bytes.NewReader(i.b))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode image: %w", err)
+		}
+		i.i = img
+	}
+	return i.i, nil
 }
 
 func (i *Image) PHash() (_ *goimagehash.ImageHash, err error) {
@@ -244,6 +260,11 @@ func (i *Image) PHash() (_ *goimagehash.ImageHash, err error) {
 	}()
 	if i == nil {
 		return nil, fmt.Errorf("image is nil")
+	}
+	if i.i == nil {
+		if _, err := i.Image(); err != nil {
+			return nil, err
+		}
 	}
 	if i.pHash == nil {
 		pHash, err := goimagehash.PerceptionHash(i.i)
@@ -259,24 +280,7 @@ func (i *Image) String() string {
 	if i == nil {
 		return ""
 	}
-	var buf bytes.Buffer
-	switch i.mimeType {
-	case MIMETypeImagePNG:
-		if err := png.Encode(&buf, i.i); err != nil {
-			return ""
-		}
-	case MIMETypeImageJPEG:
-		if err := jpeg.Encode(&buf, i.i, &jpeg.Options{Quality: 100}); err != nil {
-			return ""
-		}
-	case MIMETypeImageGIF:
-		if err := gif.Encode(&buf, i.i, nil); err != nil {
-			return ""
-		}
-	default:
-		return ""
-	}
-	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
+	encoded := base64.StdEncoding.EncodeToString(i.b)
 	return fmt.Sprintf("data:%s;base64,%s", i.mimeType, encoded)
 }
 
@@ -284,24 +288,7 @@ func (i *Image) Bytes() []byte {
 	if i == nil {
 		return nil
 	}
-	var buf bytes.Buffer
-	switch i.mimeType {
-	case MIMETypeImagePNG:
-		if err := png.Encode(&buf, i.i); err != nil {
-			return nil
-		}
-	case MIMETypeImageJPEG:
-		if err := jpeg.Encode(&buf, i.i, &jpeg.Options{Quality: 100}); err != nil {
-			return nil
-		}
-	case MIMETypeImageGIF:
-		if err := gif.Encode(&buf, i.i, nil); err != nil {
-			return nil
-		}
-	default:
-		return nil
-	}
-	return buf.Bytes()
+	return i.b
 }
 
 func (i *Image) MarshalJSON() (_ []byte, err error) {
@@ -326,16 +313,15 @@ func (i *Image) UnmarshalJSON(data []byte) (err error) {
 	i.mimeType = MIMEType(splitted[0])
 	decoded, err := base64.StdEncoding.DecodeString(string(splitted[1]))
 	if err != nil {
-		fmt.Println(string(splitted[1]))
 		return fmt.Errorf("failed to decode base64 image data: %w", err)
 	}
-	img, mimeType, err := image.Decode(bytes.NewReader(decoded))
+	_, mimeType, err := image.DecodeConfig(bytes.NewReader(decoded))
 	if err != nil {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 	if string(i.mimeType) != fmt.Sprintf("image/%s", mimeType) {
 		return fmt.Errorf("image MIME type mismatch: expected %s, got %s", i.mimeType, mimeType)
 	}
-	i.i = img
+	i.b = decoded
 	return nil
 }
