@@ -151,12 +151,19 @@
       "1"
     ],
     "subtitles": [
-      "2",
-      "3"
+      "2"
     ],
     "bodies": [
       {
         "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "3",
+                "bold": true
+              }
+            ]
+          },
           {
             "fragments": [
               {
@@ -171,13 +178,10 @@
   {
     "layout": "title-and-body-3col",
     "titles": [
-      "1"
+      "2"
     ],
     "subtitles": [
-      "2",
-      "3",
-      "4",
-      "5"
+      "1"
     ],
     "bodies": [
       {
@@ -185,25 +189,41 @@
           {
             "fragments": [
               {
+                "value": "3",
+                "bold": true
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
                 "value": "a"
               }
             ]
-          }
-        ]
-      },
-      {
-        "paragraphs": [
+          },
+          {
+            "fragments": [
+              {
+                "value": "4",
+                "bold": true
+              }
+            ]
+          },
           {
             "fragments": [
               {
                 "value": "b"
               }
             ]
-          }
-        ]
-      },
-      {
-        "paragraphs": [
+          },
+          {
+            "fragments": [
+              {
+                "value": "5",
+                "bold": true
+              }
+            ]
+          },
           {
             "fragments": [
               {

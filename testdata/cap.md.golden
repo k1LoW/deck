@@ -5,10 +5,7 @@
       "CAP theorem"
     ],
     "subtitles": [
-      "In Database theory",
-      "Consistency",
-      "Availability",
-      "Partition tolerance"
+      "In Database theory"
     ],
     "bodies": [
       {
@@ -16,25 +13,41 @@
           {
             "fragments": [
               {
+                "value": "Consistency",
+                "bold": true
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
                 "value": "Every read receives the most recent write or an error."
               }
             ]
-          }
-        ]
-      },
-      {
-        "paragraphs": [
+          },
+          {
+            "fragments": [
+              {
+                "value": "Availability",
+                "bold": true
+              }
+            ]
+          },
           {
             "fragments": [
               {
                 "value": "Every request received by a non-failing node in the system must result in a response."
               }
             ]
-          }
-        ]
-      },
-      {
-        "paragraphs": [
+          },
+          {
+            "fragments": [
+              {
+                "value": "Partition tolerance",
+                "bold": true
+              }
+            ]
+          },
           {
             "fragments": [
               {

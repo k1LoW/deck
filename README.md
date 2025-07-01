@@ -116,8 +116,8 @@ Note: This feature is reserved for future enhancements.
 
 `deck` inserts values according to the following rules regardless of the slide layout.
 
-- Heading1 (`#`) is inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
-- Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
+- The first heading (any level) is inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ).
+- The second heading (any level) is inserted into the subtitle placeholder ( `SUBTITLE` ) only if it immediately follows the first heading with no other content in between.
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
 
 > [!NOTE]

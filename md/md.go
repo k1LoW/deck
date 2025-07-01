@@ -136,36 +136,62 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
+	headingCount := 0
+	justAfterTitle := false
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
-			switch v := n.(type) {
-			case *ast.Heading:
-				switch v.Level {
-				case 1:
+			// Handle headings first
+			if v, ok := n.(*ast.Heading); ok {
+				headingCount++
+				if headingCount == 1 {
+					// First heading becomes title
 					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
-				case 2:
+					justAfterTitle = true
+				} else if headingCount == 2 && justAfterTitle {
+					// Second heading becomes subtitle only if it immediately follows the first heading
 					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
-				default:
+					justAfterTitle = false
+				} else {
+					// All other headings go to body
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{
 							{
 								Value:         convert(v.Lines().Value(b)),
-								Bold:          false,
+								Bold:          true,
 								SoftLineBreak: false,
 							},
 						},
 						Bullet:  deck.BulletNone,
 						Nesting: 0,
 					})
+					justAfterTitle = false
 				}
+				// Skip children of heading to avoid processing inline elements separately
+				return ast.WalkSkipChildren, nil
+			}
+
+			// If we're just after title, check if this content should break the sequence
+			if justAfterTitle {
+				justAfterTitle = false
+				switch v := n.(type) {
+				case *ast.Text:
+					// Break sequence only if text contains non-whitespace content
+					text := string(v.Segment.Value(b))
+					if strings.TrimSpace(text) != "" {
+						justAfterTitle = true
+					}
+				}
+			}
+			// Process content normally
+			switch v := n.(type) {
 			case *ast.List:
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
