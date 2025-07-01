@@ -70,8 +70,8 @@ func TestNewImage(t *testing.T) {
 				t.Errorf("MIME type mismatch. Expected: %s, Got: %s", tt.expectedType, img.mimeType)
 			}
 
-			if img.i == nil {
-				t.Error("Image data is nil")
+			if _, err := img.Image(); err != nil {
+				t.Errorf("Failed to decode image: %v", err)
 			}
 
 			// Check basic image properties
