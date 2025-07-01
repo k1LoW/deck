@@ -85,8 +85,13 @@ var applyCmd = &cobra.Command{
 		}
 
 		if len(args) == 1 {
-			if presentationID == "" && markdownData.Frontmatter != nil && markdownData.Frontmatter.PresentationID != "" {
-				presentationID = markdownData.Frontmatter.PresentationID
+			if markdownData.Frontmatter != nil {
+				if presentationID == "" && markdownData.Frontmatter.PresentationID != "" {
+					presentationID = markdownData.Frontmatter.PresentationID
+				}
+				if title == "" && markdownData.Frontmatter.Title != "" {
+					title = markdownData.Frontmatter.Title
+				}
 			}
 		}
 
