@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.33.0](https://github.com/k1LoW/deck/compare/v0.32.0...v0.33.0) - 2025-07-01
+### New Features 🎉
+- fix: refactor image handling for improved performance and flexibility by @k1LoW in https://github.com/k1LoW/deck/pull/191
+- feat(apply): support setting title from frontmatter by @k1LoW in https://github.com/k1LoW/deck/pull/192
+### Other Changes
+- feat(cmd): add --presentation-id flag and deprecate positional arguments by @k1LoW in https://github.com/k1LoW/deck/pull/189
+
 ## [v0.32.0](https://github.com/k1LoW/deck/compare/v0.31.2...v0.32.0) - 2025-07-01
 ### New Features 🎉
 - feat: add angle bracket autolinks support by @Songmu in https://github.com/k1LoW/deck/pull/185
