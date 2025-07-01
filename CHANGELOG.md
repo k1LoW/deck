@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.31.2](https://github.com/k1LoW/deck/compare/v0.31.1...v0.31.2) - 2025-07-01
+### Fix bug 🐛
+- fix: add CODEBLOCK_CONTENT env to cmd by @Songmu in https://github.com/k1LoW/deck/pull/181
+
 ## [v0.31.1](https://github.com/k1LoW/deck/compare/v0.31.0...v0.31.1) - 2025-07-01
 ### Fix bug 🐛
 - fix: check sum comparison of images by @Songmu in https://github.com/k1LoW/deck/pull/179
