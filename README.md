@@ -158,6 +158,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - List ( `-` `*` )
 - Ordered list ( `1.` `1)` )
 - Link ( `[Link](https://example.com)` )
+- Angle bracket autolinks ( `<https://example.com>` )
 - Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
 - Image (`![Image](path/to/image.png)` )

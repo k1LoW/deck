@@ -407,6 +407,14 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				ClassName:     className,
 			})
 			images = append(images, childImages...)
+		case *ast.AutoLink:
+			url := string(childNode.URL(b))
+			label := string(childNode.Label(b))
+			frags = append(frags, &deck.Fragment{
+				Value:     label,
+				Link:      url,
+				ClassName: className,
+			})
 		case *ast.Text:
 			v := convert(childNode.Segment.Value(b))
 			if v == "" {

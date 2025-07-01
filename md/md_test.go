@@ -29,6 +29,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/images.md"},
 		{"../testdata/codeblock.md"},
 		{"../testdata/frontmatter.md"},
+		{"../testdata/autolink.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
