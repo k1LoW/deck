@@ -116,9 +116,16 @@ Note: This feature is reserved for future enhancements.
 
 `deck` inserts values according to the following rules regardless of the slide layout.
 
-- Heading1 (`#`) is inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
-- Heading2 (`##`) is inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
+- The minimum heading level within each slide content is treated as the title and inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
+  - In most cases, this will be H1 (`#`), which is the standard for slide titles
+- The next heading level (minimum level + 1) is treated as the subtitle and inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
+  - When H1 is used for titles, H2 (`##`) becomes the subtitle
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
+
+For example:
+- **Standard case**: If a slide contains `#` (H1), then `#` becomes title and `##` becomes subtitle
+- **Alternative case**: If a slide only contains `##` (H2) or higher, then `##` becomes title and `###` becomes subtitle
+- This allows flexibility in creating slides from various markdown content structures while maintaining familiar heading hierarchies
 
 > [!NOTE]
 > They are inserted in the order they appear in the markdown document, **from the placeholder at the top of the slide** (or from the placeholder on the left if the slides are the same height).
@@ -302,7 +309,7 @@ For example, it is a good idea to provide the following rules for creating deck 
     Unless otherwise specified, please follow the rules below.
 
     - Use `---` to indicate page breaks in slides.
-    - Only `#` and `##` can be used for headings. Do not use headings with `###` or higher. It is recommended to use only one heading per page.
+    - Within each slide, the minimum heading level will be treated as the title, and the next level as the subtitle. Higher level headings will be treated as body content. It is recommended to use only one title heading per slide.
     - The following syntax can be used in the page body. Note that it cannot be used in headings.
         - Bold ( `**bold**` )
         - Italic ( `*italic*` `__italic__` )

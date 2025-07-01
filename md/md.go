@@ -129,9 +129,35 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 		err = errors.WithStack(err)
 	}()
 
+	// Parse once and reuse the AST
 	md := goldmark.New()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
+
+	// First walk: determine title level
+	titleLevel := 6
+	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		// Only check on entering, skip on leaving
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		h, ok := n.(*ast.Heading)
+		if !ok {
+			return ast.WalkContinue, nil
+		}
+		if h.Level < titleLevel {
+			titleLevel = h.Level
+			if titleLevel == 1 {
+				return ast.WalkStop, nil
+			}
+		}
+		// Skip children of headings since we only care about heading levels
+		return ast.WalkSkipChildren, nil
+	}); err != nil {
+		return nil, fmt.Errorf("failed to determine title level: %w", err)
+	}
+
+	// Second walk: parse content with determined title level
 	content := &Content{}
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
@@ -141,13 +167,13 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 			switch v := n.(type) {
 			case *ast.Heading:
 				switch v.Level {
-				case 1:
+				case titleLevel:
 					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
-				case 2:
+				case titleLevel + 1:
 					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
