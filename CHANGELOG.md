@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.32.0](https://github.com/k1LoW/deck/compare/v0.31.2...v0.32.0) - 2025-07-01
+### New Features 🎉
+- feat: add angle bracket autolinks support by @Songmu in https://github.com/k1LoW/deck/pull/185
+- feat: support dynamic heading levels for title detection by @Songmu in https://github.com/k1LoW/deck/pull/188
+
 ## [v0.31.2](https://github.com/k1LoW/deck/compare/v0.31.1...v0.31.2) - 2025-07-01
 ### Fix bug 🐛
 - fix: add CODEBLOCK_CONTENT env to cmd by @Songmu in https://github.com/k1LoW/deck/pull/181
