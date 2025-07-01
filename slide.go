@@ -203,7 +203,7 @@ func (i *Image) Compare(ii *Image) bool {
 	if i.i.Bounds().String() != ii.i.Bounds().String() {
 		return false
 	}
-	if i.Checksum() == i.Checksum() {
+	if i.Checksum() == ii.Checksum() {
 		return true
 	}
 	if i.mimeType == MIMETypeImageJPEG {
