@@ -38,7 +38,8 @@ type MD struct {
 
 // Frontmatter represents YAML frontmatter data.
 type Frontmatter struct {
-	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"`
+	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
+	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
 }
 
 // Contents represents a collection of slide contents.
