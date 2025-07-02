@@ -1,0 +1,143 @@
+[
+  {
+    "layout": "title-slide",
+    "titles": [
+      "Presentation Title"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is the first slide. It will use the \"title-slide\" layout if specified in the frontmatter.",
+                "softLineBreak": true
+              },
+              {
+                "value": "Without the \"title\" key in layout, it would use the default title layout."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "part",
+    "titles": [
+      "Part 1: Introduction"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This slide will automatically use the \"part\" layout because it has an H1 heading (and it's not the first slide)."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "chapter",
+    "titles": [
+      "Chapter 1: Getting Started"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This slide will automatically use the \"chapter\" layout because it has an H2 heading."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "section",
+    "titles": [
+      "Section 1.1: Prerequisites"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This slide will automatically use the \"section\" layout because it has an H3 heading."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "custom-layout",
+    "titles": [
+      "Chapter 2: Custom Layout"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Even with the frontmatter configuration, you can still override the layout for specific slides using the JSON comment syntax."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "subsection",
+    "titles": [
+      "Subsection: Details"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This slide has an H4 heading. It will use the \"subsection\" layout from the frontmatter h4 mapping."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Content without a heading"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Slides without headings will use the default layout."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

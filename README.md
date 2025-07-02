@@ -112,8 +112,40 @@ The frontmatter must be:
 
 - `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title`: title of the presentation. When specified, you can use the simplified command syntax.
+- `layout`: Automatic layout assignment based on heading levels.
 
-Note: This feature is reserved for future enhancements.
+#### Automatic layout assignment
+
+You can specify layouts for different heading levels in the frontmatter. This automatically applies the appropriate layout to each slide based on its title heading level:
+
+```markdown
+---
+presentationID: xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+title: My Presentation
+layout:
+  title: title-slide    # Layout for the first slide
+  h1: part              # Layout for H1 headings
+  h2: chapter           # Layout for H2 headings
+  h3: section           # Layout for H3 headings
+---
+
+# Part 1: Introduction
+Content for part slide...
+
+---
+
+## Chapter 1: Overview
+Content for chapter slide...
+
+---
+
+### Section 1.1: Details
+Content for section slide...
+```
+
+- The first slide uses the layout specified by `title`
+- Subsequent slides use layouts based on their heading level (`h1`, `h2`, `h3`, `h4`, `h5`, `h6`)
+- Explicit layout specifications via JSON comments (`<!-- {"layout": "custom"} -->`) take precedence over frontmatter settings
 
 ### Insertion rule
 
