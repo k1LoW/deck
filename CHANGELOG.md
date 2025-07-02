@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.34.0](https://github.com/k1LoW/deck/compare/v0.33.0...v0.34.0) - 2025-07-02
+### New Features 🎉
+- make heading inside body bold; it's natural by @Songmu in https://github.com/k1LoW/deck/pull/196
+### Other Changes
+- doc: use camelCase for frontmatter fields by @Songmu in https://github.com/k1LoW/deck/pull/201
+
 ## [v0.33.0](https://github.com/k1LoW/deck/compare/v0.32.0...v0.33.0) - 2025-07-01
 ### New Features 🎉
 - fix: refactor image handling for improved performance and flexibility by @k1LoW in https://github.com/k1LoW/deck/pull/191
