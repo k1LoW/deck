@@ -233,7 +233,8 @@
           {
             "fragments": [
               {
-                "value": "H4 content"
+                "value": "H4 content",
+                "bold": true
               }
             ]
           },
@@ -247,7 +248,8 @@
           {
             "fragments": [
               {
-                "value": "Another H4 content"
+                "value": "Another H4 content",
+                "bold": true
               }
             ]
           },
@@ -272,7 +274,8 @@
           {
             "fragments": [
               {
-                "value": "H4 under this H3"
+                "value": "H4 under this H3",
+                "bold": true
               }
             ]
           },
@@ -386,7 +389,8 @@
           {
             "fragments": [
               {
-                "value": "H4 content directly under H2"
+                "value": "H4 content directly under H2",
+                "bold": true
               }
             ]
           },
@@ -400,7 +404,8 @@
           {
             "fragments": [
               {
-                "value": "Another H4 content"
+                "value": "Another H4 content",
+                "bold": true
               }
             ]
           },
@@ -425,7 +430,8 @@
           {
             "fragments": [
               {
-                "value": "Direct H4 again"
+                "value": "Direct H4 again",
+                "bold": true
               }
             ]
           },
