@@ -89,7 +89,7 @@ This is useful during the content creation process as it allows you to see your 
 
 ### YAML Frontmatter
 
-`deck` accepts YAML frontmatter at the beginning of your markdown file for future extensibility.
+`deck` accepts YAML frontmatter at the beginning of your markdown file.
 
 ```markdown
 ---
@@ -106,6 +106,7 @@ The frontmatter must be:
 - At the very beginning of the file
 - Enclosed between `---` delimiters
 - Valid YAML syntax
+- Use `camelCase` for fields used in `deck` settings
 
 #### Available fields
 
