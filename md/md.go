@@ -185,7 +185,7 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 						Fragments: []*deck.Fragment{
 							{
 								Value:         convert(v.Lines().Value(b)),
-								Bold:          false,
+								Bold:          true,
 								SoftLineBreak: false,
 							},
 						},
