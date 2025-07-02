@@ -60,7 +60,7 @@ The slide pages are represented by dividing them with horizontal lines `---`.
 $ deck apply deck.md --presentation-id xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
-If your markdown file includes `presentationID` in the frontmatter, you can use the simplified syntax:
+If your markdown file includes `presentation_id` in the frontmatter, you can use the simplified syntax:
 
 ```console
 $ deck apply deck.md
@@ -93,7 +93,7 @@ This is useful during the content creation process as it allows you to see your 
 
 ```markdown
 ---
-presentationID: xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+presentation_id: xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 title: Talk about deck
 ---
 
@@ -106,13 +106,12 @@ The frontmatter must be:
 - At the very beginning of the file
 - Enclosed between `---` delimiters
 - Valid YAML syntax
+- Use `snake_case` for field names
 
 #### Available fields
 
-- `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
+- `presentation_id`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title`: title of the presentation. When specified, you can use the simplified command syntax.
-
-Note: This feature is reserved for future enhancements.
 
 ### Insertion rule
 
