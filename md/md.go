@@ -354,14 +354,19 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(dir)
+
+	output := filepath.Join(dir, "out.png")
 	env := environToMap()
 	env["CODEBLOCK_LANG"] = codeBlock.Language
 	env["CODEBLOCK_CONTENT"] = codeBlock.Content
 	env["CODEBLOCK_VALUE"] = codeBlock.Content // Deprecated, use CODEBLOCK_CONTENT.
+	// I am unsure whether to set this as an environment variable, but I will set it for consistency.
+	env["CODEBLOCK_OUTPUT"] = output
 	store := map[string]any{
 		"lang":    codeBlock.Language,
 		"content": codeBlock.Content,
 		"value":   codeBlock.Content, // Deprecated, use `content`.
+		"output":  output,
 		"env":     env,
 	}
 	repFn := expand.ExprRepFn("{{", "}}", store)
@@ -373,9 +378,9 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(codeBlock.Content)
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_LANG=%s", codeBlock.Language))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_CONTENT=%s", codeBlock.Content))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Content)) // Deprecated, use CODEBLOCK_CONTENT.
+	for k, v := range env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
 	var (
 		stdout bytes.Buffer
 		stderr bytes.Buffer
@@ -386,7 +391,15 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 		return nil, fmt.Errorf("failed to run code block to image command: %w\nstdout: %s\nstderr: %s",
 			err, stdout.String(), stderr.String())
 	}
-	return deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(stdout.Bytes()))
+	// There is no need to check whether the output file path has been replaced in the template string.
+	// It's sufficient to check whether the file exists after executing the command.
+	// Furthermore, simply opening the file, rather than checking its existence,
+	// also functions as a file existence check.
+	b, err := os.ReadFile(output)
+	if err != nil {
+		b = stdout.Bytes() // use stdout if output file is not found
+	}
+	return deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(b))
 }
 
 // toFragments converts an AST node to a slice of Fragment structures.
