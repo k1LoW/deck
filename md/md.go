@@ -321,43 +321,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 			eg := errgroup.Group{}
 			for _, codeBlock := range content.CodeBlocks {
 				eg.Go(func() error {
-					dir, err := os.MkdirTemp("", "deck")
-					if err != nil {
-						return fmt.Errorf("failed to create temporary directory: %w", err)
-					}
-					defer os.RemoveAll(dir)
-					env := environToMap()
-					env["CODEBLOCK_LANG"] = codeBlock.Language
-					env["CODEBLOCK_CONTENT"] = codeBlock.Content
-					env["CODEBLOCK_VALUE"] = codeBlock.Content // Deprecated, use CODEBLOCK_CONTENT.
-					store := map[string]any{
-						"lang":    codeBlock.Language,
-						"content": codeBlock.Content,
-						"value":   codeBlock.Content, // Deprecated, use `content`.
-						"env":     env,
-					}
-					repFn := expand.ExprRepFn("{{", "}}", store)
-					replacedCmd, err := repFn(codeBlockToImageCmd)
-					if err != nil {
-						return err
-					}
-					cmd := exec.CommandContext(ctx, "bash", "-c", replacedCmd)
-					cmd.Dir = dir
-					cmd.Stdin = strings.NewReader(codeBlock.Content)
-					cmd.Env = os.Environ()
-					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_LANG=%s", codeBlock.Language))
-					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_CONTENT=%s", codeBlock.Content))
-					cmd.Env = append(cmd.Env, fmt.Sprintf("CODEBLOCK_VALUE=%s", codeBlock.Content)) // Deprecated, use CODEBLOCK_CONTENT.
-					var (
-						stdout bytes.Buffer
-						stderr bytes.Buffer
-					)
-					cmd.Stdout = &stdout
-					cmd.Stderr = &stderr
-					if err := cmd.Run(); err != nil {
-						return fmt.Errorf("failed to run code block to image command: %w\nstdout: %s\nstderr: %s", err, stdout.String(), stderr.String())
-					}
-					image, err := deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(stdout.Bytes()))
+					image, err := genCodeImage(ctx, codeBlockToImageCmd, codeBlock)
 					if err != nil {
 						return err
 					}
@@ -382,6 +346,60 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 		}
 	}
 	return slides, nil
+}
+
+func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *CodeBlock) (*deck.Image, error) {
+	dir, err := os.MkdirTemp("", "deck")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(dir)
+
+	output := filepath.Join(dir, "out.png")
+	env := environToMap()
+	env["CODEBLOCK_LANG"] = codeBlock.Language
+	env["CODEBLOCK_CONTENT"] = codeBlock.Content
+	env["CODEBLOCK_VALUE"] = codeBlock.Content // Deprecated, use CODEBLOCK_CONTENT.
+	// I am unsure whether to set this as an environment variable, but I will set it for consistency.
+	env["CODEBLOCK_OUTPUT"] = output
+	store := map[string]any{
+		"lang":    codeBlock.Language,
+		"content": codeBlock.Content,
+		"value":   codeBlock.Content, // Deprecated, use `content`.
+		"output":  output,
+		"env":     env,
+	}
+	repFn := expand.ExprRepFn("{{", "}}", store)
+	replacedCmd, err := repFn(codeBlockToImageCmd)
+	if err != nil {
+		return nil, err
+	}
+	cmd := exec.CommandContext(ctx, "bash", "-c", replacedCmd)
+	cmd.Dir = dir
+	cmd.Stdin = strings.NewReader(codeBlock.Content)
+	cmd.Env = os.Environ()
+	for k, v := range env {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
+	var (
+		stdout bytes.Buffer
+		stderr bytes.Buffer
+	)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to run code block to image command: %w\nstdout: %s\nstderr: %s",
+			err, stdout.String(), stderr.String())
+	}
+	// There is no need to check whether the output file path has been replaced in the template string.
+	// It's sufficient to check whether the file exists after executing the command.
+	// Furthermore, simply opening the file, rather than checking its existence,
+	// also functions as a file existence check.
+	b, err := os.ReadFile(output)
+	if err != nil {
+		b = stdout.Bytes() // use stdout if output file is not found
+	}
+	return deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(b))
 }
 
 // toFragments converts an AST node to a slice of Fragment structures.

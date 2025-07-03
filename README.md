@@ -221,29 +221,34 @@ There are three ways to receive code block information within the command:
 2. **Receive as environment variables**
    - `CODEBLOCK_LANG`: Optional language identifier of the code block (e.g., `go`, `python`)
    - `CODEBLOCK_CONTENT`: Content of the code block
+   - `CODEBLOCK_OUTPUT`: Path to a temporary output file
 
 3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) )**
    - `{{lang}}`: Optional language identifier of the code block
    - `{{content}}`: Content of the code block
+   - `{{output}}`: Path to a temporary output file
    - `{{env.XXX}}`: Value of environment variable XXX
 
 These methods can be used in combination, and you can choose the appropriate method according to the command requirements.
+
+> [!NOTE]
+> When `{{output}}` is not specified, deck reads the image data from the command's stdout. When `{{output}}` is specified, the command should write the image to that file path, and deck will read the image data from that file.
 
 ##### Examples
 
 ```console
 # Convert Mermaid diagrams to images
-$ deck apply -c 'mmdc -i - -o output.png --quiet; cat output.png' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'mmdc -i - -o {{output}} --quiet' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Generate code images with syntax highlighting (e.g., silicon)
-$ deck apply -c 'silicon -l {{lang == "" ? "md" : lang}} -o output.png; cat output.png' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'silicon -l {{lang == "" ? "md" : lang}} -o {{output}}' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Use different tools depending on the language
-$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o output.png --quet; else silicon -l {{lang == "" ? "md" : lang}} --output output.png; fi; cat output.png' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --quiet; else silicon -l {{lang == "" ? "md" : lang}} --output {{output}}; fi' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ### Comment
