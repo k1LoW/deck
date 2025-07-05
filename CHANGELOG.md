@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.35.0](https://github.com/k1LoW/deck/compare/v0.34.0...v0.35.0) - 2025-07-03
+### New Features 🎉
+- feat: Add {{output}} template variable support for code-block-to-image-command by @Songmu in https://github.com/k1LoW/deck/pull/204
+
 ## [v0.34.0](https://github.com/k1LoW/deck/compare/v0.33.0...v0.34.0) - 2025-07-02
 ### New Features 🎉
 - make heading inside body bold; it's natural by @Songmu in https://github.com/k1LoW/deck/pull/196
