@@ -36,10 +36,46 @@ type MD struct {
 	Contents    Contents
 }
 
+// Layout represents layout configuration for different heading levels and title slide.
+type Layout struct {
+	Title string `yaml:"title,omitempty" json:"title,omitempty"` // layout for the first slide (title slide)
+	H1    string `yaml:"h1,omitempty" json:"h1,omitempty"`       // layout for H1 headings
+	H2    string `yaml:"h2,omitempty" json:"h2,omitempty"`       // layout for H2 headings
+	H3    string `yaml:"h3,omitempty" json:"h3,omitempty"`       // layout for H3 headings
+	H4    string `yaml:"h4,omitempty" json:"h4,omitempty"`       // layout for H4 headings
+	H5    string `yaml:"h5,omitempty" json:"h5,omitempty"`       // layout for H5 headings
+	H6    string `yaml:"h6,omitempty" json:"h6,omitempty"`       // layout for H6 headings
+}
+
+// GetLayoutForHeadingLevel returns the layout name for the specified heading level.
+// Returns empty string if no layout is configured for the heading level.
+func (l *Layout) GetLayoutForHeadingLevel(level int) string {
+	if l == nil {
+		return ""
+	}
+	switch level {
+	case 1:
+		return l.H1
+	case 2:
+		return l.H2
+	case 3:
+		return l.H3
+	case 4:
+		return l.H4
+	case 5:
+		return l.H5
+	case 6:
+		return l.H6
+	default:
+		return ""
+	}
+}
+
 // Frontmatter represents YAML frontmatter data.
 type Frontmatter struct {
-	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
-	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
+	PresentationID string  `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
+	Title          string  `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
+	Layout         *Layout `yaml:"layout,omitempty" json:"layout,omitempty"`                 // layout configuration
 }
 
 // Contents represents a collection of slide contents.
@@ -58,14 +94,15 @@ type CodeBlock struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout     string        `json:"layout"`
-	Freeze     bool          `json:"freeze,omitempty"`
-	Titles     []string      `json:"titles,omitempty"`
-	Subtitles  []string      `json:"subtitles,omitempty"`
-	Bodies     []*deck.Body  `json:"bodies,omitempty"`
-	Images     []*deck.Image `json:"images,omitempty"`
-	CodeBlocks []*CodeBlock  `json:"code_blocks,omitempty"`
-	Comments   []string      `json:"comments,omitempty"`
+	Layout       string        `json:"layout"`
+	Freeze       bool          `json:"freeze,omitempty"`
+	Titles       []string      `json:"titles,omitempty"`
+	Subtitles    []string      `json:"subtitles,omitempty"`
+	Bodies       []*deck.Body  `json:"bodies,omitempty"`
+	Images       []*deck.Image `json:"images,omitempty"`
+	CodeBlocks   []*CodeBlock  `json:"code_blocks,omitempty"`
+	Comments     []string      `json:"comments,omitempty"`
+	HeadingLevel int           `json:"-"` // the heading level (1-6) of the title, 0 if no title
 }
 
 // ParseFile parses a markdown file into contents.
@@ -114,6 +151,18 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 		if err != nil {
 			return nil, err
 		}
+
+		// Apply layout from frontmatter if provided and no explicit layout is set
+		if frontmatter != nil && frontmatter.Layout != nil && c.Layout == "" {
+			if i == 0 {
+				// Special handling for the first slide (title slide)
+				c.Layout = frontmatter.Layout.Title
+			} else {
+				// Apply layout based on heading level for other slides
+				c.Layout = frontmatter.Layout.GetLayoutForHeadingLevel(c.HeadingLevel)
+			}
+		}
+
 		contents[i] = c
 	}
 
@@ -135,8 +184,9 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 
+	const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 	// First walk: determine title level
-	titleLevel := 6
+	titleLevel := sentinelLevel
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		// Only check on entering, skip on leaving
 		if !entering {
@@ -160,6 +210,9 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 
 	// Second walk: parse content with determined title level
 	content := &Content{}
+	if titleLevel < sentinelLevel {
+		content.HeadingLevel = titleLevel
+	}
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
