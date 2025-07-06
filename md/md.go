@@ -58,14 +58,15 @@ type CodeBlock struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout     string        `json:"layout"`
-	Freeze     bool          `json:"freeze,omitempty"`
-	Titles     []string      `json:"titles,omitempty"`
-	Subtitles  []string      `json:"subtitles,omitempty"`
-	Bodies     []*deck.Body  `json:"bodies,omitempty"`
-	Images     []*deck.Image `json:"images,omitempty"`
-	CodeBlocks []*CodeBlock  `json:"code_blocks,omitempty"`
-	Comments   []string      `json:"comments,omitempty"`
+	Layout      string             `json:"layout"`
+	Freeze      bool               `json:"freeze,omitempty"`
+	Titles      []string           `json:"titles,omitempty"`
+	Subtitles   []string           `json:"subtitles,omitempty"`
+	Bodies      []*deck.Body       `json:"bodies,omitempty"`
+	Images      []*deck.Image      `json:"images,omitempty"`
+	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
+	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
+	Comments    []string           `json:"comments,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -160,6 +161,68 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 
 	// Second walk: parse content with determined title level
 	content := &Content{}
+	if err := walkBodies(doc, baseDir, b, content, titleLevel); err != nil {
+		return nil, fmt.Errorf("failed to walk body: %w", err)
+	}
+
+	// remove empty bodies
+	notEmpty := false
+	for _, body := range content.Bodies {
+		if len(body.Paragraphs) > 0 && len(body.Paragraphs[0].Fragments) > 0 {
+			notEmpty = true
+			break
+		}
+	}
+	if !notEmpty {
+		content.Bodies = nil
+	}
+
+	return content, nil
+}
+
+// ToSlides converts the contents to a slice of deck.Slide structures.
+func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
+	slides := make([]*deck.Slide, len(contents))
+	for i, content := range contents {
+		var images []*deck.Image
+		images = append(images, content.Images...)
+		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
+			mu := sync.Mutex{}
+			eg := errgroup.Group{}
+			for _, codeBlock := range content.CodeBlocks {
+				eg.Go(func() error {
+					image, err := genCodeImage(ctx, codeBlockToImageCmd, codeBlock)
+					if err != nil {
+						return err
+					}
+					mu.Lock()
+					images = append(images, image)
+					mu.Unlock()
+					return nil
+				})
+			}
+			if err := eg.Wait(); err != nil {
+				return nil, fmt.Errorf("failed to convert code blocks to images: %w", err)
+			}
+		}
+		slides[i] = &deck.Slide{
+			Layout:      content.Layout,
+			Freeze:      content.Freeze,
+			Titles:      content.Titles,
+			Subtitles:   content.Subtitles,
+			Bodies:      content.Bodies,
+			Images:      images,
+			SpeakerNote: strings.Join(content.Comments, "\n\n"),
+		}
+	}
+	return slides, nil
+}
+
+func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int) error {
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
@@ -284,68 +347,36 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 					Language: string(lang),
 					Content:  string(c),
 				})
+			case *ast.Blockquote:
+				blockQuoteContent := &Content{}
+				for v := n.FirstChild(); v != nil; v = v.NextSibling() {
+					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1); err != nil {
+						return ast.WalkStop, err
+					}
+				}
+				content.CodeBlocks = append(content.CodeBlocks, blockQuoteContent.CodeBlocks...)
+				content.Images = append(content.Images, blockQuoteContent.Images...)
+				for _, body := range blockQuoteContent.Bodies {
+					if len(body.Paragraphs) > 0 {
+						content.BlockQuotes = append(content.BlockQuotes, &deck.BlockQuote{
+							Paragraphs: body.Paragraphs,
+							Nesting:    0,
+						})
+					}
+				}
+				// Flatten nested block quotes
+				for _, blockQuote := range blockQuoteContent.BlockQuotes {
+					blockQuote.Nesting++
+					content.BlockQuotes = append(content.BlockQuotes, blockQuote)
+				}
+				return ast.WalkSkipChildren, nil
 			}
 		}
 		return ast.WalkContinue, nil
 	}); err != nil {
-		return nil, err
+		return err
 	}
-
-	// remove empty bodies
-	notEmpty := false
-	for _, body := range content.Bodies {
-		if len(body.Paragraphs) > 0 && len(body.Paragraphs[0].Fragments) > 0 {
-			notEmpty = true
-			break
-		}
-	}
-	if !notEmpty {
-		content.Bodies = nil
-	}
-
-	return content, nil
-}
-
-// ToSlides converts the contents to a slice of deck.Slide structures.
-func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-
-	slides := make([]*deck.Slide, len(contents))
-	for i, content := range contents {
-		var images []*deck.Image
-		images = append(images, content.Images...)
-		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
-			mu := sync.Mutex{}
-			eg := errgroup.Group{}
-			for _, codeBlock := range content.CodeBlocks {
-				eg.Go(func() error {
-					image, err := genCodeImage(ctx, codeBlockToImageCmd, codeBlock)
-					if err != nil {
-						return err
-					}
-					mu.Lock()
-					images = append(images, image)
-					mu.Unlock()
-					return nil
-				})
-			}
-			if err := eg.Wait(); err != nil {
-				return nil, fmt.Errorf("failed to convert code blocks to images: %w", err)
-			}
-		}
-		slides[i] = &deck.Slide{
-			Layout:      content.Layout,
-			Freeze:      content.Freeze,
-			Titles:      content.Titles,
-			Subtitles:   content.Subtitles,
-			Bodies:      content.Bodies,
-			Images:      images,
-			SpeakerNote: strings.Join(content.Comments, "\n\n"),
-		}
-	}
-	return slides, nil
+	return nil
 }
 
 func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *CodeBlock) (*deck.Image, error) {
