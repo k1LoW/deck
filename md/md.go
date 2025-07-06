@@ -224,6 +224,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 			Subtitles:   content.Subtitles,
 			Bodies:      content.Bodies,
 			Images:      images,
+			BlockQuotes: content.BlockQuotes,
 			SpeakerNote: strings.Join(content.Comments, "\n\n"),
 		}
 	}
