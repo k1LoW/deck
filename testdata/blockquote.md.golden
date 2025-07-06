@@ -1,0 +1,111 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Block Quote"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Block Quotes"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is paragraph."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "block_quotes": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "NOTICE"
+              },
+              {
+                "value": "!",
+                "softLineBreak": true
+              },
+              {
+                "value": "Hello "
+              },
+              {
+                "value": "World!",
+                "bold": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "WARNING"
+              },
+              {
+                "value": "!",
+                "softLineBreak": true
+              },
+              {
+                "value": "Hello "
+              },
+              {
+                "value": "Space!",
+                "bold": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "NESTED"
+              },
+              {
+                "value": "!",
+                "softLineBreak": true
+              },
+              {
+                "value": "But flatten"
+              }
+            ]
+          }
+        ],
+        "nesting": 1
+      },
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "NESTED NESTED"
+              },
+              {
+                "value": "!",
+                "softLineBreak": true
+              },
+              {
+                "value": "But flatten"
+              }
+            ]
+          }
+        ],
+        "nesting": 2
+      }
+    ]
+  }
+]

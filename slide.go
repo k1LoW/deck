@@ -23,13 +23,14 @@ import (
 type Slides []*Slide
 
 type Slide struct {
-	Layout      string   `json:"layout"`
-	Freeze      bool     `json:"freeze,omitempty"`
-	Titles      []string `json:"titles,omitempty"`
-	Subtitles   []string `json:"subtitles,omitempty"`
-	Bodies      []*Body  `json:"bodies,omitempty"`
-	Images      []*Image `json:"images,omitempty"`
-	SpeakerNote string   `json:"speakerNote,omitempty"`
+	Layout      string        `json:"layout"`
+	Freeze      bool          `json:"freeze,omitempty"`
+	Titles      []string      `json:"titles,omitempty"`
+	Subtitles   []string      `json:"subtitles,omitempty"`
+	Bodies      []*Body       `json:"bodies,omitempty"`
+	Images      []*Image      `json:"images,omitempty"`
+	BlockQuotes []*BlockQuote `json:"blockQuotes,omitempty"`
+	SpeakerNote string        `json:"speakerNote,omitempty"`
 
 	new    bool
 	delete bool
@@ -56,6 +57,11 @@ type Fragment struct {
 	Code          bool   `json:"code,omitempty"`
 	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
 	ClassName     string `json:"className,omitempty"`
+}
+
+type BlockQuote struct {
+	Paragraphs []*Paragraph `json:"paragraphs,omitempty"`
+	Nesting    int          `json:"nesting,omitempty"`
 }
 
 // Bullet represents the type of bullet point for a paragraph.
