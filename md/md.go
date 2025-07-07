@@ -49,6 +49,7 @@ type Contents []*Content
 type Config struct {
 	Layout string `json:"layout,omitempty"` // layout name
 	Freeze bool   `json:"freeze,omitempty"` // freeze the page
+	Ignore bool   `json:"ignore,omitempty"` // ignore the page (skip slide generation)
 }
 
 type CodeBlock struct {
@@ -60,6 +61,7 @@ type CodeBlock struct {
 type Content struct {
 	Layout      string             `json:"layout"`
 	Freeze      bool               `json:"freeze,omitempty"`
+	Ignore      bool               `json:"ignore,omitempty"`
 	Titles      []string           `json:"titles,omitempty"`
 	Subtitles   []string           `json:"subtitles,omitempty"`
 	Bodies      []*deck.Body       `json:"bodies,omitempty"`
@@ -109,13 +111,16 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 		}
 	}
 
-	contents := make(Contents, len(bpages))
-	for i, bpage := range bpages {
+	var contents Contents
+	for _, bpage := range bpages {
 		c, err := ParseContent(baseDir, bpage)
 		if err != nil {
 			return nil, err
 		}
-		contents[i] = c
+		// Skip ignored contents
+		if !c.Ignore {
+			contents = append(contents, c)
+		}
 	}
 
 	return &MD{
@@ -319,6 +324,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					if err := json.Unmarshal([]byte(block), config); err == nil {
 						content.Layout = config.Layout
 						content.Freeze = config.Freeze
+						content.Ignore = config.Ignore
 						return ast.WalkContinue, nil
 					}
 					content.Comments = append(content.Comments, block)
