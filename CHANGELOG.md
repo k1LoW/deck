@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.36.0](https://github.com/k1LoW/deck/compare/v0.35.0...v0.36.0) - 2025-07-07
+### New Features 🎉
+- feat: Add ignore page functionality with page configuration comment by @Songmu in https://github.com/k1LoW/deck/pull/213
+### Other Changes
+- feat(md): add support for block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/206
+- chore(deps): bump the dependencies group with 2 updates by @dependabot in https://github.com/k1LoW/deck/pull/209
+
 ## [v0.35.0](https://github.com/k1LoW/deck/compare/v0.34.0...v0.35.0) - 2025-07-03
 ### New Features 🎉
 - feat: Add {{output}} template variable support for code-block-to-image-command by @Songmu in https://github.com/k1LoW/deck/pull/204
