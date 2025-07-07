@@ -997,6 +997,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			})
 		}
 	}
+
+	// set skip flag to slide
+	req.Requests = append(req.Requests, &slides.Request{
+		UpdateSlideProperties: &slides.UpdateSlidePropertiesRequest{
+			ObjectId: currentSlide.ObjectId,
+			SlideProperties: &slides.SlideProperties{
+				IsSkipped: slide.Skip,
+			},
+			Fields: "isSkipped",
+		},
+	})
+
 	// prune unmatched images via markdown
 	for _, currentImage := range currentImages {
 		if !currentImage.fromMarkdown {

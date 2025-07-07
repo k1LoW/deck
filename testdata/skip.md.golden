@@ -1,0 +1,21 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Skip"
+    ]
+  },
+  {
+    "layout": "",
+    "skip": true,
+    "titles": [
+      "Skip this Page"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Hello"
+    ]
+  }
+]
