@@ -50,6 +50,7 @@ type Config struct {
 	Layout string `json:"layout,omitempty"` // layout name
 	Freeze bool   `json:"freeze,omitempty"` // freeze the page
 	Ignore bool   `json:"ignore,omitempty"` // ignore the page (skip slide generation)
+	Skip   bool   `json:"skip,omitempty"`   // skip the page (do not show in the presentation)
 }
 
 type CodeBlock struct {
@@ -62,6 +63,7 @@ type Content struct {
 	Layout      string             `json:"layout"`
 	Freeze      bool               `json:"freeze,omitempty"`
 	Ignore      bool               `json:"ignore,omitempty"`
+	Skip        bool               `json:"skip,omitempty"`
 	Titles      []string           `json:"titles,omitempty"`
 	Subtitles   []string           `json:"subtitles,omitempty"`
 	Bodies      []*deck.Body       `json:"bodies,omitempty"`
@@ -217,6 +219,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 		slides[i] = &deck.Slide{
 			Layout:      content.Layout,
 			Freeze:      content.Freeze,
+			Skip:        content.Skip,
 			Titles:      content.Titles,
 			Subtitles:   content.Subtitles,
 			Bodies:      content.Bodies,
@@ -325,6 +328,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 						content.Layout = config.Layout
 						content.Freeze = config.Freeze
 						content.Ignore = config.Ignore
+						content.Skip = config.Skip
 						return ast.WalkContinue, nil
 					}
 					content.Comments = append(content.Comments, block)

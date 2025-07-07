@@ -25,6 +25,7 @@ type Slides []*Slide
 type Slide struct {
 	Layout      string        `json:"layout"`
 	Freeze      bool          `json:"freeze,omitempty"`
+	Skip        bool          `json:"skip,omitempty"`
 	Titles      []string      `json:"titles,omitempty"`
 	Subtitles   []string      `json:"subtitles,omitempty"`
 	Bodies      []*Body       `json:"bodies,omitempty"`
