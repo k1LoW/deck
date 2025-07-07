@@ -68,7 +68,7 @@
               },
               {
                 "value": "notice",
-                "className": "notice"
+                "class_name": "notice"
               }
             ],
             "bullet": "-"
@@ -77,7 +77,7 @@
             "fragments": [
               {
                 "value": "unknown",
-                "className": "unknown"
+                "class_name": "unknown"
               },
               {
                 "value": " world"
@@ -89,7 +89,7 @@
             "fragments": [
               {
                 "value": "unknown",
-                "className": "unknown"
+                "class_name": "unknown"
               },
               {
                 "value": " world"

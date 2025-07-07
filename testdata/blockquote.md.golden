@@ -33,7 +33,7 @@
               },
               {
                 "value": "!",
-                "softLineBreak": true
+                "soft_line_break": true
               },
               {
                 "value": "Hello "
@@ -55,7 +55,7 @@
               },
               {
                 "value": "!",
-                "softLineBreak": true
+                "soft_line_break": true
               },
               {
                 "value": "Hello "
@@ -77,7 +77,7 @@
               },
               {
                 "value": "!",
-                "softLineBreak": true
+                "soft_line_break": true
               },
               {
                 "value": "But flatten"
@@ -96,7 +96,7 @@
               },
               {
                 "value": "!",
-                "softLineBreak": true
+                "soft_line_break": true
               },
               {
                 "value": "But flatten"

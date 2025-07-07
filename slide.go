@@ -30,8 +30,8 @@ type Slide struct {
 	Subtitles   []string      `json:"subtitles,omitempty"`
 	Bodies      []*Body       `json:"bodies,omitempty"`
 	Images      []*Image      `json:"images,omitempty"`
-	BlockQuotes []*BlockQuote `json:"blockQuotes,omitempty"`
-	SpeakerNote string        `json:"speakerNote,omitempty"`
+	BlockQuotes []*BlockQuote `json:"block_quotes,omitempty"`
+	SpeakerNote string        `json:"speaker_note,omitempty"`
 
 	new    bool
 	delete bool
@@ -56,8 +56,8 @@ type Fragment struct {
 	Italic        bool   `json:"italic,omitempty"`
 	Link          string `json:"link,omitempty"`
 	Code          bool   `json:"code,omitempty"`
-	SoftLineBreak bool   `json:"softLineBreak,omitempty"`
-	ClassName     string `json:"className,omitempty"`
+	SoftLineBreak bool   `json:"soft_line_break,omitempty"`
+	ClassName     string `json:"class_name,omitempty"`
 }
 
 type BlockQuote struct {
