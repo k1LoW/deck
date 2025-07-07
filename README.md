@@ -300,6 +300,17 @@ It is possible to skip the operation of the target page.
 <!-- {"freeze": true} -->
 ```
 
+### `"ignore":`
+
+It is possible to exclude the target page from slide generation.
+
+> [!TIP]
+> Use this for draft pages, notes, or content that you don't want to include in the presentation.
+
+```markdown
+<!-- {"ignore": true} -->
+```
+
 ## Integration
 
 - [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Creating deck using Markdown and Google Slides.
