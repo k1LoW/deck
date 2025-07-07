@@ -311,6 +311,17 @@ It is possible to exclude the target page from slide generation.
 <!-- {"ignore": true} -->
 ```
 
+### `"skip":`
+
+It is possible to skip the target page during presentation.
+
+> [!TIP]
+> The slide will be created in Google Slides, but during presentation it will not be displayed and automatically advance to the next slide. Use this for slides that are temporarily unused or planned for future use.
+
+```markdown
+<!-- {"skip": true} -->
+```
+
 ## Integration
 
 - [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Creating deck using Markdown and Google Slides.
