@@ -1903,9 +1903,11 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 					subtitles = append(subtitles, text)
 				}
 			case "BODY":
-				body := convertToBody(element.Shape.Text)
-				if body != nil {
-					bodies = append(bodies, body)
+				paragraphs := convertToParagraphs(element.Shape.Text)
+				if len(paragraphs) > 0 {
+					bodies = append(bodies, &Body{
+						Paragraphs: paragraphs,
+					})
 				}
 			}
 		}
@@ -1964,16 +1966,13 @@ func extractText(text *slides.TextContent) string {
 	return strings.TrimSpace(result.String())
 }
 
-// convertToBody generates a Body struct from Shape.Text.
-func convertToBody(text *slides.TextContent) *Body {
+// convertToParagraphs converts TextContent to a slice of Paragraphs.
+func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 	if text == nil || len(text.TextElements) == 0 {
 		return nil
 	}
 
-	body := &Body{
-		Paragraphs: []*Paragraph{},
-	}
-
+	var paragraphs []*Paragraph
 	var currentParagraph *Paragraph
 	var currentBullet Bullet
 
@@ -1992,7 +1991,7 @@ func convertToBody(text *slides.TextContent) *Body {
 					})
 					// Don't create a new paragraph, continue with the current one
 				} else {
-					body.Paragraphs = append(body.Paragraphs, currentParagraph)
+					paragraphs = append(paragraphs, currentParagraph)
 					currentParagraph = &Paragraph{
 						Fragments: []*Fragment{},
 						Nesting:   0,
@@ -2111,10 +2110,10 @@ func convertToBody(text *slides.TextContent) *Body {
 
 	// Add the last paragraph
 	if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
-		body.Paragraphs = append(body.Paragraphs, currentParagraph)
+		paragraphs = append(paragraphs, currentParagraph)
 	}
 
-	return body
+	return paragraphs
 }
 
 var _ retryablehttp.LeveledLogger = (*apiLogger)(nil)
