@@ -44,11 +44,11 @@
               {
                 "value": "C",
                 "bold": true,
-                "softLineBreak": true
+                "soft_line_break": true
               },
               {
                 "value": "D",
-                "softLineBreak": true
+                "soft_line_break": true
               },
               {
                 "value": "E"
