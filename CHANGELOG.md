@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.37.0](https://github.com/k1LoW/deck/compare/v0.36.0...v0.37.0) - 2025-07-07
+### New Features 🎉
+- feat: add support for skipping slides by @k1LoW in https://github.com/k1LoW/deck/pull/214
+### Other Changes
+- fix: rename JSON field names to use snake_case by @k1LoW in https://github.com/k1LoW/deck/pull/216
+
 ## [v0.36.0](https://github.com/k1LoW/deck/compare/v0.35.0...v0.36.0) - 2025-07-07
 ### New Features 🎉
 - feat: Add ignore page functionality with page configuration comment by @Songmu in https://github.com/k1LoW/deck/pull/213
