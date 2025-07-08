@@ -61,6 +61,22 @@
                 "italic": true
               }
             ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "G"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "H"
+              }
+            ],
+            "bullet": "-"
           }
         ]
       }
