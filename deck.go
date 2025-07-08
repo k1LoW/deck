@@ -683,7 +683,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if len(bodies) <= i {
 			continue
 		}
-		reqs, err := d.applyParagraphs(ctx, bodies[i].objectID, body.Paragraphs)
+		reqs, err := d.applyParagraphsRequests(bodies[i].objectID, body.Paragraphs)
 		if err != nil {
 			return fmt.Errorf("failed to apply paragraphs: %w", err)
 		}
@@ -1056,7 +1056,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	return nil
 }
 
-func (d *Deck) applyParagraphs(ctx context.Context, objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, err error) {
+func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
