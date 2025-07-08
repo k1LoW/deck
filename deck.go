@@ -876,11 +876,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			}
 
 			if len(body.Paragraphs) > j+1 {
-				nextParagraph := body.Paragraphs[j+1]
-				if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
-					text += "\n"
-					plen++
-				}
+				text += "\n"
+				plen++
 			}
 
 			if paragraph.Bullet != BulletNone {
