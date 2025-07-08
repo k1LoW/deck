@@ -8,6 +8,42 @@
   {
     "layout": "",
     "titles": [
+      "no nest"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "A"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "B"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "C"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
       "4-space padding"
     ],
     "bodies": [
@@ -76,6 +112,43 @@
             ],
             "bullet": "-",
             "nesting": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Nested in the middle"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "A"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "B"
+              }
+            ],
+            "bullet": "-",
+            "nesting": 1
+          },
+          {
+            "fragments": [
+              {
+                "value": "C"
+              }
+            ],
+            "bullet": "-"
           }
         ]
       }

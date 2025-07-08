@@ -2,6 +2,14 @@
 
 ---
 
+# no nest
+
+- A
+- B
+- C
+
+---
+
 # 4-space padding
 
 - A
@@ -15,3 +23,11 @@
 - A
   - B
     - C
+
+---
+
+# Nested in the middle
+
+- A
+  - B
+- C
