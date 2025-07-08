@@ -919,7 +919,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		for _, r := range bulletRangeSlice {
 			startIndex := int64(r.start)
 			endIndex := int64(r.end - 1)
-			if startIndex == endIndex {
+			if startIndex <= endIndex {
 				endIndex++
 			}
 			req.Requests = append(req.Requests, &slides.Request{
