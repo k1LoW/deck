@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.37.1](https://github.com/k1LoW/deck/compare/v0.37.0...v0.37.1) - 2025-07-08
+### Fix bug 🐛
+- fix: improve single-character list item rendering by @Songmu in https://github.com/k1LoW/deck/pull/220
+
 ## [v0.37.0](https://github.com/k1LoW/deck/compare/v0.36.0...v0.37.0) - 2025-07-07
 ### New Features 🎉
 - feat: add support for skipping slides by @k1LoW in https://github.com/k1LoW/deck/pull/214
