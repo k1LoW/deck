@@ -390,6 +390,22 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 }
 
 func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *CodeBlock) (*deck.Image, error) {
+	cacheKey := fmt.Sprintf("deckcodeblock:%s:%s:%s", codeBlock.Language, codeBlock.Content, codeBlockToImageCmd)
+
+	if cachedImage, ok := deck.LoadImageCache(cacheKey); ok {
+		return cachedImage, nil
+	}
+
+	image, err := generateCodeImageInternal(ctx, codeBlockToImageCmd, codeBlock)
+	if err != nil {
+		return nil, err
+	}
+	deck.StoreImageCache(cacheKey, image)
+
+	return image, nil
+}
+
+func generateCodeImageInternal(ctx context.Context, codeBlockToImageCmd string, codeBlock *CodeBlock) (*deck.Image, error) {
 	dir, err := os.MkdirTemp("", "deck")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
