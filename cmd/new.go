@@ -25,15 +25,20 @@ import (
 	"fmt"
 
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/md"
 	"github.com/spf13/cobra"
 )
 
 var from string
 
 var newCmd = &cobra.Command{
-	Use:   "new",
+	Use:   "new [markdown-file]",
 	Short: "create new presentation",
-	Long:  `create new presentation.`,
+	Long: `create new presentation.
+
+If a markdown file is specified, frontmatter with title and presentationId will be added to the file.
+If the file doesn't exist, it will be created.`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		var (
@@ -56,7 +61,18 @@ var newCmd = &cobra.Command{
 				return err
 			}
 		}
-		fmt.Println(d.ID())
+
+		presentationID := d.ID()
+
+		// If markdown file is specified, apply frontmatter to it.
+		if len(args) > 0 {
+			mdFile := args[0]
+			if err := md.ApplyFrontmatterToMD(mdFile, title, presentationID); err != nil {
+				return err
+			}
+			cmd.PrintErrf("Applied frontmatter to %s\n", mdFile)
+		}
+		fmt.Println(presentationID)
 		return nil
 	},
 }

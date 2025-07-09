@@ -47,6 +47,16 @@ $ deck new --from yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
 xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
+You can also specify a markdown file:
+
+```console
+$ deck new presentation.md --title "Talk about deck"
+Applied frontmatter to presentation.md
+xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+```
+
+This will create (or update) the specified markdown file with frontmatter containing the presentation ID and title.
+
 ### Write desk in markdown
 
 The slide pages are represented by dividing them with horizontal lines `---`.
