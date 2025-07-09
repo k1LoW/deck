@@ -29,7 +29,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
@@ -312,30 +311,12 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 			logger.Info("file modified", slog.String("file", fileName))
 
-			var newContents md.Contents
-			var parseErr error
-
-			for retry := range 3 {
-				var newMD *md.MD
-				newMD, parseErr = md.ParseFile(filePath)
-				if parseErr == nil {
-					newContents = newMD.Contents
-					break
-				}
-
-				logger.Warn("failed to parse file, retrying...",
-					slog.String("error", parseErr.Error()),
-					slog.Int("retry", retry+1))
-
-				time.Sleep(100 * time.Millisecond)
-			}
-
-			if parseErr != nil {
-				logger.Error("failed to parse file after retries", slog.String("error", parseErr.Error()))
+			newMD, err := md.ParseFile(filePath)
+			if err != nil {
+				logger.Error("failed to parse file", slog.String("error", err.Error()))
 				continue
 			}
-
-			changedPages := md.DiffContents(oldContents, newContents)
+			changedPages := md.DiffContents(oldContents, newMD.Contents)
 
 			if len(changedPages) == 0 {
 				logger.Info("no changes detected")
@@ -343,7 +324,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
-			slides, err := newContents.ToSlides(ctx, codeBlockToImageCmd)
+			slides, err := newMD.Contents.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))
 				continue
@@ -355,7 +336,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 
 			logger.Info("applied changes", slog.Any("pages", changedPages))
 
-			oldContents = newContents
+			oldContents = newMD.Contents
 		}
 	}
 }
