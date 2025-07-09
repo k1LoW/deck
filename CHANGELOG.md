@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.38.0](https://github.com/k1LoW/deck/compare/v0.37.1...v0.38.0) - 2025-07-09
+### New Features 🎉
+- feat(cmd): add markdown file support to deck new command by @Songmu in https://github.com/k1LoW/deck/pull/223
+- perf: optimize watch process by @Songmu in https://github.com/k1LoW/deck/pull/226
+
 ## [v0.37.1](https://github.com/k1LoW/deck/compare/v0.37.0...v0.37.1) - 2025-07-08
 ### Fix bug 🐛
 - fix: improve single-character list item rendering by @Songmu in https://github.com/k1LoW/deck/pull/220
