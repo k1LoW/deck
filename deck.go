@@ -37,13 +37,14 @@ var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/Songmu/k1LoW/deck)"
 
 const (
-	layoutNameForStyle           = "style"
-	styleCode                    = "code"
-	styleBold                    = "bold"
-	styleItalic                  = "italic"
-	styleLink                    = "link"
-	defaultCodeFontFamily        = "Noto Sans Mono"
-	descriptionImageFromMarkdown = "Image generated from markdown"
+	layoutNameForStyle             = "style"
+	styleCode                      = "code"
+	styleBold                      = "bold"
+	styleItalic                    = "italic"
+	styleLink                      = "link"
+	defaultCodeFontFamily          = "Noto Sans Mono"
+	descriptionImageFromMarkdown   = "Image generated from markdown"
+	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
 )
 
 type Deck struct {
@@ -83,6 +84,11 @@ type bulletRange struct {
 	bullet Bullet
 	start  int64
 	end    int64
+}
+
+type textBox struct {
+	paragraphs   []*Paragraph
+	fromMarkdown bool
 }
 
 type actionDetail struct {
@@ -551,15 +557,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	var (
-		titles                  []placeholder
-		subtitles               []placeholder
-		bodies                  []placeholder
-		currentImages           []*Image
-		currentImageObjectIDMap = map[*Image]string{} // key: *Image, value: objectID
+		titles                    []placeholder
+		subtitles                 []placeholder
+		bodies                    []placeholder
+		currentImages             []*Image
+		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
+		currentTextBoxes          []*textBox
+		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
 	)
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
-		if element.Shape != nil && element.Shape.Placeholder != nil {
+		switch {
+		case element.Shape != nil && element.Shape.Placeholder != nil:
 			switch element.Shape.Placeholder.Type {
 			case "CENTERED_TITLE", "TITLE":
 				titles = append(titles, placeholder{
@@ -589,8 +598,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					return err
 				}
 			}
-		}
-		if element.Image != nil {
+		case element.Image != nil:
 			var (
 				image *Image
 				err   error
@@ -608,6 +616,14 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			}
 			currentImages = append(currentImages, image)
 			currentImageObjectIDMap[image] = element.ObjectId
+		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
+			tb := &textBox{}
+			if element.Description == descriptionTextboxFromMarkdown {
+				tb.fromMarkdown = true
+			}
+			tb.paragraphs = convertToParagraphs(element.Shape.Text)
+			currentTextBoxes = append(currentTextBoxes, tb)
+			currentTextBoxObjectIDMap[tb] = element.ObjectId
 		}
 	}
 	var speakerNotesID string
@@ -752,6 +768,60 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 	}
 
+	// set text boxes
+	for _, bq := range slide.BlockQuotes {
+		found := false
+		for _, currentTextBox := range currentTextBoxes {
+			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// create new text box
+		textBoxObjectID := fmt.Sprintf("textbox-%s", uuid.New().String())
+		req.Requests = append(req.Requests, &slides.Request{
+			CreateShape: &slides.CreateShapeRequest{
+				ObjectId: textBoxObjectID,
+				ElementProperties: &slides.PageElementProperties{
+					PageObjectId: currentSlide.ObjectId,
+					Size: &slides.Size{
+						Height: &slides.Dimension{
+							Magnitude: float64(500000 * len(bq.Paragraphs)),
+							Unit:      "EMU",
+						},
+						Width: &slides.Dimension{
+							Magnitude: 5000000,
+							Unit:      "EMU",
+						},
+					},
+					Transform: &slides.AffineTransform{
+						ScaleX:     1.0,
+						ScaleY:     1.0,
+						TranslateX: 1,
+						TranslateY: 1,
+						Unit:       "EMU",
+					},
+				},
+				ShapeType: "TEXT_BOX",
+			},
+		})
+		reqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs: %w", err)
+		}
+		req.Requests = append(req.Requests, reqs...)
+
+		req.Requests = append(req.Requests, &slides.Request{
+			UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
+				ObjectId:    textBoxObjectID,
+				Description: descriptionTextboxFromMarkdown,
+			},
+		})
+	}
+
 	// set skip flag to slide
 	req.Requests = append(req.Requests, &slides.Request{
 		UpdateSlideProperties: &slides.UpdateSlidePropertiesRequest{
@@ -785,6 +855,32 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		req.Requests = append(req.Requests, &slides.Request{
 			DeleteObject: &slides.DeleteObjectRequest{
 				ObjectId: imageObjectID,
+			},
+		})
+	}
+
+	// prune unmatched text boxes via markdown
+	for _, currentTextBox := range currentTextBoxes {
+		if !currentTextBox.fromMarkdown {
+			continue
+		}
+		found := false
+		for _, bq := range slide.BlockQuotes {
+			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		textBoxObjectID, ok := currentTextBoxObjectIDMap[currentTextBox]
+		if !ok {
+			return fmt.Errorf("text box object ID not found for text box: %v", currentTextBox.paragraphs)
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: textBoxObjectID,
 			},
 		})
 	}
