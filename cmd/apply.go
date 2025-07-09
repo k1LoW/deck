@@ -275,23 +275,42 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 
 	logger.Info("watching for changes", slog.String("file", absPath))
 
+	var events []fsnotify.Event
 	for {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return nil
 			}
+			// drain all stacked events
+			events = append(events, event)
 
-			if filepath.Base(event.Name) != fileName {
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			logger.Error("watcher error", slog.String("error", err.Error()))
+
+		case <-ctx.Done():
+			return nil
+		default:
+			if len(events) == 0 {
 				continue
 			}
-
-			if event.Op&fsnotify.Write != fsnotify.Write &&
-				event.Op&fsnotify.Create != fsnotify.Create {
+			var fileModified = false
+			for _, event := range events {
+				fileModified = filepath.Base(event.Name) == fileName &&
+					(event.Op&fsnotify.Write == fsnotify.Write ||
+						event.Op&fsnotify.Create == fsnotify.Create)
+				if fileModified {
+					break
+				}
+			}
+			events = nil
+			if !fileModified {
 				continue
 			}
-
-			logger.Info("file modified", slog.String("file", event.Name))
+			logger.Info("file modified", slog.String("file", fileName))
 
 			var newContents md.Contents
 			var parseErr error
@@ -337,15 +356,6 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			logger.Info("applied changes", slog.Any("pages", changedPages))
 
 			oldContents = newContents
-
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return nil
-			}
-			logger.Error("watcher error", slog.String("error", err.Error()))
-
-		case <-ctx.Done():
-			return nil
 		}
 	}
 }
