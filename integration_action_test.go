@@ -16,7 +16,7 @@ func TestApplyAction(t *testing.T) {
 	ctx := context.Background()
 	presentationID := os.Getenv("TEST_PRESENTATION_ID")
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(Fragment{}, "StyleName", "SoftLineBreak"),
 		cmpopts.IgnoreUnexported(Slide{}),
 	}
 

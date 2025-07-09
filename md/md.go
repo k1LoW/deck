@@ -463,7 +463,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 	if n == nil {
 		return frags, images, nil
 	}
-	var className string
+	var styleName string
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
@@ -479,7 +479,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 					Italic:        (childNode.Level == 1) || child.Italic,
 					Code:          child.Code,
 					SoftLineBreak: child.SoftLineBreak,
-					ClassName:     className,
+					StyleName:     styleName,
 				})
 			}
 			images = append(images, childImages...)
@@ -498,7 +498,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				Italic:        children[0].Italic,
 				Code:          children[0].Code,
 				SoftLineBreak: children[0].SoftLineBreak,
-				ClassName:     className,
+				StyleName:     styleName,
 			})
 			images = append(images, childImages...)
 		case *ast.AutoLink:
@@ -507,7 +507,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			frags = append(frags, &deck.Fragment{
 				Value:     label,
 				Link:      url,
-				ClassName: className,
+				StyleName: styleName,
 			})
 		case *ast.Text:
 			v := convert(childNode.Segment.Value(b))
@@ -521,7 +521,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			frags = append(frags, &deck.Fragment{
 				Value:         convert(childNode.Segment.Value(b)),
 				SoftLineBreak: childNode.SoftLineBreak(),
-				ClassName:     className,
+				StyleName:     styleName,
 			})
 		case *ast.Image:
 			imageLink := string(childNode.Destination)
@@ -538,13 +538,13 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			htmlContent := string(childNode.Segments.Value(b))
 
 			if !strings.HasPrefix(htmlContent, "<") {
-				className = "" // Reset class attribute for closing tags
+				styleName = "" // Reset class attribute for closing tags
 				continue       // Skip if it doesn't look like HTML
 			}
 
 			// Check if it's a closing tag
 			if strings.HasPrefix(htmlContent, "</") && strings.HasSuffix(htmlContent, ">") {
-				className = "" // Reset class attribute for closing tags
+				styleName = "" // Reset class attribute for closing tags
 				continue
 			}
 
@@ -554,9 +554,9 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 					Value:         "\n",
 					Bold:          false,
 					SoftLineBreak: false,
-					ClassName:     className,
+					StyleName:     styleName,
 				})
-				className = "" // Reset class attribute
+				styleName = "" // Reset class attribute
 				continue
 			}
 
@@ -564,7 +564,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			stuffs := allowdInlineElmReg.FindStringSubmatch(htmlContent)
 			isAllowed := len(stuffs) == 2
 			if !isAllowed {
-				className = "" // Reset class attribute for disallowed elements
+				styleName = "" // Reset class attribute for disallowed elements
 				continue       // Skip disallowed inline HTML elements
 			}
 
@@ -572,19 +572,19 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			matches := classRe.FindStringSubmatch(htmlContent)
 			if len(matches) > 1 {
 				if matches[1] != "" {
-					className = matches[1] // For double quotes
+					styleName = matches[1] // For double quotes
 				} else if len(matches) > 2 && matches[2] != "" {
-					className = matches[2] // For single quotes
+					styleName = matches[2] // For single quotes
 				}
 			} else {
-				className = stuffs[1] // Use the matched element name as class name
+				styleName = stuffs[1] // Use the matched element name as style name
 			}
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
 				frags = append(frags, &deck.Fragment{
 					Value:     convert(childNode.Value),
-					ClassName: className,
+					StyleName: styleName,
 				})
 			} else {
 				// Fallback for empty strings
@@ -604,7 +604,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				Italic:        children[0].Italic,
 				Code:          true,
 				SoftLineBreak: children[0].SoftLineBreak,
-				ClassName:     className,
+				StyleName:     styleName,
 			})
 			images = append(images, childImages...)
 		default:
