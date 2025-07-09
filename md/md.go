@@ -25,9 +25,17 @@ import (
 )
 
 var allowedInlineHTMLElements = []string{
-	"<a", "<abbr", "<b", "<cite", "<code", "<data", "<dfn", "<em", "<i", "<kbd",
-	"<mark", "<q", "<rp", "<rt", "<ruby", "<s", "<samp", "<small", "<span",
-	"<strong", "<sub", "<sup", "<time", "<u", "<var",
+	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd",
+	"mark", "q", "rp", "rt", "ruby", "s", "samp", "small", "span",
+	"strong", "sub", "sup", "time", "u", "var",
+}
+
+var allowdInlineElmReg *regexp.Regexp
+
+func init() {
+	// Compile the regular expression to match allowed inline HTML elements
+	allowedElements := strings.Join(allowedInlineHTMLElements, "|")
+	allowdInlineElmReg = regexp.MustCompile(`^<(` + allowedElements + `)[\s>]`)
 }
 
 // MD represents a markdown presentation.
@@ -553,13 +561,8 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			}
 
 			// Check if the HTML content is an allowed inline element
-			isAllowed := false
-			for _, elem := range allowedInlineHTMLElements {
-				if strings.HasPrefix(htmlContent, elem) {
-					isAllowed = true
-					break
-				}
-			}
+			stuffs := allowdInlineElmReg.FindStringSubmatch(htmlContent)
+			isAllowed := len(stuffs) == 2
 			if !isAllowed {
 				className = "" // Reset class attribute for disallowed elements
 				continue       // Skip disallowed inline HTML elements
@@ -573,6 +576,8 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				} else if len(matches) > 2 && matches[2] != "" {
 					className = matches[2] // For single quotes
 				}
+			} else {
+				className = stuffs[1] // Use the matched element name as class name
 			}
 		case *ast.String:
 			// For String nodes, try to get their content
