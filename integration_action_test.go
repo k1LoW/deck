@@ -9,12 +9,24 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-func TestApplyAction(t *testing.T) {
+func TestAction(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
 		t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
 	}
 	ctx := context.Background()
-	presentationID := os.Getenv("TEST_PRESENTATION_ID")
+	d, err := CreateFrom(ctx, basePresentationID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	presentationID := d.ID()
+	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
+
+	t.Cleanup(func() {
+		if err := Delete(ctx, presentationID); err != nil {
+			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
+		}
+	})
+
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
 		cmpopts.IgnoreUnexported(Slide{}),
