@@ -33,6 +33,7 @@ jobs:
           fail_level: error
           go_version_file: go.mod
           golangci_lint_flags: --timeout=5m
+          cache: false
 
       - name: Run tests
         run: make ci
