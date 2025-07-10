@@ -27,8 +27,10 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
@@ -292,19 +294,12 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 
 		case <-ctx.Done():
 			return nil
-		default:
-			if len(events) == 0 {
-				continue
-			}
-			var fileModified = false
-			for _, event := range events {
-				fileModified = filepath.Base(event.Name) == fileName &&
+		case <-time.After(time.Second):
+			fileModified := slices.ContainsFunc(events, func(event fsnotify.Event) bool {
+				return filepath.Base(event.Name) == fileName &&
 					(event.Op&fsnotify.Write == fsnotify.Write ||
 						event.Op&fsnotify.Create == fsnotify.Create)
-				if fileModified {
-					break
-				}
-			}
+			})
 			events = nil
 			if !fileModified {
 				continue
