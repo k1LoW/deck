@@ -212,6 +212,41 @@ func List(ctx context.Context) (_ []*Presentation, err error) {
 	return presentations, nil
 }
 
+// Delete deletes a Google Slides presentation by ID.
+func Delete(ctx context.Context, id string) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	d := &Deck{
+		styles: map[string]*slides.TextStyle{},
+	}
+	if err := d.initialize(ctx); err != nil {
+		return err
+	}
+	if err := d.driveSrv.Files.Delete(id).Context(ctx).Do(); err != nil {
+		return fmt.Errorf("failed to delete presentation: %w", err)
+	}
+	return nil
+}
+
+// AllowReadingByAnyone sets the permission of the presentation to allow anyone to read it.
+func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	if d.id == "" {
+		return fmt.Errorf("presentation ID is not set")
+	}
+	permission := &drive.Permission{
+		Type: "anyone",
+		Role: "reader",
+	}
+	if _, err := d.driveSrv.Permissions.Create(d.id, permission).Context(ctx).Do(); err != nil {
+		return fmt.Errorf("failed to set permission: %w", err)
+	}
+	return nil
+}
+
 func (d *Deck) initialize(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -290,6 +325,15 @@ func (d *Deck) ListLayouts() []string {
 		layouts = append(layouts, l.LayoutProperties.DisplayName)
 	}
 	return layouts
+}
+
+// ListSlideURLs lists URLs of the slides in the Google Slides presentation.
+func (d *Deck) ListSlideURLs() []string {
+	var slideURLs []string
+	for _, s := range d.presentation.Slides {
+		slideURLs = append(slideURLs, fmt.Sprintf("https://docs.google.com/presentation/d/%s/present?slide=id.%s", d.id, s.ObjectId))
+	}
+	return slideURLs
 }
 
 // Apply the markdown slides to the presentation.
