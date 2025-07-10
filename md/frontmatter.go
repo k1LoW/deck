@@ -10,7 +10,7 @@ import (
 	"github.com/k1LoW/errors"
 )
 
-// ApplyFrontmatterToMD updates or creates a markdown file with frontmatter
+// ApplyFrontmatterToMD updates or creates a markdown file with frontmatter.
 func ApplyFrontmatterToMD(mdFile, title, presentationID string) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -75,7 +75,7 @@ func ApplyFrontmatterToMD(mdFile, title, presentationID string) (err error) {
 		}
 	}
 	// Write the file
-	if err := os.WriteFile(mdFile, newContent.Bytes(), 0644); err != nil {
+	if err := os.WriteFile(mdFile, newContent.Bytes(), 0600); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil

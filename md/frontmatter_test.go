@@ -176,7 +176,7 @@ title: Existing Title
 
 			// Write initial content if any
 			if tt.initialContent != "" {
-				if err := os.WriteFile(tmpFile, []byte(tt.initialContent), 0644); err != nil {
+				if err := os.WriteFile(tmpFile, []byte(tt.initialContent), 0600); err != nil {
 					t.Fatalf("Failed to write initial content: %v", err)
 				}
 			}

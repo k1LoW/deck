@@ -51,7 +51,7 @@ var lsLayoutsCmd = &cobra.Command{
 			}
 		}
 		if presentationID == "" {
-			return fmt.Errorf("presentation ID is required. Use --presentation-id or set it in the frontmatter of the markdown file.")
+			return fmt.Errorf("presentation ID is required. Use --presentation-id or set it in the frontmatter of the markdown file")
 		}
 		d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
 		if err != nil {
