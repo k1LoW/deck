@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.39.0](https://github.com/k1LoW/deck/compare/v0.38.0...v0.39.0) - 2025-07-10
+### New Features 🎉
+- perf: add debounce function to avoid busy loop while watching by @Songmu in https://github.com/k1LoW/deck/pull/227
+### Other Changes
+- chore: fix lint errors and fix reviewdog/action-golangci-lint by @Songmu in https://github.com/k1LoW/deck/pull/229
+- chore: set User-Agent to HTTP Request for crawling manner by @Songmu in https://github.com/k1LoW/deck/pull/228
+
 ## [v0.38.0](https://github.com/k1LoW/deck/compare/v0.37.1...v0.38.0) - 2025-07-09
 ### New Features 🎉
 - feat(cmd): add markdown file support to deck new command by @Songmu in https://github.com/k1LoW/deck/pull/223
