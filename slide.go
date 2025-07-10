@@ -162,7 +162,7 @@ func NewImageFromMarkdown(pathOrURL string) (_ *Image, err error) {
 	}()
 	i, err := NewImage(pathOrURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create image from code block: %w", err)
+		return nil, fmt.Errorf("failed to create image from path or URL: %w", err)
 	}
 	i.fromMarkdown = true
 	return i, nil
