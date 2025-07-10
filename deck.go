@@ -22,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/k1LoW/deck/config"
+	"github.com/k1LoW/deck/version"
 	"github.com/k1LoW/errors"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
@@ -32,6 +33,8 @@ import (
 )
 
 var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
+
+var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/Songmu/k1LoW/deck)"
 
 const (
 	layoutNameForStyle           = "style"
@@ -242,11 +245,13 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	if err != nil {
 		return err
 	}
+	srv.UserAgent = userAgent
 	d.srv = srv
 	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return err
 	}
+	driveSrv.UserAgent = userAgent
 	d.driveSrv = driveSrv
 	return nil
 }
