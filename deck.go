@@ -842,8 +842,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					}
 				}
 
-				if fragment.ClassName != "" {
-					s, ok := d.styles[fragment.ClassName]
+				if fragment.StyleName != "" {
+					s, ok := d.styles[fragment.StyleName]
 					if ok {
 						styleReqs = append(styleReqs, &slides.Request{
 							UpdateTextStyle: &slides.UpdateTextStyleRequest{
@@ -1279,11 +1279,11 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 					if t.TextRun == nil {
 						continue
 					}
-					className := strings.Trim(t.TextRun.Content, " \n")
-					if className == "" {
+					styleName := strings.Trim(t.TextRun.Content, " \n")
+					if styleName == "" {
 						continue
 					}
-					d.styles[className] = t.TextRun.Style
+					d.styles[styleName] = t.TextRun.Style
 				}
 			}
 		}
@@ -1980,7 +1980,7 @@ func convertToBody(text *slides.TextContent) *Body {
 				fragment := &Fragment{
 					Value:         "",
 					SoftLineBreak: true,
-					ClassName:     "",
+					StyleName:     "",
 				}
 				currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
 				continue

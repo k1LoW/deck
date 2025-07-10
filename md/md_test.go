@@ -25,6 +25,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/emoji.md"},
 		{"../testdata/code.md"},
 		{"../testdata/style.md"},
+		{"../testdata/html_element_style.md"},
 		{"../testdata/empty_list.md"},
 		{"../testdata/empty_link.md"},
 		{"../testdata/lists_with_blankline.md"},
@@ -141,6 +142,7 @@ func TestGenCodeImage(t *testing.T) {
 		})
 	}
 }
+
 
 func FuzzParse(f *testing.F) {
 	f.Add([]byte(`# Title
