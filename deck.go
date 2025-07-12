@@ -2014,10 +2014,12 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	var subtitles []string
 	var bodies []*Body
 	var images []*Image
+	var blockQuotes []*BlockQuote
 
 	// Extract titles, subtitles, and bodies from page elements
 	for _, element := range p.PageElements {
-		if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+		switch {
+		case element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil:
 			switch element.Shape.Placeholder.Type {
 			case "CENTERED_TITLE", "TITLE":
 				text := extractText(element.Shape.Text)
@@ -2037,8 +2039,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 					})
 				}
 			}
-		}
-		if element.Image != nil {
+		case element.Image != nil:
 			var (
 				image *Image
 				err   error
@@ -2055,6 +2056,14 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 				}
 			}
 			images = append(images, image)
+		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
+			if element.Description != descriptionTextboxFromMarkdown {
+				continue
+			}
+			bq := &BlockQuote{
+				Paragraphs: convertToParagraphs(element.Shape.Text),
+			}
+			blockQuotes = append(blockQuotes, bq)
 		}
 	}
 
@@ -2062,6 +2071,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	slide.Subtitles = subtitles
 	slide.Bodies = bodies
 	slide.Images = images
+	slide.BlockQuotes = blockQuotes
 
 	// Extract speaker notes
 	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {
