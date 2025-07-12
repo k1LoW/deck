@@ -37,13 +37,15 @@ var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/Songmu/k1LoW/deck)"
 
 const (
-	layoutNameForStyle           = "style"
-	styleCode                    = "code"
-	styleBold                    = "bold"
-	styleItalic                  = "italic"
-	styleLink                    = "link"
-	defaultCodeFontFamily        = "Noto Sans Mono"
-	descriptionImageFromMarkdown = "Image generated from markdown"
+	layoutNameForStyle             = "style"
+	styleCode                      = "code"
+	styleBold                      = "bold"
+	styleItalic                    = "italic"
+	styleLink                      = "link"
+	styleBlockQuote                = "blockquote"
+	defaultCodeFontFamily          = "Noto Sans Mono"
+	descriptionImageFromMarkdown   = "Image generated from markdown"
+	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
 )
 
 type Deck struct {
@@ -54,6 +56,7 @@ type Deck struct {
 	defaultTitleLayout string
 	defaultLayout      string
 	styles             map[string]*slides.TextStyle
+	shapes             map[string]*slides.ShapeProperties
 	logger             *slog.Logger
 }
 
@@ -85,6 +88,11 @@ type bulletRange struct {
 	end    int64
 }
 
+type textBox struct {
+	paragraphs   []*Paragraph
+	fromMarkdown bool
+}
+
 type actionDetail struct {
 	ActionType  actionType `json:"action_type"`
 	Titles      []string   `json:"titles,omitempty"`
@@ -105,6 +113,7 @@ func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -127,6 +136,7 @@ func Create(ctx context.Context) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -154,6 +164,7 @@ func CreateFrom(ctx context.Context, id string) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -191,6 +202,7 @@ func List(ctx context.Context) (_ []*Presentation, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -244,50 +256,6 @@ func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
 	if _, err := d.driveSrv.Permissions.Create(d.id, permission).Context(ctx).Do(); err != nil {
 		return fmt.Errorf("failed to set permission: %w", err)
 	}
-	return nil
-}
-
-func (d *Deck) initialize(ctx context.Context) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if d.logger == nil {
-		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
-	}
-	if err := os.MkdirAll(config.DataHomePath(), 0700); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
-		return err
-	}
-
-	creds := filepath.Join(config.DataHomePath(), "credentials.json")
-	b, err := os.ReadFile(creds)
-	if err != nil {
-		return err
-	}
-
-	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
-	if err != nil {
-		return err
-	}
-
-	client, err := d.getHTTPClient(ctx, config)
-	if err != nil {
-		return err
-	}
-	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return err
-	}
-	srv.UserAgent = userAgent
-	d.srv = srv
-	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return err
-	}
-	driveSrv.UserAgent = userAgent
-	d.driveSrv = driveSrv
 	return nil
 }
 
@@ -522,373 +490,6 @@ func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
 	return slides, nil
 }
 
-func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	layoutMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutMap[l.LayoutProperties.DisplayName] = l
-	}
-
-	layout, ok := layoutMap[slide.Layout]
-	if !ok {
-		return fmt.Errorf("layout not found: %q", slide.Layout)
-	}
-
-	if len(d.presentation.Slides) <= index {
-		return fmt.Errorf("index out of range: %d", index)
-	}
-	if slide.Freeze {
-		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
-		return nil
-	}
-	currentSlide := d.presentation.Slides[index]
-	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
-		if err := d.updateLayout(ctx, index, slide); err != nil {
-			return err
-		}
-	}
-
-	var (
-		titles                  []placeholder
-		subtitles               []placeholder
-		bodies                  []placeholder
-		currentImages           []*Image
-		currentImageObjectIDMap = map[*Image]string{} // key: *Image, value: objectID
-	)
-	currentSlide = d.presentation.Slides[index]
-	for _, element := range currentSlide.PageElements {
-		if element.Shape != nil && element.Shape.Placeholder != nil {
-			switch element.Shape.Placeholder.Type {
-			case "CENTERED_TITLE", "TITLE":
-				titles = append(titles, placeholder{
-					objectID: element.ObjectId,
-					x:        element.Transform.TranslateX,
-					y:        element.Transform.TranslateY,
-				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
-				}
-			case "SUBTITLE":
-				subtitles = append(subtitles, placeholder{
-					objectID: element.ObjectId,
-					x:        element.Transform.TranslateX,
-					y:        element.Transform.TranslateY,
-				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
-				}
-			case "BODY":
-				bodies = append(bodies, placeholder{
-					objectID: element.ObjectId,
-					x:        element.Transform.TranslateX,
-					y:        element.Transform.TranslateY,
-				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
-				}
-			}
-		}
-		if element.Image != nil {
-			var (
-				image *Image
-				err   error
-			)
-			if element.Description == descriptionImageFromMarkdown {
-				image, err = NewImageFromMarkdown(element.Image.ContentUrl)
-				if err != nil {
-					return fmt.Errorf("failed to create image from code block %s: %w", element.Image.ContentUrl, err)
-				}
-			} else {
-				image, err = NewImage(element.Image.ContentUrl)
-				if err != nil {
-					return fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
-				}
-			}
-			currentImages = append(currentImages, image)
-			currentImageObjectIDMap[image] = element.ObjectId
-		}
-	}
-	var speakerNotesID string
-	for _, element := range currentSlide.SlideProperties.NotesPage.PageElements {
-		if element.Shape != nil && element.Shape.Placeholder != nil {
-			if element.Shape.Placeholder.Type == "BODY" {
-				speakerNotesID = element.ObjectId
-				if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
-					return err
-				}
-			}
-		}
-	}
-	if speakerNotesID == "" {
-		return fmt.Errorf("speaker notes not found")
-	}
-
-	// set titles
-	req := &slides.BatchUpdatePresentationRequest{}
-	sort.Slice(titles, func(i, j int) bool {
-		if titles[i].y == titles[j].y {
-			return titles[i].x < titles[j].x
-		}
-		return titles[i].y < titles[j].y
-	})
-	for i, title := range slide.Titles {
-		if len(titles) <= i {
-			continue
-		}
-		req.Requests = append(req.Requests, &slides.Request{
-			InsertText: &slides.InsertTextRequest{
-				ObjectId: titles[i].objectID,
-				Text:     title,
-			},
-		})
-	}
-
-	// set subtitles
-	sort.Slice(subtitles, func(i, j int) bool {
-		if subtitles[i].y == subtitles[j].y {
-			return subtitles[i].x < subtitles[j].x
-		}
-		return subtitles[i].y < subtitles[j].y
-	})
-	for i, subtitle := range slide.Subtitles {
-		if len(subtitles) <= i {
-			continue
-		}
-		req.Requests = append(req.Requests, &slides.Request{
-			InsertText: &slides.InsertTextRequest{
-				ObjectId: subtitles[i].objectID,
-				Text:     subtitle,
-			},
-		})
-	}
-
-	// set speaker notes
-	req.Requests = append(req.Requests, &slides.Request{
-		InsertText: &slides.InsertTextRequest{
-			ObjectId: speakerNotesID,
-			Text:     slide.SpeakerNote,
-		},
-	})
-
-	// set bodies
-	sort.Slice(bodies, func(i, j int) bool {
-		if bodies[i].y == bodies[j].y {
-			return bodies[i].x < bodies[j].x
-		}
-		return bodies[i].y < bodies[j].y
-	})
-	var bulletStartIndex, bulletEndIndex int64
-	bulletRanges := map[int]*bulletRange{}
-	for i, body := range slide.Bodies {
-		if len(bodies) <= i {
-			continue
-		}
-		count := int64(0)
-		text := ""
-		bulletStartIndex = 0 // reset per body
-		bulletEndIndex = 0   // reset per body
-		var styleReqs []*slides.Request
-		currentBullet := BulletNone
-		for j, paragraph := range body.Paragraphs {
-			plen := 0
-			if paragraph.Bullet != BulletNone {
-				if paragraph.Nesting > 0 {
-					text += strings.Repeat("\t", paragraph.Nesting)
-					plen += paragraph.Nesting
-				}
-			}
-			for _, fragment := range paragraph.Fragments {
-				flen := countString(fragment.Value)
-				for _, req := range d.getInlineStyleRequests(fragment) {
-					req.ObjectId = bodies[i].objectID
-					req.TextRange = &slides.Range{
-						Type:       "FIXED_RANGE",
-						StartIndex: ptrInt64(count + int64(plen)),
-						EndIndex:   ptrInt64(count + int64(plen+flen)),
-					}
-					styleReqs = append(styleReqs, &slides.Request{
-						UpdateTextStyle: req,
-					})
-				}
-				plen += flen
-				text += fragment.Value
-				if fragment.SoftLineBreak {
-					text += "\n"
-					plen++
-				}
-			}
-
-			if len(body.Paragraphs) > j+1 {
-				nextParagraph := body.Paragraphs[j+1]
-				if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
-					text += "\n"
-					plen++
-				}
-			}
-
-			if paragraph.Bullet != BulletNone {
-				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
-					bulletStartIndex = count
-					bulletEndIndex = count
-					bulletRanges[int(bulletStartIndex)] = &bulletRange{
-						bullet: paragraph.Bullet,
-						start:  bulletStartIndex,
-						end:    bulletEndIndex,
-					}
-				}
-				bulletEndIndex += int64(plen)
-				bulletRanges[int(bulletStartIndex)].end = bulletEndIndex
-			}
-			currentBullet = paragraph.Bullet
-			count += int64(plen)
-		}
-
-		req.Requests = append(req.Requests, &slides.Request{
-			InsertText: &slides.InsertTextRequest{
-				ObjectId: bodies[i].objectID,
-				Text:     text,
-			},
-		})
-		req.Requests = append(req.Requests, styleReqs...)
-		bulletRangeSlice := []*bulletRange{}
-		for _, r := range bulletRanges {
-			bulletRangeSlice = append(bulletRangeSlice, r)
-		}
-		// reverse sort
-		// Because the Range changes each time it is converted to a list, convert from the end to a list.
-		sort.Slice(bulletRangeSlice, func(i, j int) bool {
-			return bulletRangeSlice[i].start > bulletRangeSlice[j].start
-		})
-		for _, r := range bulletRangeSlice {
-			startIndex := int64(r.start)
-			endIndex := int64(r.end - 1)
-			if startIndex <= endIndex {
-				endIndex++
-			}
-			req.Requests = append(req.Requests, &slides.Request{
-				CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
-					ObjectId:     bodies[i].objectID,
-					BulletPreset: convertBullet(r.bullet),
-					TextRange: &slides.Range{
-						Type:       "FIXED_RANGE",
-						StartIndex: ptrInt64(startIndex),
-						EndIndex:   ptrInt64(endIndex),
-					},
-				},
-			})
-		}
-	}
-
-	// set images
-	for _, image := range slide.Images {
-		found := false
-		for _, currentImage := range currentImages {
-			if currentImage.Compare(image) {
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-
-		// upload image to Google Drive
-		df := &drive.File{
-			Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
-			MimeType: string(image.mimeType),
-		}
-		uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
-		if err != nil {
-			return fmt.Errorf("failed to upload image: %w", err)
-		}
-		if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
-			Type: "anyone",
-			Role: "reader",
-		}).Do(); err != nil {
-			return fmt.Errorf("failed to set permission for image: %w", err)
-		}
-		f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
-		if err != nil {
-			return fmt.Errorf("failed to get webContentLink for image: %w", err)
-		}
-		defer func() {
-			// Clean up the uploaded image after use
-			if err := d.driveSrv.Files.Delete(uploaded.Id).Do(); err != nil {
-				d.logger.Error("failed to delete uploaded image", slog.String("id", uploaded.Id), slog.Any("error", err))
-			}
-		}()
-		if f.WebContentLink == "" {
-			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
-		}
-
-		imageObjectID := fmt.Sprintf("image-%s", uuid.New().String())
-		req.Requests = append(req.Requests, &slides.Request{
-			CreateImage: &slides.CreateImageRequest{
-				ObjectId: imageObjectID,
-				ElementProperties: &slides.PageElementProperties{
-					PageObjectId: currentSlide.ObjectId,
-				},
-				Url: f.WebContentLink,
-			},
-		})
-		if image.fromMarkdown {
-			req.Requests = append(req.Requests, &slides.Request{
-				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
-					ObjectId:    imageObjectID,
-					Description: descriptionImageFromMarkdown,
-				},
-			})
-		}
-	}
-
-	// set skip flag to slide
-	req.Requests = append(req.Requests, &slides.Request{
-		UpdateSlideProperties: &slides.UpdateSlidePropertiesRequest{
-			ObjectId: currentSlide.ObjectId,
-			SlideProperties: &slides.SlideProperties{
-				IsSkipped: slide.Skip,
-			},
-			Fields: "isSkipped",
-		},
-	})
-
-	// prune unmatched images via markdown
-	for _, currentImage := range currentImages {
-		if !currentImage.fromMarkdown {
-			continue
-		}
-		found := false
-		for _, image := range slide.Images {
-			if currentImage.Compare(image) {
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		imageObjectID, ok := currentImageObjectIDMap[currentImage]
-		if !ok {
-			return fmt.Errorf("image object ID not found for image: %s", currentImage.url)
-		}
-		req.Requests = append(req.Requests, &slides.Request{
-			DeleteObject: &slides.DeleteObjectRequest{
-				ObjectId: imageObjectID,
-			},
-		})
-	}
-
-	if len(req.Requests) > 0 {
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.UpdateTextStyleRequest) {
 	if fragment.Code {
 		s, ok := d.styles[styleCode]
@@ -1068,6 +669,79 @@ func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err erro
 	return nil
 }
 
+func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	d.logger.Info("inserting page", slog.Int("index", index))
+	if len(d.presentation.Slides) <= index {
+		return fmt.Errorf("index out of range: %d", index)
+	}
+	if err := d.createPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if index == 0 {
+		if err := d.movePage(ctx, 1, 0); err != nil {
+			return fmt.Errorf("failed to move page: %w", err)
+		}
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	d.logger.Info("inserted page", slog.Int("index", index))
+	return nil
+}
+
+func (d *Deck) initialize(ctx context.Context) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	if d.logger == nil {
+		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
+	}
+	if err := os.MkdirAll(config.DataHomePath(), 0700); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
+		return err
+	}
+
+	creds := filepath.Join(config.DataHomePath(), "credentials.json")
+	b, err := os.ReadFile(creds)
+	if err != nil {
+		return err
+	}
+
+	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
+	if err != nil {
+		return err
+	}
+
+	client, err := d.getHTTPClient(ctx, config)
+	if err != nil {
+		return err
+	}
+	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return err
+	}
+	srv.UserAgent = userAgent
+	d.srv = srv
+	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return err
+	}
+	driveSrv.UserAgent = userAgent
+	d.driveSrv = driveSrv
+	return nil
+}
+
 func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -1107,32 +781,394 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err err
 	return nil
 }
 
-func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err error) {
+func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d.logger.Info("inserting page", slog.Int("index", index))
+	layoutMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutMap[l.LayoutProperties.DisplayName] = l
+	}
+
+	layout, ok := layoutMap[slide.Layout]
+	if !ok {
+		return fmt.Errorf("layout not found: %q", slide.Layout)
+	}
+
 	if len(d.presentation.Slides) <= index {
 		return fmt.Errorf("index out of range: %d", index)
 	}
-	if err := d.createPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
+	if slide.Freeze {
+		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
+		return nil
 	}
-	if index == 0 {
-		if err := d.movePage(ctx, 1, 0); err != nil {
-			return fmt.Errorf("failed to move page: %w", err)
+	currentSlide := d.presentation.Slides[index]
+	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
+		if err := d.updateLayout(ctx, index, slide); err != nil {
+			return err
 		}
 	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
+
+	var (
+		titles                    []placeholder
+		subtitles                 []placeholder
+		bodies                    []placeholder
+		currentImages             []*Image
+		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
+		currentTextBoxes          []*textBox
+		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
+	)
+	currentSlide = d.presentation.Slides[index]
+	for _, element := range currentSlide.PageElements {
+		switch {
+		case element.Shape != nil && element.Shape.Placeholder != nil:
+			switch element.Shape.Placeholder.Type {
+			case "CENTERED_TITLE", "TITLE":
+				titles = append(titles, placeholder{
+					objectID: element.ObjectId,
+					x:        element.Transform.TranslateX,
+					y:        element.Transform.TranslateY,
+				})
+				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
+					return err
+				}
+			case "SUBTITLE":
+				subtitles = append(subtitles, placeholder{
+					objectID: element.ObjectId,
+					x:        element.Transform.TranslateX,
+					y:        element.Transform.TranslateY,
+				})
+				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
+					return err
+				}
+			case "BODY":
+				bodies = append(bodies, placeholder{
+					objectID: element.ObjectId,
+					x:        element.Transform.TranslateX,
+					y:        element.Transform.TranslateY,
+				})
+				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
+					return err
+				}
+			}
+		case element.Image != nil:
+			var (
+				image *Image
+				err   error
+			)
+			if element.Description == descriptionImageFromMarkdown {
+				image, err = NewImageFromMarkdown(element.Image.ContentUrl)
+				if err != nil {
+					return fmt.Errorf("failed to create image from code block %s: %w", element.Image.ContentUrl, err)
+				}
+			} else {
+				image, err = NewImage(element.Image.ContentUrl)
+				if err != nil {
+					return fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
+				}
+			}
+			currentImages = append(currentImages, image)
+			currentImageObjectIDMap[image] = element.ObjectId
+		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
+			tb := &textBox{}
+			if element.Description == descriptionTextboxFromMarkdown {
+				tb.fromMarkdown = true
+			}
+			tb.paragraphs = convertToParagraphs(element.Shape.Text)
+			currentTextBoxes = append(currentTextBoxes, tb)
+			currentTextBoxObjectIDMap[tb] = element.ObjectId
+		}
 	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
+	var speakerNotesID string
+	for _, element := range currentSlide.SlideProperties.NotesPage.PageElements {
+		if element.Shape != nil && element.Shape.Placeholder != nil {
+			if element.Shape.Placeholder.Type == "BODY" {
+				speakerNotesID = element.ObjectId
+				if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
+					return err
+				}
+			}
+		}
 	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
+	if speakerNotesID == "" {
+		return fmt.Errorf("speaker notes not found")
 	}
-	d.logger.Info("inserted page", slog.Int("index", index))
+
+	// set titles
+	req := &slides.BatchUpdatePresentationRequest{}
+	sort.Slice(titles, func(i, j int) bool {
+		if titles[i].y == titles[j].y {
+			return titles[i].x < titles[j].x
+		}
+		return titles[i].y < titles[j].y
+	})
+	for i, title := range slide.Titles {
+		if len(titles) <= i {
+			continue
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			InsertText: &slides.InsertTextRequest{
+				ObjectId: titles[i].objectID,
+				Text:     title,
+			},
+		})
+	}
+
+	// set subtitles
+	sort.Slice(subtitles, func(i, j int) bool {
+		if subtitles[i].y == subtitles[j].y {
+			return subtitles[i].x < subtitles[j].x
+		}
+		return subtitles[i].y < subtitles[j].y
+	})
+	for i, subtitle := range slide.Subtitles {
+		if len(subtitles) <= i {
+			continue
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			InsertText: &slides.InsertTextRequest{
+				ObjectId: subtitles[i].objectID,
+				Text:     subtitle,
+			},
+		})
+	}
+
+	// set speaker notes
+	req.Requests = append(req.Requests, &slides.Request{
+		InsertText: &slides.InsertTextRequest{
+			ObjectId: speakerNotesID,
+			Text:     slide.SpeakerNote,
+		},
+	})
+
+	// set bodies
+	sort.Slice(bodies, func(i, j int) bool {
+		if bodies[i].y == bodies[j].y {
+			return bodies[i].x < bodies[j].x
+		}
+		return bodies[i].y < bodies[j].y
+	})
+	for i, body := range slide.Bodies {
+		if len(bodies) <= i {
+			continue
+		}
+		reqs, styleReqs, err := d.applyParagraphsRequests(bodies[i].objectID, body.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs: %w", err)
+		}
+		req.Requests = append(req.Requests, reqs...)
+		req.Requests = append(req.Requests, styleReqs...)
+	}
+
+	// set images
+	for _, image := range slide.Images {
+		found := false
+		for _, currentImage := range currentImages {
+			if currentImage.Compare(image) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		// upload image to Google Drive
+		df := &drive.File{
+			Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
+			MimeType: string(image.mimeType),
+		}
+		uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
+		if err != nil {
+			return fmt.Errorf("failed to upload image: %w", err)
+		}
+		if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
+			Type: "anyone",
+			Role: "reader",
+		}).Do(); err != nil {
+			return fmt.Errorf("failed to set permission for image: %w", err)
+		}
+		f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
+		if err != nil {
+			return fmt.Errorf("failed to get webContentLink for image: %w", err)
+		}
+		defer func() {
+			// Clean up the uploaded image after use
+			if err := d.driveSrv.Files.Delete(uploaded.Id).Do(); err != nil {
+				d.logger.Error("failed to delete uploaded image", slog.String("id", uploaded.Id), slog.Any("error", err))
+			}
+		}()
+		if f.WebContentLink == "" {
+			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
+		}
+
+		imageObjectID := fmt.Sprintf("image-%s", uuid.New().String())
+		req.Requests = append(req.Requests, &slides.Request{
+			CreateImage: &slides.CreateImageRequest{
+				ObjectId: imageObjectID,
+				ElementProperties: &slides.PageElementProperties{
+					PageObjectId: currentSlide.ObjectId,
+				},
+				Url: f.WebContentLink,
+			},
+		})
+		if image.fromMarkdown {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
+					ObjectId:    imageObjectID,
+					Description: descriptionImageFromMarkdown,
+				},
+			})
+		}
+	}
+
+	// set text boxes
+	for _, bq := range slide.BlockQuotes {
+		found := false
+		for _, currentTextBox := range currentTextBoxes {
+			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// create new text box
+		textBoxObjectID := fmt.Sprintf("textbox-%s", uuid.New().String())
+		req.Requests = append(req.Requests, &slides.Request{
+			CreateShape: &slides.CreateShapeRequest{
+				ObjectId: textBoxObjectID,
+				ElementProperties: &slides.PageElementProperties{
+					PageObjectId: currentSlide.ObjectId,
+					Size: &slides.Size{
+						Height: &slides.Dimension{
+							Magnitude: float64(500000 * len(bq.Paragraphs)),
+							Unit:      "EMU",
+						},
+						Width: &slides.Dimension{
+							Magnitude: 5000000,
+							Unit:      "EMU",
+						},
+					},
+					Transform: &slides.AffineTransform{
+						ScaleX:     1.0,
+						ScaleY:     1.0,
+						TranslateX: 1,
+						TranslateY: 1,
+						Unit:       "EMU",
+					},
+				},
+				ShapeType: "TEXT_BOX",
+			},
+		})
+
+		sp, ok := d.shapes[styleBlockQuote]
+		if ok {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
+					ObjectId:        textBoxObjectID,
+					ShapeProperties: sp,
+					Fields:          "shapeBackgroundFill,outline,shadow",
+				},
+			})
+		}
+		reqs, styleReqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs: %w", err)
+		}
+		req.Requests = append(req.Requests, reqs...)
+
+		s, ok := d.styles[styleBlockQuote]
+		if ok {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdateTextStyle: &slides.UpdateTextStyleRequest{
+					ObjectId: textBoxObjectID,
+					Style:    s,
+					Fields:   "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+				},
+			})
+		}
+
+		req.Requests = append(req.Requests, styleReqs...)
+
+		req.Requests = append(req.Requests, &slides.Request{
+			UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
+				ObjectId:    textBoxObjectID,
+				Description: descriptionTextboxFromMarkdown,
+			},
+		})
+	}
+
+	// set skip flag to slide
+	req.Requests = append(req.Requests, &slides.Request{
+		UpdateSlideProperties: &slides.UpdateSlidePropertiesRequest{
+			ObjectId: currentSlide.ObjectId,
+			SlideProperties: &slides.SlideProperties{
+				IsSkipped: slide.Skip,
+			},
+			Fields: "isSkipped",
+		},
+	})
+
+	// prune unmatched images via markdown
+	for _, currentImage := range currentImages {
+		if !currentImage.fromMarkdown {
+			continue
+		}
+		found := false
+		for _, image := range slide.Images {
+			if currentImage.Compare(image) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		imageObjectID, ok := currentImageObjectIDMap[currentImage]
+		if !ok {
+			return fmt.Errorf("image object ID not found for image: %s", currentImage.url)
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: imageObjectID,
+			},
+		})
+	}
+
+	// prune unmatched text boxes via markdown
+	for _, currentTextBox := range currentTextBoxes {
+		if !currentTextBox.fromMarkdown {
+			continue
+		}
+		found := false
+		for _, bq := range slide.BlockQuotes {
+			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		textBoxObjectID, ok := currentTextBoxObjectIDMap[currentTextBox]
+		if !ok {
+			return fmt.Errorf("text box object ID not found for text box: %v", currentTextBox.paragraphs)
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: textBoxObjectID,
+			},
+		})
+	}
+
+	if len(req.Requests) > 0 {
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -1235,6 +1271,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 						continue
 					}
 					d.styles[className] = t.TextRun.Style
+					d.shapes[className] = e.Shape.ShapeProperties
 				}
 			}
 		}
@@ -1251,6 +1288,109 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, stlyeReqs []*slides.Request, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
+	bulletRanges := map[int]*bulletRange{}
+	count := int64(0)
+	text := ""
+	bulletStartIndex := int64(0) // reset per body
+	bulletEndIndex := int64(0)   // reset per body
+	var styleReqs []*slides.Request
+	currentBullet := BulletNone
+	for j, paragraph := range paragraphs {
+		plen := 0
+		if paragraph.Bullet != BulletNone {
+			if paragraph.Nesting > 0 {
+				text += strings.Repeat("\t", paragraph.Nesting)
+				plen += paragraph.Nesting
+			}
+		}
+		for _, fragment := range paragraph.Fragments {
+			flen := countString(fragment.Value)
+			for _, req := range d.getInlineStyleRequests(fragment) {
+				req.ObjectId = objectID
+				req.TextRange = &slides.Range{
+					Type:       "FIXED_RANGE",
+					StartIndex: ptrInt64(count),
+					EndIndex:   ptrInt64(count + int64(flen)),
+				}
+				stlyeReqs = append(stlyeReqs, &slides.Request{
+					UpdateTextStyle: req,
+				})
+			}
+			plen += flen
+			text += fragment.Value
+			if fragment.SoftLineBreak {
+				text += "\n"
+				plen++
+			}
+		}
+
+		if len(paragraphs) > j+1 {
+			nextParagraph := paragraphs[j+1]
+			if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
+				text += "\n"
+				plen++
+			}
+		}
+
+		if paragraph.Bullet != BulletNone {
+			if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
+				bulletStartIndex = count
+				bulletEndIndex = count
+				bulletRanges[int(bulletStartIndex)] = &bulletRange{
+					bullet: paragraph.Bullet,
+					start:  bulletStartIndex,
+					end:    bulletEndIndex,
+				}
+			}
+			bulletEndIndex += int64(plen)
+			bulletRanges[int(bulletStartIndex)].end = bulletEndIndex
+		}
+		currentBullet = paragraph.Bullet
+		count += int64(plen)
+	}
+
+	reqs = append(reqs, &slides.Request{
+		InsertText: &slides.InsertTextRequest{
+			ObjectId: objectID,
+			Text:     text,
+		},
+	})
+	bulletRangeSlice := []*bulletRange{}
+	for _, r := range bulletRanges {
+		bulletRangeSlice = append(bulletRangeSlice, r)
+	}
+	// reverse sort
+	// Because the Range changes each time it is converted to a list, convert from the end to a list.
+	sort.Slice(bulletRangeSlice, func(i, j int) bool {
+		return bulletRangeSlice[i].start > bulletRangeSlice[j].start
+	})
+	for _, r := range bulletRangeSlice {
+		startIndex := int64(r.start)
+		endIndex := int64(r.end - 1)
+		if startIndex <= endIndex {
+			endIndex++
+		}
+		styleReqs = append(stlyeReqs, &slides.Request{
+			CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+				ObjectId:     objectID,
+				BulletPreset: convertBullet(r.bullet),
+				TextRange: &slides.Range{
+					Type:       "FIXED_RANGE",
+					StartIndex: ptrInt64(startIndex),
+					EndIndex:   ptrInt64(endIndex),
+				},
+			},
+		})
+	}
+
+	return reqs, styleReqs, nil
 }
 
 func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err error) {
@@ -1776,10 +1916,12 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	var subtitles []string
 	var bodies []*Body
 	var images []*Image
+	var blockQuotes []*BlockQuote
 
 	// Extract titles, subtitles, and bodies from page elements
 	for _, element := range p.PageElements {
-		if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+		switch {
+		case element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil:
 			switch element.Shape.Placeholder.Type {
 			case "CENTERED_TITLE", "TITLE":
 				text := extractText(element.Shape.Text)
@@ -1792,13 +1934,14 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 					subtitles = append(subtitles, text)
 				}
 			case "BODY":
-				body := convertToBody(element.Shape.Text)
-				if body != nil {
-					bodies = append(bodies, body)
+				paragraphs := convertToParagraphs(element.Shape.Text)
+				if len(paragraphs) > 0 {
+					bodies = append(bodies, &Body{
+						Paragraphs: paragraphs,
+					})
 				}
 			}
-		}
-		if element.Image != nil {
+		case element.Image != nil:
 			var (
 				image *Image
 				err   error
@@ -1815,6 +1958,14 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 				}
 			}
 			images = append(images, image)
+		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
+			if element.Description != descriptionTextboxFromMarkdown {
+				continue
+			}
+			bq := &BlockQuote{
+				Paragraphs: convertToParagraphs(element.Shape.Text),
+			}
+			blockQuotes = append(blockQuotes, bq)
 		}
 	}
 
@@ -1822,6 +1973,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	slide.Subtitles = subtitles
 	slide.Bodies = bodies
 	slide.Images = images
+	slide.BlockQuotes = blockQuotes
 
 	// Extract speaker notes
 	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {
@@ -1853,16 +2005,13 @@ func extractText(text *slides.TextContent) string {
 	return strings.TrimSpace(result.String())
 }
 
-// convertToBody generates a Body struct from Shape.Text.
-func convertToBody(text *slides.TextContent) *Body {
+// convertToParagraphs converts TextContent to a slice of Paragraphs.
+func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 	if text == nil || len(text.TextElements) == 0 {
 		return nil
 	}
 
-	body := &Body{
-		Paragraphs: []*Paragraph{},
-	}
-
+	var paragraphs []*Paragraph
 	var currentParagraph *Paragraph
 	var currentBullet Bullet
 
@@ -1881,7 +2030,7 @@ func convertToBody(text *slides.TextContent) *Body {
 					})
 					// Don't create a new paragraph, continue with the current one
 				} else {
-					body.Paragraphs = append(body.Paragraphs, currentParagraph)
+					paragraphs = append(paragraphs, currentParagraph)
 					currentParagraph = &Paragraph{
 						Fragments: []*Fragment{},
 						Nesting:   0,
@@ -2000,10 +2149,10 @@ func convertToBody(text *slides.TextContent) *Body {
 
 	// Add the last paragraph
 	if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
-		body.Paragraphs = append(body.Paragraphs, currentParagraph)
+		paragraphs = append(paragraphs, currentParagraph)
 	}
 
-	return body
+	return paragraphs
 }
 
 var _ retryablehttp.LeveledLogger = (*apiLogger)(nil)
