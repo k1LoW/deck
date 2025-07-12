@@ -703,10 +703,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				flen := countString(fragment.Value)
 				req := d.getInlineStyle(fragment)
 				if req != nil {
-					req.UpdateTextStyle.ObjectId = bodies[i].objectID
-					req.UpdateTextStyle.TextRange.StartIndex = ptrInt64(count + int64(plen))
-					req.UpdateTextStyle.TextRange.EndIndex = ptrInt64(count + int64(plen+flen))
-					styleReqs = append(styleReqs, req)
+					req.ObjectId = bodies[i].objectID
+					req.TextRange.StartIndex = ptrInt64(count + int64(plen))
+					req.TextRange.EndIndex = ptrInt64(count + int64(plen+flen))
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: req,
+					})
 				}
 				plen += flen
 				text += fragment.Value
@@ -885,44 +887,40 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	return nil
 }
 
-func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
+func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRequest) {
 
 	// code
 	if fragment.Code {
 		s, ok := d.styles[styleCode]
 		if ok {
-			req = &slides.Request{
-				UpdateTextStyle: buildCustomStyleRequest(s),
-			}
+			req = buildCustomStyleRequest(s)
 		} else {
-			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						ForegroundColor: &slides.OptionalColor{
-							OpaqueColor: &slides.OpaqueColor{
-								RgbColor: &slides.RgbColor{
-									Red:   0.0,
-									Green: 0.0,
-									Blue:  0.0,
-								},
-							},
-						},
-						FontFamily: defaultCodeFontFamily,
-						BackgroundColor: &slides.OptionalColor{
-							OpaqueColor: &slides.OpaqueColor{
-								RgbColor: &slides.RgbColor{
-									Red:   0.95,
-									Green: 0.95,
-									Blue:  0.95,
-								},
+			req = &slides.UpdateTextStyleRequest{
+				Style: &slides.TextStyle{
+					ForegroundColor: &slides.OptionalColor{
+						OpaqueColor: &slides.OpaqueColor{
+							RgbColor: &slides.RgbColor{
+								Red:   0.0,
+								Green: 0.0,
+								Blue:  0.0,
 							},
 						},
 					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
+					FontFamily: defaultCodeFontFamily,
+					BackgroundColor: &slides.OptionalColor{
+						OpaqueColor: &slides.OpaqueColor{
+							RgbColor: &slides.RgbColor{
+								Red:   0.95,
+								Green: 0.95,
+								Blue:  0.95,
+							},
+						},
 					},
-					Fields: "foregroundColor,fontFamily,backgroundColor",
 				},
+				TextRange: &slides.Range{
+					Type: "FIXED_RANGE",
+				},
+				Fields: "foregroundColor,fontFamily,backgroundColor",
 			}
 		}
 	}
@@ -931,20 +929,16 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 	if fragment.Bold {
 		s, ok := d.styles[styleBold]
 		if ok {
-			req = &slides.Request{
-				UpdateTextStyle: buildCustomStyleRequest(s),
-			}
+			req = buildCustomStyleRequest(s)
 		} else {
-			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Bold: true,
-					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "bold",
+			req = &slides.UpdateTextStyleRequest{
+				Style: &slides.TextStyle{
+					Bold: true,
 				},
+				TextRange: &slides.Range{
+					Type: "FIXED_RANGE",
+				},
+				Fields: "bold",
 			}
 		}
 	}
@@ -953,20 +947,16 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 	if fragment.Italic {
 		s, ok := d.styles[styleItalic]
 		if ok {
-			req = &slides.Request{
-				UpdateTextStyle: buildCustomStyleRequest(s),
-			}
+			req = buildCustomStyleRequest(s)
 		} else {
-			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Italic: true,
-					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "italic",
+			req = &slides.UpdateTextStyleRequest{
+				Style: &slides.TextStyle{
+					Italic: true,
 				},
+				TextRange: &slides.Range{
+					Type: "FIXED_RANGE",
+				},
+				Fields: "italic",
 			}
 		}
 	}
@@ -975,26 +965,22 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 	if fragment.Link != "" {
 		s, ok := d.styles[styleLink]
 		if ok {
-			req = &slides.Request{
-				UpdateTextStyle: buildCustomStyleRequest(s),
-			}
-			req.UpdateTextStyle.Fields = "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor"
-			req.UpdateTextStyle.Style.Link = &slides.Link{
+			req = buildCustomStyleRequest(s)
+			req.Fields = "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor"
+			req.Style.Link = &slides.Link{
 				Url: fragment.Link,
 			}
 		} else {
-			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Link: &slides.Link{
-							Url: fragment.Link,
-						},
+			req = &slides.UpdateTextStyleRequest{
+				Style: &slides.TextStyle{
+					Link: &slides.Link{
+						Url: fragment.Link,
 					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "link",
 				},
+				TextRange: &slides.Range{
+					Type: "FIXED_RANGE",
+				},
+				Fields: "link",
 			}
 		}
 	}
@@ -1002,9 +988,7 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 	if fragment.ClassName != "" {
 		s, ok := d.styles[fragment.ClassName]
 		if ok {
-			req = &slides.Request{
-				UpdateTextStyle: buildCustomStyleRequest(s),
-			}
+			req = buildCustomStyleRequest(s)
 		}
 	}
 
