@@ -701,8 +701,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			}
 			for _, fragment := range paragraph.Fragments {
 				flen := countString(fragment.Value)
-				req := d.getInlineStyle(fragment)
-				if req != nil {
+				for _, req := range d.getInlineStyleRequests(fragment) {
 					req.ObjectId = bodies[i].objectID
 					req.TextRange = &slides.Range{
 						Type:       "FIXED_RANGE",
@@ -890,15 +889,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	return nil
 }
 
-func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRequest) {
-
-	// code
+func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.UpdateTextStyleRequest) {
 	if fragment.Code {
 		s, ok := d.styles[styleCode]
 		if ok {
-			req = buildCustomStyleRequest(s)
+			reqs = append(reqs, buildCustomStyleRequest(s))
 		} else {
-			req = &slides.UpdateTextStyleRequest{
+			reqs = append(reqs, &slides.UpdateTextStyleRequest{
 				Style: &slides.TextStyle{
 					ForegroundColor: &slides.OptionalColor{
 						OpaqueColor: &slides.OpaqueColor{
@@ -921,69 +918,67 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRe
 					},
 				},
 				Fields: "foregroundColor,fontFamily,backgroundColor",
-			}
+			})
 		}
 	}
 
-	// bold
 	if fragment.Bold {
 		s, ok := d.styles[styleBold]
 		if ok {
-			req = buildCustomStyleRequest(s)
+			reqs = append(reqs, buildCustomStyleRequest(s))
 		} else {
-			req = &slides.UpdateTextStyleRequest{
+			reqs = append(reqs, &slides.UpdateTextStyleRequest{
 				Style: &slides.TextStyle{
 					Bold: true,
 				},
 				Fields: "bold",
-			}
+			})
 		}
 	}
 
-	// italic
 	if fragment.Italic {
 		s, ok := d.styles[styleItalic]
 		if ok {
-			req = buildCustomStyleRequest(s)
+			reqs = append(reqs, buildCustomStyleRequest(s))
 		} else {
-			req = &slides.UpdateTextStyleRequest{
+			reqs = append(reqs, &slides.UpdateTextStyleRequest{
 				Style: &slides.TextStyle{
 					Italic: true,
 				},
 				Fields: "italic",
-			}
+			})
 		}
 	}
 
-	// link
 	if fragment.Link != "" {
 		s, ok := d.styles[styleLink]
 		if ok {
-			req = buildCustomStyleRequest(s)
+			req := buildCustomStyleRequest(s)
 			req.Fields = "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor"
 			req.Style.Link = &slides.Link{
 				Url: fragment.Link,
 			}
+			reqs = append(reqs, req)
 		} else {
-			req = &slides.UpdateTextStyleRequest{
+			reqs = append(reqs, &slides.UpdateTextStyleRequest{
 				Style: &slides.TextStyle{
 					Link: &slides.Link{
 						Url: fragment.Link,
 					},
 				},
 				Fields: "link",
-			}
+			})
 		}
 	}
 
 	if fragment.ClassName != "" {
 		s, ok := d.styles[fragment.ClassName]
 		if ok {
-			req = buildCustomStyleRequest(s)
+			reqs = append(reqs, buildCustomStyleRequest(s))
 		}
 	}
 
-	return req
+	return reqs
 }
 
 func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest {
