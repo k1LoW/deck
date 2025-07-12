@@ -37,13 +37,15 @@ var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/Songmu/k1LoW/deck)"
 
 const (
-	layoutNameForStyle           = "style"
-	styleCode                    = "code"
-	styleBold                    = "bold"
-	styleItalic                  = "italic"
-	styleLink                    = "link"
-	defaultCodeFontFamily        = "Noto Sans Mono"
-	descriptionImageFromMarkdown = "Image generated from markdown"
+	layoutNameForStyle             = "style"
+	styleCode                      = "code"
+	styleBold                      = "bold"
+	styleItalic                    = "italic"
+	styleLink                      = "link"
+	styleBlockQuote                = "blockquote"
+	defaultCodeFontFamily          = "Noto Sans Mono"
+	descriptionImageFromMarkdown   = "Image generated from markdown"
+	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
 )
 
 type Deck struct {
@@ -54,6 +56,7 @@ type Deck struct {
 	defaultTitleLayout string
 	defaultLayout      string
 	styles             map[string]*slides.TextStyle
+	shapes             map[string]*slides.ShapeProperties
 	logger             *slog.Logger
 }
 
@@ -85,6 +88,11 @@ type bulletRange struct {
 	end    int64
 }
 
+type textBox struct {
+	paragraphs   []*Paragraph
+	fromMarkdown bool
+}
+
 type actionDetail struct {
 	ActionType  actionType `json:"action_type"`
 	Titles      []string   `json:"titles,omitempty"`
@@ -105,6 +113,7 @@ func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -127,6 +136,7 @@ func Create(ctx context.Context) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -154,6 +164,7 @@ func CreateFrom(ctx context.Context, id string) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -191,6 +202,7 @@ func List(ctx context.Context) (_ []*Presentation, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -551,15 +563,18 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	var (
-		titles                  []placeholder
-		subtitles               []placeholder
-		bodies                  []placeholder
-		currentImages           []*Image
-		currentImageObjectIDMap = map[*Image]string{} // key: *Image, value: objectID
+		titles                    []placeholder
+		subtitles                 []placeholder
+		bodies                    []placeholder
+		currentImages             []*Image
+		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
+		currentTextBoxes          []*textBox
+		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
 	)
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
-		if element.Shape != nil && element.Shape.Placeholder != nil {
+		switch {
+		case element.Shape != nil && element.Shape.Placeholder != nil:
 			switch element.Shape.Placeholder.Type {
 			case "CENTERED_TITLE", "TITLE":
 				titles = append(titles, placeholder{
@@ -589,8 +604,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					return err
 				}
 			}
-		}
-		if element.Image != nil {
+		case element.Image != nil:
 			var (
 				image *Image
 				err   error
@@ -608,6 +622,14 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			}
 			currentImages = append(currentImages, image)
 			currentImageObjectIDMap[image] = element.ObjectId
+		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
+			tb := &textBox{}
+			if element.Description == descriptionTextboxFromMarkdown {
+				tb.fromMarkdown = true
+			}
+			tb.paragraphs = convertToParagraphs(element.Shape.Text)
+			currentTextBoxes = append(currentTextBoxes, tb)
+			currentTextBoxObjectIDMap[tb] = element.ObjectId
 		}
 	}
 	var speakerNotesID string
@@ -679,310 +701,16 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 		return bodies[i].y < bodies[j].y
 	})
-	var bulletStartIndex, bulletEndIndex int64
-	bulletRanges := map[int]*bulletRange{}
 	for i, body := range slide.Bodies {
 		if len(bodies) <= i {
 			continue
 		}
-		count := int64(0)
-		text := ""
-		bulletStartIndex = 0 // reset per body
-		bulletEndIndex = 0   // reset per body
-		var styleReqs []*slides.Request
-		currentBullet := BulletNone
-		for j, paragraph := range body.Paragraphs {
-			plen := 0
-			if paragraph.Bullet != BulletNone {
-				if paragraph.Nesting > 0 {
-					text += strings.Repeat("\t", paragraph.Nesting)
-					plen += paragraph.Nesting
-				}
-			}
-			for _, fragment := range paragraph.Fragments {
-				flen := countString(fragment.Value)
-				startIndex := ptrInt64(count + int64(plen))
-				endIndex := ptrInt64(count + int64(plen+flen))
-
-				// code
-				if fragment.Code {
-					s, ok := d.styles[styleCode]
-					if ok {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold:            s.Bold,
-									Italic:          s.Italic,
-									Underline:       s.Underline,
-									ForegroundColor: s.ForegroundColor,
-									FontFamily:      s.FontFamily,
-									BackgroundColor: s.BackgroundColor,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-							},
-						})
-					} else {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									ForegroundColor: &slides.OptionalColor{
-										OpaqueColor: &slides.OpaqueColor{
-											RgbColor: &slides.RgbColor{
-												Red:   0.0,
-												Green: 0.0,
-												Blue:  0.0,
-											},
-										},
-									},
-									FontFamily: defaultCodeFontFamily,
-									BackgroundColor: &slides.OptionalColor{
-										OpaqueColor: &slides.OpaqueColor{
-											RgbColor: &slides.RgbColor{
-												Red:   0.95,
-												Green: 0.95,
-												Blue:  0.95,
-											},
-										},
-									},
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "foregroundColor,fontFamily,backgroundColor",
-							},
-						})
-					}
-				}
-
-				// bold
-				if fragment.Bold {
-					s, ok := d.styles[styleBold]
-					if ok {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold:            s.Bold,
-									Italic:          s.Italic,
-									Underline:       s.Underline,
-									ForegroundColor: s.ForegroundColor,
-									FontFamily:      s.FontFamily,
-									BackgroundColor: s.BackgroundColor,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-							},
-						})
-					} else {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold: true,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "bold",
-							},
-						})
-					}
-				}
-
-				// italic
-				if fragment.Italic {
-					s, ok := d.styles[styleItalic]
-					if ok {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold:            s.Bold,
-									Italic:          s.Italic,
-									Underline:       s.Underline,
-									ForegroundColor: s.ForegroundColor,
-									FontFamily:      s.FontFamily,
-									BackgroundColor: s.BackgroundColor,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-							},
-						})
-					} else {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Italic: true,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "italic",
-							},
-						})
-					}
-				}
-
-				// link
-				if fragment.Link != "" {
-					s, ok := d.styles[styleLink]
-					if ok {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold:            s.Bold,
-									Italic:          s.Italic,
-									Underline:       s.Underline,
-									ForegroundColor: s.ForegroundColor,
-									FontFamily:      s.FontFamily,
-									BackgroundColor: s.BackgroundColor,
-									Link: &slides.Link{
-										Url: fragment.Link,
-									},
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-							},
-						})
-					} else {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Link: &slides.Link{
-										Url: fragment.Link,
-									},
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "link",
-							},
-						})
-					}
-				}
-
-				if fragment.ClassName != "" {
-					s, ok := d.styles[fragment.ClassName]
-					if ok {
-						styleReqs = append(styleReqs, &slides.Request{
-							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId: bodies[i].objectID,
-								Style: &slides.TextStyle{
-									Bold:            s.Bold,
-									Italic:          s.Italic,
-									Underline:       s.Underline,
-									ForegroundColor: s.ForegroundColor,
-									FontFamily:      s.FontFamily,
-									BackgroundColor: s.BackgroundColor,
-								},
-								TextRange: &slides.Range{
-									Type:       "FIXED_RANGE",
-									StartIndex: startIndex,
-									EndIndex:   endIndex,
-								},
-								Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-							},
-						})
-					}
-				}
-
-				plen += flen
-				text += fragment.Value
-				if fragment.SoftLineBreak {
-					text += "\n"
-					plen++
-				}
-			}
-
-			if len(body.Paragraphs) > j+1 {
-				nextParagraph := body.Paragraphs[j+1]
-				if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
-					text += "\n"
-					plen++
-				}
-			}
-
-			if paragraph.Bullet != BulletNone {
-				if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
-					bulletStartIndex = count
-					bulletEndIndex = count
-					bulletRanges[int(bulletStartIndex)] = &bulletRange{
-						bullet: paragraph.Bullet,
-						start:  bulletStartIndex,
-						end:    bulletEndIndex,
-					}
-				}
-				bulletEndIndex += int64(plen)
-				bulletRanges[int(bulletStartIndex)].end = bulletEndIndex
-			}
-			currentBullet = paragraph.Bullet
-			count += int64(plen)
+		reqs, styleReqs, err := d.applyParagraphsRequests(bodies[i].objectID, body.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs: %w", err)
 		}
-
-		req.Requests = append(req.Requests, &slides.Request{
-			InsertText: &slides.InsertTextRequest{
-				ObjectId: bodies[i].objectID,
-				Text:     text,
-			},
-		})
+		req.Requests = append(req.Requests, reqs...)
 		req.Requests = append(req.Requests, styleReqs...)
-		bulletRangeSlice := []*bulletRange{}
-		for _, r := range bulletRanges {
-			bulletRangeSlice = append(bulletRangeSlice, r)
-		}
-		// reverse sort
-		// Because the Range changes each time it is converted to a list, convert from the end to a list.
-		sort.Slice(bulletRangeSlice, func(i, j int) bool {
-			return bulletRangeSlice[i].start > bulletRangeSlice[j].start
-		})
-		for _, r := range bulletRangeSlice {
-			startIndex := int64(r.start)
-			endIndex := int64(r.end - 1)
-			if startIndex <= endIndex {
-				endIndex++
-			}
-			req.Requests = append(req.Requests, &slides.Request{
-				CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
-					ObjectId:     bodies[i].objectID,
-					BulletPreset: convertBullet(r.bullet),
-					TextRange: &slides.Range{
-						Type:       "FIXED_RANGE",
-						StartIndex: ptrInt64(startIndex),
-						EndIndex:   ptrInt64(endIndex),
-					},
-				},
-			})
-		}
 	}
 
 	// set images
@@ -1047,6 +775,84 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 	}
 
+	// set text boxes
+	for _, bq := range slide.BlockQuotes {
+		found := false
+		for _, currentTextBox := range currentTextBoxes {
+			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		// create new text box
+		textBoxObjectID := fmt.Sprintf("textbox-%s", uuid.New().String())
+		req.Requests = append(req.Requests, &slides.Request{
+			CreateShape: &slides.CreateShapeRequest{
+				ObjectId: textBoxObjectID,
+				ElementProperties: &slides.PageElementProperties{
+					PageObjectId: currentSlide.ObjectId,
+					Size: &slides.Size{
+						Height: &slides.Dimension{
+							Magnitude: float64(500000 * len(bq.Paragraphs)),
+							Unit:      "EMU",
+						},
+						Width: &slides.Dimension{
+							Magnitude: 5000000,
+							Unit:      "EMU",
+						},
+					},
+					Transform: &slides.AffineTransform{
+						ScaleX:     1.0,
+						ScaleY:     1.0,
+						TranslateX: 1,
+						TranslateY: 1,
+						Unit:       "EMU",
+					},
+				},
+				ShapeType: "TEXT_BOX",
+			},
+		})
+
+		sp, ok := d.shapes[styleBlockQuote]
+		if ok {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
+					ObjectId:        textBoxObjectID,
+					ShapeProperties: sp,
+					Fields:          "shapeBackgroundFill,outline,shadow",
+				},
+			})
+		}
+		reqs, styleReqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs: %w", err)
+		}
+		req.Requests = append(req.Requests, reqs...)
+
+		s, ok := d.styles[styleBlockQuote]
+		if ok {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdateTextStyle: &slides.UpdateTextStyleRequest{
+					ObjectId: textBoxObjectID,
+					Style:    s,
+					Fields:   "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+				},
+			})
+		}
+
+		req.Requests = append(req.Requests, styleReqs...)
+
+		req.Requests = append(req.Requests, &slides.Request{
+			UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
+				ObjectId:    textBoxObjectID,
+				Description: descriptionTextboxFromMarkdown,
+			},
+		})
+	}
+
 	// set skip flag to slide
 	req.Requests = append(req.Requests, &slides.Request{
 		UpdateSlideProperties: &slides.UpdateSlidePropertiesRequest{
@@ -1080,6 +886,32 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		req.Requests = append(req.Requests, &slides.Request{
 			DeleteObject: &slides.DeleteObjectRequest{
 				ObjectId: imageObjectID,
+			},
+		})
+	}
+
+	// prune unmatched text boxes via markdown
+	for _, currentTextBox := range currentTextBoxes {
+		if !currentTextBox.fromMarkdown {
+			continue
+		}
+		found := false
+		for _, bq := range slide.BlockQuotes {
+			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+		textBoxObjectID, ok := currentTextBoxObjectIDMap[currentTextBox]
+		if !ok {
+			return fmt.Errorf("text box object ID not found for text box: %v", currentTextBox.paragraphs)
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: textBoxObjectID,
 			},
 		})
 	}
@@ -1333,6 +1165,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 						continue
 					}
 					d.styles[className] = t.TextRun.Style
+					d.shapes[className] = e.Shape.ShapeProperties
 				}
 			}
 		}
@@ -1349,6 +1182,313 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, stlyeReqs []*slides.Request, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
+	bulletRanges := map[int]*bulletRange{}
+	count := int64(0)
+	text := ""
+	bulletStartIndex := int64(0) // reset per body
+	bulletEndIndex := int64(0)   // reset per body
+	var styleReqs []*slides.Request
+	currentBullet := BulletNone
+	for j, paragraph := range paragraphs {
+		plen := 0
+		if paragraph.Bullet != BulletNone {
+			if paragraph.Nesting > 0 {
+				text += strings.Repeat("\t", paragraph.Nesting)
+				plen += paragraph.Nesting
+			}
+		}
+		for _, fragment := range paragraph.Fragments {
+			flen := countString(fragment.Value)
+			startIndex := ptrInt64(count + int64(plen))
+			endIndex := ptrInt64(count + int64(plen+flen))
+
+			// code
+			if fragment.Code {
+				s, ok := d.styles[styleCode]
+				if ok {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Bold:            s.Bold,
+								Italic:          s.Italic,
+								Underline:       s.Underline,
+								ForegroundColor: s.ForegroundColor,
+								FontFamily:      s.FontFamily,
+								BackgroundColor: s.BackgroundColor,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+						},
+					})
+				} else {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								ForegroundColor: &slides.OptionalColor{
+									OpaqueColor: &slides.OpaqueColor{
+										RgbColor: &slides.RgbColor{
+											Red:   0.0,
+											Green: 0.0,
+											Blue:  0.0,
+										},
+									},
+								},
+								FontFamily: defaultCodeFontFamily,
+								BackgroundColor: &slides.OptionalColor{
+									OpaqueColor: &slides.OpaqueColor{
+										RgbColor: &slides.RgbColor{
+											Red:   0.95,
+											Green: 0.95,
+											Blue:  0.95,
+										},
+									},
+								},
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "foregroundColor,fontFamily,backgroundColor",
+						},
+					})
+				}
+			}
+
+			// bold
+			if fragment.Bold {
+				s, ok := d.styles[styleBold]
+				if ok {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Bold:            s.Bold,
+								Italic:          s.Italic,
+								Underline:       s.Underline,
+								ForegroundColor: s.ForegroundColor,
+								FontFamily:      s.FontFamily,
+								BackgroundColor: s.BackgroundColor,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+						},
+					})
+				} else {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Bold: true,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "bold",
+						},
+					})
+				}
+			}
+
+			// italic
+			if fragment.Italic {
+				s, ok := d.styles[styleItalic]
+				if ok {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Bold:            s.Bold,
+								Italic:          s.Italic,
+								Underline:       s.Underline,
+								ForegroundColor: s.ForegroundColor,
+								FontFamily:      s.FontFamily,
+								BackgroundColor: s.BackgroundColor,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+						},
+					})
+				} else {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Italic: true,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "italic",
+						},
+					})
+				}
+			}
+
+			// link
+			if fragment.Link != "" {
+				s, ok := d.styles[styleLink]
+				if ok {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Bold:            s.Bold,
+								Italic:          s.Italic,
+								Underline:       s.Underline,
+								ForegroundColor: s.ForegroundColor,
+								FontFamily:      s.FontFamily,
+								BackgroundColor: s.BackgroundColor,
+								Link: &slides.Link{
+									Url: fragment.Link,
+								},
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+						},
+					})
+				} else {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Link: &slides.Link{
+									Url: fragment.Link,
+								},
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "link",
+						},
+					})
+				}
+			}
+
+			if fragment.ClassName != "" {
+				s, ok := d.styles[fragment.ClassName]
+				if ok {
+					styleReqs = append(styleReqs, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId: objectID,
+							Style: &slides.TextStyle{
+								Bold:            s.Bold,
+								Italic:          s.Italic,
+								Underline:       s.Underline,
+								ForegroundColor: s.ForegroundColor,
+								FontFamily:      s.FontFamily,
+								BackgroundColor: s.BackgroundColor,
+							},
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: startIndex,
+								EndIndex:   endIndex,
+							},
+							Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+						},
+					})
+				}
+			}
+
+			plen += flen
+			text += fragment.Value
+			if fragment.SoftLineBreak {
+				text += "\n"
+				plen++
+			}
+		}
+
+		if len(paragraphs) > j+1 {
+			nextParagraph := paragraphs[j+1]
+			if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
+				text += "\n"
+				plen++
+			}
+		}
+
+		if paragraph.Bullet != BulletNone {
+			if paragraph.Nesting == 0 && currentBullet != paragraph.Bullet {
+				bulletStartIndex = count
+				bulletEndIndex = count
+				bulletRanges[int(bulletStartIndex)] = &bulletRange{
+					bullet: paragraph.Bullet,
+					start:  bulletStartIndex,
+					end:    bulletEndIndex,
+				}
+			}
+			bulletEndIndex += int64(plen)
+			bulletRanges[int(bulletStartIndex)].end = bulletEndIndex
+		}
+		currentBullet = paragraph.Bullet
+		count += int64(plen)
+	}
+
+	reqs = append(reqs, &slides.Request{
+		InsertText: &slides.InsertTextRequest{
+			ObjectId: objectID,
+			Text:     text,
+		},
+	})
+	bulletRangeSlice := []*bulletRange{}
+	for _, r := range bulletRanges {
+		bulletRangeSlice = append(bulletRangeSlice, r)
+	}
+	// reverse sort
+	// Because the Range changes each time it is converted to a list, convert from the end to a list.
+	sort.Slice(bulletRangeSlice, func(i, j int) bool {
+		return bulletRangeSlice[i].start > bulletRangeSlice[j].start
+	})
+	for _, r := range bulletRangeSlice {
+		startIndex := int64(r.start)
+		endIndex := int64(r.end - 1)
+		if startIndex <= endIndex {
+			endIndex++
+		}
+		styleReqs = append(stlyeReqs, &slides.Request{
+			CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
+				ObjectId:     objectID,
+				BulletPreset: convertBullet(r.bullet),
+				TextRange: &slides.Range{
+					Type:       "FIXED_RANGE",
+					StartIndex: ptrInt64(startIndex),
+					EndIndex:   ptrInt64(endIndex),
+				},
+			},
+		})
+	}
+
+	return reqs, styleReqs, nil
 }
 
 func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err error) {
@@ -1874,10 +2014,12 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	var subtitles []string
 	var bodies []*Body
 	var images []*Image
+	var blockQuotes []*BlockQuote
 
 	// Extract titles, subtitles, and bodies from page elements
 	for _, element := range p.PageElements {
-		if element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil {
+		switch {
+		case element.Shape != nil && element.Shape.Text != nil && element.Shape.Placeholder != nil:
 			switch element.Shape.Placeholder.Type {
 			case "CENTERED_TITLE", "TITLE":
 				text := extractText(element.Shape.Text)
@@ -1890,13 +2032,14 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 					subtitles = append(subtitles, text)
 				}
 			case "BODY":
-				body := convertToBody(element.Shape.Text)
-				if body != nil {
-					bodies = append(bodies, body)
+				paragraphs := convertToParagraphs(element.Shape.Text)
+				if len(paragraphs) > 0 {
+					bodies = append(bodies, &Body{
+						Paragraphs: paragraphs,
+					})
 				}
 			}
-		}
-		if element.Image != nil {
+		case element.Image != nil:
 			var (
 				image *Image
 				err   error
@@ -1913,6 +2056,14 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 				}
 			}
 			images = append(images, image)
+		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
+			if element.Description != descriptionTextboxFromMarkdown {
+				continue
+			}
+			bq := &BlockQuote{
+				Paragraphs: convertToParagraphs(element.Shape.Text),
+			}
+			blockQuotes = append(blockQuotes, bq)
 		}
 	}
 
@@ -1920,6 +2071,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	slide.Subtitles = subtitles
 	slide.Bodies = bodies
 	slide.Images = images
+	slide.BlockQuotes = blockQuotes
 
 	// Extract speaker notes
 	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {
@@ -1951,16 +2103,13 @@ func extractText(text *slides.TextContent) string {
 	return strings.TrimSpace(result.String())
 }
 
-// convertToBody generates a Body struct from Shape.Text.
-func convertToBody(text *slides.TextContent) *Body {
+// convertToParagraphs converts TextContent to a slice of Paragraphs.
+func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 	if text == nil || len(text.TextElements) == 0 {
 		return nil
 	}
 
-	body := &Body{
-		Paragraphs: []*Paragraph{},
-	}
-
+	var paragraphs []*Paragraph
 	var currentParagraph *Paragraph
 	var currentBullet Bullet
 
@@ -1979,7 +2128,7 @@ func convertToBody(text *slides.TextContent) *Body {
 					})
 					// Don't create a new paragraph, continue with the current one
 				} else {
-					body.Paragraphs = append(body.Paragraphs, currentParagraph)
+					paragraphs = append(paragraphs, currentParagraph)
 					currentParagraph = &Paragraph{
 						Fragments: []*Fragment{},
 						Nesting:   0,
@@ -2098,10 +2247,10 @@ func convertToBody(text *slides.TextContent) *Body {
 
 	// Add the last paragraph
 	if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
-		body.Paragraphs = append(body.Paragraphs, currentParagraph)
+		paragraphs = append(paragraphs, currentParagraph)
 	}
 
-	return body
+	return paragraphs
 }
 
 var _ retryablehttp.LeveledLogger = (*apiLogger)(nil)
