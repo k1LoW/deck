@@ -892,20 +892,7 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 		s, ok := d.styles[styleCode]
 		if ok {
 			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Bold:            s.Bold,
-						Italic:          s.Italic,
-						Underline:       s.Underline,
-						ForegroundColor: s.ForegroundColor,
-						FontFamily:      s.FontFamily,
-						BackgroundColor: s.BackgroundColor,
-					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-				},
+				UpdateTextStyle: buildCustomStyleRequest(s),
 			}
 		} else {
 			req = &slides.Request{
@@ -945,20 +932,7 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 		s, ok := d.styles[styleBold]
 		if ok {
 			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Bold:            s.Bold,
-						Italic:          s.Italic,
-						Underline:       s.Underline,
-						ForegroundColor: s.ForegroundColor,
-						FontFamily:      s.FontFamily,
-						BackgroundColor: s.BackgroundColor,
-					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-				},
+				UpdateTextStyle: buildCustomStyleRequest(s),
 			}
 		} else {
 			req = &slides.Request{
@@ -979,23 +953,9 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 	if fragment.Italic {
 		s, ok := d.styles[styleItalic]
 		if ok {
-			req =
-				&slides.Request{
-					UpdateTextStyle: &slides.UpdateTextStyleRequest{
-						Style: &slides.TextStyle{
-							Bold:            s.Bold,
-							Italic:          s.Italic,
-							Underline:       s.Underline,
-							ForegroundColor: s.ForegroundColor,
-							FontFamily:      s.FontFamily,
-							BackgroundColor: s.BackgroundColor,
-						},
-						TextRange: &slides.Range{
-							Type: "FIXED_RANGE",
-						},
-						Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-					},
-				}
+			req = &slides.Request{
+				UpdateTextStyle: buildCustomStyleRequest(s),
+			}
 		} else {
 			req = &slides.Request{
 				UpdateTextStyle: &slides.UpdateTextStyleRequest{
@@ -1016,23 +976,11 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 		s, ok := d.styles[styleLink]
 		if ok {
 			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Bold:            s.Bold,
-						Italic:          s.Italic,
-						Underline:       s.Underline,
-						ForegroundColor: s.ForegroundColor,
-						FontFamily:      s.FontFamily,
-						BackgroundColor: s.BackgroundColor,
-						Link: &slides.Link{
-							Url: fragment.Link,
-						},
-					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-				},
+				UpdateTextStyle: buildCustomStyleRequest(s),
+			}
+			req.UpdateTextStyle.Fields = "link,bold,italic,underline,foregroundColor,fontFamily,backgroundColor"
+			req.UpdateTextStyle.Style.Link = &slides.Link{
+				Url: fragment.Link,
 			}
 		} else {
 			req = &slides.Request{
@@ -1055,25 +1003,29 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.Request) {
 		s, ok := d.styles[fragment.ClassName]
 		if ok {
 			req = &slides.Request{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					Style: &slides.TextStyle{
-						Bold:            s.Bold,
-						Italic:          s.Italic,
-						Underline:       s.Underline,
-						ForegroundColor: s.ForegroundColor,
-						FontFamily:      s.FontFamily,
-						BackgroundColor: s.BackgroundColor,
-					},
-					TextRange: &slides.Range{
-						Type: "FIXED_RANGE",
-					},
-					Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
-				},
+				UpdateTextStyle: buildCustomStyleRequest(s),
 			}
 		}
 	}
 
 	return req
+}
+
+func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest {
+	return &slides.UpdateTextStyleRequest{
+		Style: &slides.TextStyle{
+			Bold:            s.Bold,
+			Italic:          s.Italic,
+			Underline:       s.Underline,
+			ForegroundColor: s.ForegroundColor,
+			FontFamily:      s.FontFamily,
+			BackgroundColor: s.BackgroundColor,
+		},
+		TextRange: &slides.Range{
+			Type: "FIXED_RANGE",
+		},
+		Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+	}
 }
 
 func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
