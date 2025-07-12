@@ -259,50 +259,6 @@ func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
 	return nil
 }
 
-func (d *Deck) initialize(ctx context.Context) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if d.logger == nil {
-		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
-	}
-	if err := os.MkdirAll(config.DataHomePath(), 0700); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
-		return err
-	}
-
-	creds := filepath.Join(config.DataHomePath(), "credentials.json")
-	b, err := os.ReadFile(creds)
-	if err != nil {
-		return err
-	}
-
-	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
-	if err != nil {
-		return err
-	}
-
-	client, err := d.getHTTPClient(ctx, config)
-	if err != nil {
-		return err
-	}
-	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return err
-	}
-	srv.UserAgent = userAgent
-	d.srv = srv
-	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
-	if err != nil {
-		return err
-	}
-	driveSrv.UserAgent = userAgent
-	d.driveSrv = driveSrv
-	return nil
-}
-
 // ID returns the ID of the presentation.
 func (d *Deck) ID() string {
 	return d.id
@@ -532,6 +488,191 @@ func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
 		slides = append(slides, slide)
 	}
 	return slides, nil
+}
+
+func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	d.logger.Info("deleting page", slog.Int("index", index))
+	if err := d.deletePage(ctx, index); err != nil {
+		return err
+	}
+	d.logger.Info("deleted page", slog.Int("index", index))
+	return nil
+}
+
+func (d *Deck) DeletePageAfter(ctx context.Context, index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	if len(d.presentation.Slides) <= index {
+		return nil
+	}
+	req := &slides.BatchUpdatePresentationRequest{}
+	for i := index + 1; i < len(d.presentation.Slides); i++ {
+		req.Requests = append(req.Requests, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: d.presentation.Slides[i].ObjectId,
+			},
+		})
+	}
+	if len(req.Requests) == 0 {
+		return nil
+	}
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		return err
+	}
+	if err := d.refresh(ctx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	d.logger.Info("appending new page")
+	index := len(d.presentation.Slides)
+	if err := d.createPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	d.logger.Info("appended page")
+	return nil
+}
+
+func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	d.logger.Info("moving page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
+	if err := d.movePage(ctx, from_index, to_index); err != nil {
+		return err
+	}
+	d.logger.Info("moved page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
+	return nil
+}
+
+func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	d.logger.Info("inserting page", slog.Int("index", index))
+	if len(d.presentation.Slides) <= index {
+		return fmt.Errorf("index out of range: %d", index)
+	}
+	if err := d.createPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
+	}
+	if index == 0 {
+		if err := d.movePage(ctx, 1, 0); err != nil {
+			return fmt.Errorf("failed to move page: %w", err)
+		}
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	if err := d.applyPage(ctx, index, slide); err != nil {
+		return fmt.Errorf("failed to apply page: %w", err)
+	}
+	if err := d.refresh(ctx); err != nil {
+		return fmt.Errorf("failed to refresh presentation: %w", err)
+	}
+	d.logger.Info("inserted page", slog.Int("index", index))
+	return nil
+}
+
+func (d *Deck) initialize(ctx context.Context) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	if d.logger == nil {
+		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
+	}
+	if err := os.MkdirAll(config.DataHomePath(), 0700); err != nil {
+		return err
+	}
+	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
+		return err
+	}
+
+	creds := filepath.Join(config.DataHomePath(), "credentials.json")
+	b, err := os.ReadFile(creds)
+	if err != nil {
+		return err
+	}
+
+	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
+	if err != nil {
+		return err
+	}
+
+	client, err := d.getHTTPClient(ctx, config)
+	if err != nil {
+		return err
+	}
+	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return err
+	}
+	srv.UserAgent = userAgent
+	d.srv = srv
+	driveSrv, err := drive.NewService(ctx, option.WithHTTPClient(client))
+	if err != nil {
+		return err
+	}
+	driveSrv.UserAgent = userAgent
+	d.driveSrv = driveSrv
+	return nil
+}
+
+func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	layoutMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutMap[l.LayoutProperties.DisplayName] = l
+	}
+
+	layout, ok := layoutMap[slide.Layout]
+	if !ok {
+		return fmt.Errorf("layout not found: %q", slide.Layout)
+	}
+
+	// create new page
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: []*slides.Request{
+			{
+				CreateSlide: &slides.CreateSlideRequest{
+					InsertionIndex: int64(index),
+					SlideLayoutReference: &slides.LayoutReference{
+						LayoutId: layout.ObjectId,
+					},
+				},
+			},
+		},
+	}
+
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		return err
+	}
+
+	if err := d.refresh(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err error) {
@@ -922,147 +1063,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 	}
 
-	return nil
-}
-
-func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d.logger.Info("deleting page", slog.Int("index", index))
-	if err := d.deletePage(ctx, index); err != nil {
-		return err
-	}
-	d.logger.Info("deleted page", slog.Int("index", index))
-	return nil
-}
-
-func (d *Deck) DeletePageAfter(ctx context.Context, index int) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if len(d.presentation.Slides) <= index {
-		return nil
-	}
-	req := &slides.BatchUpdatePresentationRequest{}
-	for i := index + 1; i < len(d.presentation.Slides); i++ {
-		req.Requests = append(req.Requests, &slides.Request{
-			DeleteObject: &slides.DeleteObjectRequest{
-				ObjectId: d.presentation.Slides[i].ObjectId,
-			},
-		})
-	}
-	if len(req.Requests) == 0 {
-		return nil
-	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-		return err
-	}
-	if err := d.refresh(ctx); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d.logger.Info("appending new page")
-	index := len(d.presentation.Slides)
-	if err := d.createPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	d.logger.Info("appended page")
-	return nil
-}
-
-func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d.logger.Info("moving page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
-	if err := d.movePage(ctx, from_index, to_index); err != nil {
-		return err
-	}
-	d.logger.Info("moved page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
-	return nil
-}
-
-func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	layoutMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutMap[l.LayoutProperties.DisplayName] = l
-	}
-
-	layout, ok := layoutMap[slide.Layout]
-	if !ok {
-		return fmt.Errorf("layout not found: %q", slide.Layout)
-	}
-
-	// create new page
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{
-			{
-				CreateSlide: &slides.CreateSlideRequest{
-					InsertionIndex: int64(index),
-					SlideLayoutReference: &slides.LayoutReference{
-						LayoutId: layout.ObjectId,
-					},
-				},
-			},
-		},
-	}
-
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-		return err
-	}
-
-	if err := d.refresh(ctx); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d.logger.Info("inserting page", slog.Int("index", index))
-	if len(d.presentation.Slides) <= index {
-		return fmt.Errorf("index out of range: %d", index)
-	}
-	if err := d.createPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
-	}
-	if index == 0 {
-		if err := d.movePage(ctx, 1, 0); err != nil {
-			return fmt.Errorf("failed to move page: %w", err)
-		}
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	d.logger.Info("inserted page", slog.Int("index", index))
 	return nil
 }
 
