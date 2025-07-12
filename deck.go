@@ -42,6 +42,7 @@ const (
 	styleBold                      = "bold"
 	styleItalic                    = "italic"
 	styleLink                      = "link"
+	styleBlockQuote                = "blockquote"
 	defaultCodeFontFamily          = "Noto Sans Mono"
 	descriptionImageFromMarkdown   = "Image generated from markdown"
 	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
@@ -55,6 +56,7 @@ type Deck struct {
 	defaultTitleLayout string
 	defaultLayout      string
 	styles             map[string]*slides.TextStyle
+	shapes             map[string]*slides.ShapeProperties
 	logger             *slog.Logger
 }
 
@@ -111,6 +113,7 @@ func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -133,6 +136,7 @@ func Create(ctx context.Context) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -160,6 +164,7 @@ func CreateFrom(ctx context.Context, id string) (_ *Deck, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -197,6 +202,7 @@ func List(ctx context.Context) (_ []*Presentation, err error) {
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -699,11 +705,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if len(bodies) <= i {
 			continue
 		}
-		reqs, err := d.applyParagraphsRequests(bodies[i].objectID, body.Paragraphs)
+		reqs, styleReqs, err := d.applyParagraphsRequests(bodies[i].objectID, body.Paragraphs)
 		if err != nil {
 			return fmt.Errorf("failed to apply paragraphs: %w", err)
 		}
 		req.Requests = append(req.Requests, reqs...)
+		req.Requests = append(req.Requests, styleReqs...)
 	}
 
 	// set images
@@ -808,11 +815,35 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				ShapeType: "TEXT_BOX",
 			},
 		})
-		reqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
+
+		sp, ok := d.shapes[styleBlockQuote]
+		if ok {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
+					ObjectId:        textBoxObjectID,
+					ShapeProperties: sp,
+					Fields:          "shapeBackgroundFill,outline,shadow",
+				},
+			})
+		}
+		reqs, styleReqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
 		if err != nil {
 			return fmt.Errorf("failed to apply paragraphs: %w", err)
 		}
 		req.Requests = append(req.Requests, reqs...)
+
+		s, ok := d.styles[styleBlockQuote]
+		if ok {
+			req.Requests = append(req.Requests, &slides.Request{
+				UpdateTextStyle: &slides.UpdateTextStyleRequest{
+					ObjectId: textBoxObjectID,
+					Style:    s,
+					Fields:   "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+				},
+			})
+		}
+
+		req.Requests = append(req.Requests, styleReqs...)
 
 		req.Requests = append(req.Requests, &slides.Request{
 			UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
@@ -1134,6 +1165,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 						continue
 					}
 					d.styles[className] = t.TextRun.Style
+					d.shapes[className] = e.Shape.ShapeProperties
 				}
 			}
 		}
@@ -1152,7 +1184,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	return nil
 }
 
-func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, err error) {
+func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, stlyeReqs []*slides.Request, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -1428,7 +1460,6 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			Text:     text,
 		},
 	})
-	reqs = append(reqs, styleReqs...)
 	bulletRangeSlice := []*bulletRange{}
 	for _, r := range bulletRanges {
 		bulletRangeSlice = append(bulletRangeSlice, r)
@@ -1444,7 +1475,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		if startIndex <= endIndex {
 			endIndex++
 		}
-		reqs = append(reqs, &slides.Request{
+		styleReqs = append(stlyeReqs, &slides.Request{
 			CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
 				ObjectId:     objectID,
 				BulletPreset: convertBullet(r.bullet),
@@ -1457,7 +1488,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		})
 	}
 
-	return reqs, nil
+	return reqs, styleReqs, nil
 }
 
 func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err error) {
