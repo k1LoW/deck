@@ -182,6 +182,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
 - Image (`![Image](path/to/image.png)` )
+- Block quote ( `> block quote` )
 
 #### Style for syntax
 
@@ -195,6 +196,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
+| `blockquote` | style for block quote. |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
 #### Code blocks to images
