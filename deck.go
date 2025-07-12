@@ -704,8 +704,11 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				req := d.getInlineStyle(fragment)
 				if req != nil {
 					req.ObjectId = bodies[i].objectID
-					req.TextRange.StartIndex = ptrInt64(count + int64(plen))
-					req.TextRange.EndIndex = ptrInt64(count + int64(plen+flen))
+					req.TextRange = &slides.Range{
+						Type:       "FIXED_RANGE",
+						StartIndex: ptrInt64(count + int64(plen)),
+						EndIndex:   ptrInt64(count + int64(plen+flen)),
+					}
 					styleReqs = append(styleReqs, &slides.Request{
 						UpdateTextStyle: req,
 					})
@@ -917,9 +920,6 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRe
 						},
 					},
 				},
-				TextRange: &slides.Range{
-					Type: "FIXED_RANGE",
-				},
 				Fields: "foregroundColor,fontFamily,backgroundColor",
 			}
 		}
@@ -935,9 +935,6 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRe
 				Style: &slides.TextStyle{
 					Bold: true,
 				},
-				TextRange: &slides.Range{
-					Type: "FIXED_RANGE",
-				},
 				Fields: "bold",
 			}
 		}
@@ -952,9 +949,6 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRe
 			req = &slides.UpdateTextStyleRequest{
 				Style: &slides.TextStyle{
 					Italic: true,
-				},
-				TextRange: &slides.Range{
-					Type: "FIXED_RANGE",
 				},
 				Fields: "italic",
 			}
@@ -976,9 +970,6 @@ func (d *Deck) getInlineStyle(fragment *Fragment) (req *slides.UpdateTextStyleRe
 					Link: &slides.Link{
 						Url: fragment.Link,
 					},
-				},
-				TextRange: &slides.Range{
-					Type: "FIXED_RANGE",
 				},
 				Fields: "link",
 			}
@@ -1004,9 +995,6 @@ func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest
 			ForegroundColor: s.ForegroundColor,
 			FontFamily:      s.FontFamily,
 			BackgroundColor: s.BackgroundColor,
-		},
-		TextRange: &slides.Range{
-			Type: "FIXED_RANGE",
 		},
 		Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
 	}
