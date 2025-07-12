@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.40.0](https://github.com/k1LoW/deck/compare/v0.39.0...v0.40.0) - 2025-07-12
+### New Features 🎉
+- feat: support block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/208
+### Other Changes
+- test: improve integration test by @k1LoW in https://github.com/k1LoW/deck/pull/232
+- chore: add linter `funcorder` by @k1LoW in https://github.com/k1LoW/deck/pull/235
+
 ## [v0.39.0](https://github.com/k1LoW/deck/compare/v0.38.0...v0.39.0) - 2025-07-10
 ### New Features 🎉
 - perf: add debounce function to avoid busy loop while watching by @Songmu in https://github.com/k1LoW/deck/pull/227
