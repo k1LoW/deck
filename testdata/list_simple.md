@@ -1,9 +1,5 @@
 # List simple
 
----
-
-# Title
-
 - A
 - B
 - **C**
@@ -13,3 +9,4 @@
 - G
 - H
 
+<!-- {"layout":"title-and-body"} -->

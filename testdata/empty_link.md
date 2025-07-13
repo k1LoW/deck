@@ -1,7 +1,5 @@
-# Title
-
----
-
-# Title
+# Empty link
 
 []()
+
+<!-- {"layout":"title-and-body"} -->

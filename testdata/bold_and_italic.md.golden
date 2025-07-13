@@ -1,12 +1,6 @@
 [
   {
-    "layout": "",
-    "titles": [
-      "Title"
-    ]
-  },
-  {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
       "Bold and italic"
     ],

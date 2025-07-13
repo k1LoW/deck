@@ -1,9 +1,5 @@
 # Block Quote
 
----
-
-# Block Quotes
-
 > NOTICE!
 > Hello **World!**
 
@@ -15,3 +11,6 @@ This is paragraph.
 > > But flatten
 > > > NESTED NESTED!
 > > > But flatten
+
+<!-- {"layout":"title-and-body"} -->
+

@@ -1,14 +1,8 @@
 [
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
       "List and paragraph"
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "Title"
     ],
     "bodies": [
       {
