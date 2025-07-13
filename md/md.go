@@ -200,20 +200,24 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
 			mu := sync.Mutex{}
 			eg := errgroup.Group{}
-			for _, codeBlock := range content.CodeBlocks {
+			blockMap := make(map[int]*deck.Image)
+			for i, codeBlock := range content.CodeBlocks {
 				eg.Go(func() error {
 					image, err := genCodeImage(ctx, codeBlockToImageCmd, codeBlock)
 					if err != nil {
 						return err
 					}
 					mu.Lock()
-					images = append(images, image)
+					blockMap[i] = image
 					mu.Unlock()
 					return nil
 				})
 			}
 			if err := eg.Wait(); err != nil {
 				return nil, fmt.Errorf("failed to convert code blocks to images: %w", err)
+			}
+			for i := range content.CodeBlocks {
+				images = append(images, blockMap[i])
 			}
 		}
 		slides[i] = &deck.Slide{
