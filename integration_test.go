@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"image/png"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -21,6 +22,14 @@ const (
 	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
 	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
 )
+
+var testCodeBlockToImageCmd = func() string {
+	abs, err := filepath.Abs("testdata/txt2img/main.go")
+	if err != nil {
+		return ""
+	}
+	return fmt.Sprintf("go run -mod=mod %s", abs)
+}()
 
 func TestApplyMarkdown(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
@@ -66,6 +75,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/nested_list.md"},
 		{"testdata/images.md"},
 		{"testdata/blockquote.md"},
+		{"testdata/codeblock.md"},
 	}
 
 	for _, tt := range tests {
@@ -78,7 +88,7 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			fromMd, err := markdownData.Contents.ToSlides(ctx, "")
+			fromMd, err := markdownData.Contents.ToSlides(ctx, testCodeBlockToImageCmd)
 			if err != nil {
 				t.Fatal(err)
 			}
