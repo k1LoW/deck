@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.40.1](https://github.com/k1LoW/deck/compare/v0.40.0...v0.40.1) - 2025-07-13
+### Fix bug 🐛
+- fix(md): resolve concurrency issue in code block image generation by @k1LoW in https://github.com/k1LoW/deck/pull/244
+### Other Changes
+- feat(compare): add sorting logic for BlockQuotes in blockQuotesEqual function by @k1LoW in https://github.com/k1LoW/deck/pull/240
+- fix(compare): improve paragraph equality logic / reduce testdata(markdown pages) by @k1LoW in https://github.com/k1LoW/deck/pull/243
+
 ## [v0.40.0](https://github.com/k1LoW/deck/compare/v0.39.0...v0.40.0) - 2025-07-13
 ### New Features 🎉
 - feat: support block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/208
