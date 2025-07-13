@@ -113,6 +113,41 @@ func blockQuotesEqual(bq1, bq2 []*BlockQuote) bool {
 	if len(bq1) != len(bq2) {
 		return false
 	}
+	slices.SortFunc(bq1, func(a *BlockQuote, b *BlockQuote) int {
+		if a.Nesting != b.Nesting {
+			return a.Nesting - b.Nesting
+		}
+		if len(a.Paragraphs) != len(b.Paragraphs) {
+			return len(a.Paragraphs) - len(b.Paragraphs)
+		}
+		jsonA, err := json.Marshal(a.Paragraphs)
+		if err != nil {
+			return -1 // Error case, treat as unequal
+		}
+		jsonB, err := json.Marshal(b.Paragraphs)
+		if err != nil {
+			return 1 // Error case, treat as unequal
+		}
+		return bytes.Compare(jsonA, jsonB)
+	})
+	slices.SortFunc(bq2, func(a *BlockQuote, b *BlockQuote) int {
+		if a.Nesting != b.Nesting {
+			return a.Nesting - b.Nesting
+		}
+		if len(a.Paragraphs) != len(b.Paragraphs) {
+			return len(a.Paragraphs) - len(b.Paragraphs)
+		}
+		jsonA, err := json.Marshal(a.Paragraphs)
+		if err != nil {
+			return -1 // Error case, treat as unequal
+		}
+		jsonB, err := json.Marshal(b.Paragraphs)
+		if err != nil {
+			return 1 // Error case, treat as unequal
+		}
+		return bytes.Compare(jsonA, jsonB)
+	})
+
 	for i := range bq1 {
 		if bq1[i] == nil || bq2[i] == nil {
 			if bq1[i] != bq2[i] {
