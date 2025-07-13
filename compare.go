@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"slices"
+	"strings"
 )
 
 func (s Slides) Compare(other Slides) bool { //nostyle:recvtype
@@ -174,15 +175,25 @@ func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
 	if paragraph1.Nesting != paragraph2.Nesting {
 		return false
 	}
-	merged1B, err := json.Marshal(mergeFragments(paragraph1.Fragments))
-	if err != nil {
+	merged1 := mergeFragments(paragraph1.Fragments)
+	merged2 := mergeFragments(paragraph2.Fragments)
+	if len(merged1) != len(merged2) {
 		return false
 	}
-	merged2B, err := json.Marshal(mergeFragments(paragraph2.Fragments))
-	if err != nil {
-		return false
+	for i := range merged1 {
+		if strings.TrimRight(merged1[i].Value, "\n") != strings.TrimRight(merged2[i].Value, "\n") {
+			// FIXME: SoftLineBreak is not considered in equality check
+			return false
+		}
+		if merged1[i].Bold != merged2[i].Bold ||
+			merged1[i].Italic != merged2[i].Italic ||
+			merged1[i].Link != merged2[i].Link ||
+			merged1[i].Code != merged2[i].Code {
+			// MEMO: skip ClassName and SoftLineBreak for comparison
+			return false
+		}
 	}
-	return bytes.Equal(merged1B, merged2B)
+	return true
 }
 
 func paragraphsEqual(paragraphs1, paragraphs2 []*Paragraph) bool {
@@ -228,5 +239,6 @@ func mergeFragments(in []*Fragment) []*Fragment {
 			ClassName:     in[i].ClassName,
 		})
 	}
+
 	return merged
 }
