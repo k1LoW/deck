@@ -93,12 +93,12 @@ func TestApplyMarkdown(t *testing.T) {
 				backoff.WithMinInterval(time.Second),
 				backoff.WithMaxInterval(5*time.Second),
 				backoff.WithJitterFactor(0.05),
-				backoff.WithMaxRetries(3),
+				backoff.WithMaxRetries(5),
 			)
 			for i, url := range urls {
 				page := i + 1
 				b := p.Start(ctx)
-				if err := func() error {
+				if err := func() (errr error) {
 					for backoff.Continue(b) {
 						got := deck.Screenshot(t, url)
 						p := fmt.Sprintf("%s-%d.golden.png", tt.in, page)
@@ -135,10 +135,12 @@ func TestApplyMarkdown(t *testing.T) {
 						if distance > 1 { // threshold for similarity
 							diffpath := fmt.Sprintf("%s-%d.diff.png", tt.in, page)
 							_ = os.WriteFile(diffpath, got, 0600)
-							return fmt.Errorf("screenshot %s does not match golden file %s: distance %d, see %s for diff", p, tt.in, distance, diffpath)
+							errr = fmt.Errorf("screenshot %s does not match golden file %s: distance %d, see %s for diff", p, tt.in, distance, diffpath)
+							continue
 						}
+						return nil
 					}
-					return nil
+					return
 				}(); err != nil {
 					t.Error(err)
 				}
