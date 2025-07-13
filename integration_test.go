@@ -186,8 +186,8 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
 		{"testdata/nested_list.md"},
-		// {"testdata/images.md"},
-		// {"testdata/blockquote.md"},
+		//{"testdata/images.md"},
+		//{"testdata/blockquote.md"},
 	}
 
 	cmpopts := cmp.Options{
@@ -225,22 +225,9 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(base, applied, cmpopts...); diff != "" {
-				t.Errorf("diff after apply: %s", diff)
-			}
-			for i, slide := range applied {
-				for _, image := range slide.Images {
-					found := false
-					for _, baseImage := range base[i].Images {
-						if image.Compare(baseImage) {
-							found = true
-							break
-						}
-					}
-					if !found {
-						t.Errorf("image not found in slide %d", i+1)
-					}
-				}
+			if !base.Compare(applied) {
+				diff := cmp.Diff(base, applied, cmpopts...)
+				t.Errorf("slides after apply do not match base: %s", diff)
 			}
 			if err := d.Apply(ctx, applied); err != nil {
 				t.Fatal(err)
@@ -249,22 +236,9 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			for i, slide := range applied2 {
-				for _, image := range slide.Images {
-					found := false
-					for _, mdImage := range applied[i].Images {
-						if image.Compare(mdImage) {
-							found = true
-							break
-						}
-					}
-					if !found {
-						t.Errorf("image not found in slide %d", i+1)
-					}
-				}
-			}
-			if diff := cmp.Diff(applied, applied2, cmpopts...); diff != "" {
-				t.Errorf("diff after re-apply: %s", diff)
+			if !applied.Compare(applied2) {
+				diff := cmp.Diff(applied, applied2, cmpopts...)
+				t.Errorf("slides after apply do not match base: %s", diff)
 			}
 		})
 	}

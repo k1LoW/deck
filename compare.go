@@ -6,6 +6,18 @@ import (
 	"slices"
 )
 
+func (s Slides) Compare(other Slides) bool {
+	if len(s) != len(other) {
+		return false
+	}
+	for i := range s {
+		if !slidesEqual(s[i], other[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 func (s *Slide) Compare(other *Slide) bool {
 	if s == nil || other == nil {
 		return s == other
@@ -66,14 +78,13 @@ func bodiesEqual(bodies1, bodies2 []*Body) bool {
 	if len(bodies1) != len(bodies2) {
 		return false
 	}
-	for i, body1 := range bodies1 {
-		body2 := bodies2[i]
-		if body1 == nil || body2 == nil {
-			if body1 != body2 {
+	for i := range bodies1 {
+		if bodies1[i] == nil || bodies2[i] == nil {
+			if bodies1[i] != bodies2[i] {
 				return false
 			}
 		}
-		if !paragraphsEqual(body1.Paragraphs, body2.Paragraphs) {
+		if !paragraphsEqual(bodies1[i].Paragraphs, bodies2[i].Paragraphs) {
 			return false
 		}
 	}
@@ -98,21 +109,20 @@ func imagesEqual(images1, images2 []*Image) bool {
 	return true
 }
 
-func blockQuotesEqual(blockQuotes1, blockQuotes2 []*BlockQuote) bool {
-	if len(blockQuotes1) != len(blockQuotes2) {
+func blockQuotesEqual(bq1, bq2 []*BlockQuote) bool {
+	if len(bq1) != len(bq2) {
 		return false
 	}
-	for i, bq1 := range blockQuotes1 {
-		bq2 := blockQuotes2[i]
-		if bq1 == nil || bq2 == nil {
-			if bq1 != bq2 {
+	for i := range bq1 {
+		if bq1[i] == nil || bq2[i] == nil {
+			if bq1[i] != bq2[i] {
 				return false
 			}
 		}
-		if bq1.Nesting != bq2.Nesting {
+		if bq1[i].Nesting != bq2[i].Nesting {
 			return false
 		}
-		if !paragraphsEqual(bq1.Paragraphs, bq2.Paragraphs) {
+		if !paragraphsEqual(bq1[i].Paragraphs, bq2[i].Paragraphs) {
 			return false
 		}
 	}
@@ -144,9 +154,8 @@ func paragraphsEqual(paragraphs1, paragraphs2 []*Paragraph) bool {
 	if len(paragraphs1) != len(paragraphs2) {
 		return false
 	}
-	for i, paragraph1 := range paragraphs1 {
-		paragraph2 := paragraphs2[i]
-		if !paragraphEqual(paragraph1, paragraph2) {
+	for i := range paragraphs1 {
+		if !paragraphEqual(paragraphs1[i], paragraphs2[i]) {
 			return false
 		}
 	}
