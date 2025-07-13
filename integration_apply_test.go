@@ -9,7 +9,10 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-const basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
+const (
+	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
+	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
+)
 
 func TestApply(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
@@ -20,6 +23,9 @@ func TestApply(t *testing.T) {
 	d, err := CreateFrom(ctx, basePresentationID)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
+		t.Fatalf("failed to update title: %v", err)
 	}
 	presentationID := d.ID()
 	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)

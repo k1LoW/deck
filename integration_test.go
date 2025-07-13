@@ -7,15 +7,20 @@ import (
 	"image/png"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/corona10/goimagehash"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/md"
+	"github.com/lestrrat-go/backoff/v2"
 )
 
-const basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
+const (
+	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
+	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
+)
 
 func TestApplyMarkdown(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
@@ -27,7 +32,7 @@ func TestApplyMarkdown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := d.UpdateTitle(ctx, "Presentation for deck integration test (Unless you are testing the deck, you can delete this file without any problems)"); err != nil {
+	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
 		t.Fatalf("failed to update title: %v", err)
 	}
 	presentationID := d.ID()
@@ -84,44 +89,60 @@ func TestApplyMarkdown(t *testing.T) {
 				t.Fatal(err)
 			}
 			urls := d.ListSlideURLs()
+			p := backoff.Exponential(
+				backoff.WithMinInterval(time.Second),
+				backoff.WithMaxInterval(5*time.Second),
+				backoff.WithJitterFactor(0.05),
+				backoff.WithMaxRetries(5),
+			)
 			for i, url := range urls {
 				page := i + 1
-				got := deck.Screenshot(t, url)
-				p := fmt.Sprintf("%s-%d.golden.png", tt.in, page)
-				if os.Getenv("UPDATE_GOLDEN") != "" {
-					if err := os.WriteFile(p, got, 0600); err != nil {
-						t.Fatalf("failed to update golden file %s: %v", p, err)
+				b := p.Start(ctx)
+				if err := func() (errr error) {
+					for backoff.Continue(b) {
+						got := deck.Screenshot(t, url)
+						p := fmt.Sprintf("%s-%d.golden.png", tt.in, page)
+						if os.Getenv("UPDATE_GOLDEN") != "" {
+							if err := os.WriteFile(p, got, 0600); err != nil {
+								t.Fatalf("failed to update golden file %s: %v", p, err)
+							}
+							return nil
+						}
+						want, err := os.ReadFile(p)
+						if err != nil {
+							t.Fatalf("failed to read golden file %s: %v", p, err)
+						}
+						gotImage, err := png.Decode(bytes.NewReader(got))
+						if err != nil {
+							t.Fatalf("failed to decode screenshot: %v", err)
+						}
+						gotPHash, err := goimagehash.PerceptionHash(gotImage)
+						if err != nil {
+							t.Fatalf("failed to compute perception hash for screenshot: %v", err)
+						}
+						wantImage, err := png.Decode(bytes.NewReader(want))
+						if err != nil {
+							t.Fatalf("failed to decode golden screenshot: %v", err)
+						}
+						wantPHash, err := goimagehash.PerceptionHash(wantImage)
+						if err != nil {
+							t.Fatalf("failed to compute perception hash for golden screenshot: %v", err)
+						}
+						distance, err := gotPHash.Distance(wantPHash)
+						if err != nil {
+							t.Fatalf("failed to compute distance between screenshots: %v", err)
+						}
+						if distance > 1 { // threshold for similarity
+							diffpath := fmt.Sprintf("%s-%d.diff.png", tt.in, page)
+							_ = os.WriteFile(diffpath, got, 0600)
+							errr = fmt.Errorf("screenshot %s does not match golden file %s: distance %d, see %s for diff", p, tt.in, distance, diffpath)
+							continue
+						}
+						return nil
 					}
-					continue
-				}
-				want, err := os.ReadFile(p)
-				if err != nil {
-					t.Fatalf("failed to read golden file %s: %v", p, err)
-				}
-				gotImage, err := png.Decode(bytes.NewReader(got))
-				if err != nil {
-					t.Fatalf("failed to decode screenshot: %v", err)
-				}
-				gotPHash, err := goimagehash.PerceptionHash(gotImage)
-				if err != nil {
-					t.Fatalf("failed to compute perception hash for screenshot: %v", err)
-				}
-				wantImage, err := png.Decode(bytes.NewReader(want))
-				if err != nil {
-					t.Fatalf("failed to decode golden screenshot: %v", err)
-				}
-				wantPHash, err := goimagehash.PerceptionHash(wantImage)
-				if err != nil {
-					t.Fatalf("failed to compute perception hash for golden screenshot: %v", err)
-				}
-				distance, err := gotPHash.Distance(wantPHash)
-				if err != nil {
-					t.Fatalf("failed to compute distance between screenshots: %v", err)
-				}
-				if distance > 1 { // threshold for similarity
-					diffpath := fmt.Sprintf("%s-%d.diff.png", tt.in, page)
-					_ = os.WriteFile(diffpath, got, 0600)
-					t.Errorf("screenshot %s does not match golden file %s: distance %d, see %s for diff", p, tt.in, distance, diffpath)
+					return
+				}(); err != nil {
+					t.Error(err)
 				}
 			}
 		})
@@ -137,6 +158,9 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 	d, err := deck.CreateFrom(ctx, basePresentationID)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
+		t.Fatalf("failed to update title: %v", err)
 	}
 	presentationID := d.ID()
 	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
