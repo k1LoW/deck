@@ -1,7 +1,6 @@
 package deck
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -598,6 +597,10 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		if len(beforeSlide.Images) > 0 && len(afterSlide.Images) > 0 && imagesEqual(beforeSlide.Images, afterSlide.Images) {
 			score += 40
 		}
+
+		if len(beforeSlide.BlockQuotes) > 0 && len(afterSlide.BlockQuotes) > 0 && blockQuotesEqual(beforeSlide.BlockQuotes, afterSlide.BlockQuotes) {
+			score += 30
+		}
 	}
 
 	return score
@@ -635,37 +638,6 @@ func getSimilarityForMapping(beforeSlide, afterSlide *Slide, beforeIndex, afterI
 	}
 
 	return baseScore + positionBonus
-}
-
-func slidesEqual(slide1, slide2 *Slide) bool {
-	if slide1 == nil || slide2 == nil {
-		return slide1 == slide2
-	}
-
-	// Perfect match check using JSON comparison
-	slide1B, err1 := json.Marshal(slide1)
-	if err1 != nil {
-		return false
-	}
-
-	slide2B, err2 := json.Marshal(slide2)
-	if err2 != nil {
-		return false
-	}
-
-	return bytes.Equal(slide1B, slide2B)
-}
-
-func titlesEqual(titles1, titles2 []string) bool {
-	if len(titles1) != len(titles2) {
-		return false
-	}
-	for i := range titles1 {
-		if titles1[i] != titles2[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // generateUpdateActions generates update actions.
@@ -886,93 +858,6 @@ func generateMoveActions(before *Slides, after Slides, mapping *map[int]int) []*
 	return actions
 }
 
-func subtitlesEqual(subtitles1, subtitles2 []string) bool {
-	if len(subtitles1) != len(subtitles2) {
-		return false
-	}
-	for i := range subtitles1 {
-		if subtitles1[i] != subtitles2[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
-	if paragraph1 == nil || paragraph2 == nil {
-		return paragraph1 == paragraph2
-	}
-	if paragraph1.Bullet != paragraph2.Bullet {
-		return false
-	}
-	if paragraph1.Nesting != paragraph2.Nesting {
-		return false
-	}
-	merged1B, err := json.Marshal(mergeFragments(paragraph1.Fragments))
-	if err != nil {
-		return false
-	}
-	merged2B, err := json.Marshal(mergeFragments(paragraph2.Fragments))
-	if err != nil {
-		return false
-	}
-	return bytes.Equal(merged1B, merged2B)
-}
-
-func paragraphsEqual(paragraphs1, paragraphs2 []*Paragraph) bool {
-	if len(paragraphs1) != len(paragraphs2) {
-		return false
-	}
-	for i, paragraph1 := range paragraphs1 {
-		paragraph2 := paragraphs2[i]
-		if !paragraphEqual(paragraph1, paragraph2) {
-			return false
-		}
-	}
-	return true
-}
-
-func bodiesEqual(bodies1, bodies2 []*Body) bool {
-	if len(bodies1) != len(bodies2) {
-		return false
-	}
-
-	bodies1B, err := json.Marshal(bodies1)
-	if err != nil {
-		return false
-	}
-
-	bodies2B, err := json.Marshal(bodies2)
-	if err != nil {
-		return false
-	}
-
-	return bytes.Equal(bodies1B, bodies2B)
-}
-
-func imagesEqual(images1, images2 []*Image) bool {
-	if len(images1) != len(images2) {
-		return false
-	}
-	var imageChecksums1 []uint32
-	var imageChecksums2 []uint32
-	for _, img := range images1 {
-		if img == nil {
-			continue // Skip nil images
-		}
-		imageChecksums1 = append(imageChecksums1, img.Checksum())
-	}
-	for _, img := range images2 {
-		if img == nil {
-			continue // Skip nil images
-		}
-		imageChecksums2 = append(imageChecksums2, img.Checksum())
-	}
-	slices.Sort(imageChecksums1)
-	slices.Sort(imageChecksums2)
-	return slices.Equal(imageChecksums1, imageChecksums2)
-}
-
 // applyDeleteMarks applies delete marks from after slides to corresponding before slides
 // based on the provided mapping. It modifies the before slides in-place.
 func applyDeleteMarks(before, after Slides, mapping map[int]int) {
@@ -983,39 +868,4 @@ func applyDeleteMarks(before, after Slides, mapping map[int]int) {
 			}
 		}
 	}
-}
-
-func mergeFragments(in []*Fragment) []*Fragment {
-	var merged []*Fragment
-	if len(in) == 0 {
-		return merged
-	}
-	for i := range len(in) - 1 {
-		value := in[i].Value
-		if in[i].SoftLineBreak {
-			value += "\n"
-		}
-		if i > 0 {
-			// Merge with previous fragment if possible
-			if in[i-1].Bold == in[i].Bold &&
-				in[i-1].Italic == in[i].Italic &&
-				in[i-1].Link == in[i].Link &&
-				in[i-1].Code == in[i].Code &&
-				in[i-1].ClassName == in[i].ClassName {
-				merged[len(merged)-1].Value += value
-				continue
-			}
-		}
-		merged = append(merged, &Fragment{
-			Value:         in[i].Value,
-			Bold:          in[i].Bold,
-			Italic:        in[i].Italic,
-			Link:          in[i].Link,
-			Code:          in[i].Code,
-			SoftLineBreak: false,
-			ClassName:     in[i].ClassName,
-		})
-	}
-
-	return merged
 }
