@@ -855,7 +855,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	// set images
-	for _, image := range slide.Images {
+	for i, image := range slide.Images {
 		found := false
 		for _, currentImage := range currentImages {
 			if currentImage.Compare(image) {
@@ -902,6 +902,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				ObjectId: imageObjectID,
 				ElementProperties: &slides.PageElementProperties{
 					PageObjectId: currentSlide.ObjectId,
+					Transform: &slides.AffineTransform{
+						ScaleX:     1.0,
+						ScaleY:     1.0,
+						TranslateX: float64(i+1) * 100000,
+						TranslateY: float64(i+1) * 100000,
+						Unit:       "EMU",
+					},
 				},
 				Url: f.WebContentLink,
 			},
@@ -917,7 +924,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	// set text boxes
-	for _, bq := range slide.BlockQuotes {
+	for i, bq := range slide.BlockQuotes {
 		found := false
 		for _, currentTextBox := range currentTextBoxes {
 			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
@@ -948,8 +955,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					Transform: &slides.AffineTransform{
 						ScaleX:     1.0,
 						ScaleY:     1.0,
-						TranslateX: 1,
-						TranslateY: 1,
+						TranslateX: float64(i+1) * 100000,
+						TranslateY: float64(i+1) * 100000,
 						Unit:       "EMU",
 					},
 				},
