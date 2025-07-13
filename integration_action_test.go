@@ -18,6 +18,9 @@ func TestAction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
+		t.Fatalf("failed to update title: %v", err)
+	}
 	presentationID := d.ID()
 	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
 
