@@ -1,14 +1,8 @@
 [
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
       "Inline Code"
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "Title `with code`"
     ],
     "subtitles": [
       "Hello `code`"

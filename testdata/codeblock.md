@@ -1,9 +1,5 @@
 # Code Block
 
----
-
-# Blocks
-
 ```go
 package main
 
@@ -28,3 +24,5 @@ graph TD
 ```
 Hello World
 ```
+
+<!-- {"layout":"title-and-body"} -->

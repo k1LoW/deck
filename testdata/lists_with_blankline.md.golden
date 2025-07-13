@@ -1,14 +1,8 @@
 [
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
       "Lists with blank line"
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "Title"
     ],
     "bodies": [
       {

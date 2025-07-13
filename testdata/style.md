@@ -1,9 +1,5 @@
 # Inline Style
 
----
-
-# Title
-
 ## Hello style
 
 - _**Bold Italic** and Italic_
@@ -13,3 +9,5 @@
 - <span  class='unknown'>unknown</span> world
 
 <span class=" unknown">unknown</span> world
+
+<!-- {"layout":"title-and-body"} -->
