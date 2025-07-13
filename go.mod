@@ -16,6 +16,7 @@ require (
 	github.com/k1LoW/exec v0.3.0
 	github.com/k1LoW/expand v0.16.2
 	github.com/k1LoW/tail v0.1.0
+	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/mattn/go-colorable v0.1.14
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/samber/slog-multi v1.4.1
@@ -49,6 +50,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/mapfs v0.0.0-20210615234106-095c008854e6 // indirect
 	github.com/josharian/txtarfs v0.0.0-20240408113805-5dc76b8fe6bf // indirect
+	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/samber/lo v1.51.0 // indirect
