@@ -22,6 +22,7 @@ func TestApply(t *testing.T) {
 		t.Fatal(err)
 	}
 	presentationID := d.ID()
+	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
 	t.Cleanup(func() {
 		if err := Delete(ctx, presentationID); err != nil {
 			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
@@ -47,7 +48,7 @@ func TestApply(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(before, tt.before, cmpopts...); diff != "" {
-				t.Error(diff)
+				t.Fatal(diff)
 			}
 
 			if err := d.Apply(ctx, tt.after); err != nil {

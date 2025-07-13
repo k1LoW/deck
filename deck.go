@@ -1184,7 +1184,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	return nil
 }
 
-func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, stlyeReqs []*slides.Request, err error) {
+func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, styleReqs []*slides.Request, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -1194,7 +1194,6 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 	text := ""
 	bulletStartIndex := int64(0) // reset per body
 	bulletEndIndex := int64(0)   // reset per body
-	var styleReqs []*slides.Request
 	currentBullet := BulletNone
 	for j, paragraph := range paragraphs {
 		plen := 0
@@ -1213,7 +1212,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 					StartIndex: ptrInt64(count),
 					EndIndex:   ptrInt64(count + int64(flen)),
 				}
-				stlyeReqs = append(stlyeReqs, &slides.Request{
+				styleReqs = append(styleReqs, &slides.Request{
 					UpdateTextStyle: req,
 				})
 			}
@@ -1271,7 +1270,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		if startIndex <= endIndex {
 			endIndex++
 		}
-		styleReqs = append(stlyeReqs, &slides.Request{
+		styleReqs = append(styleReqs, &slides.Request{
 			CreateParagraphBullets: &slides.CreateParagraphBulletsRequest{
 				ObjectId:     objectID,
 				BulletPreset: convertBullet(r.bullet),
