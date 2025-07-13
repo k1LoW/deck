@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.40.0](https://github.com/k1LoW/deck/compare/v0.39.0...v0.40.0) - 2025-07-13
+### New Features 🎉
+- feat: support block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/208
+- fix(compare): move comparison logic to a new file and simplify equality check by @k1LoW in https://github.com/k1LoW/deck/pull/238
+- feat(deck): add affine transform for images and block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/239
+### Other Changes
+- test: improve integration test by @k1LoW in https://github.com/k1LoW/deck/pull/232
+- chore: add linter `funcorder` by @k1LoW in https://github.com/k1LoW/deck/pull/235
+- chore: `define (*Deck) getInlineStyleElements(*deck.Fragment)` and refactoring by @Songmu in https://github.com/k1LoW/deck/pull/236
+
 ## [v0.39.0](https://github.com/k1LoW/deck/compare/v0.38.0...v0.39.0) - 2025-07-10
 ### New Features 🎉
 - perf: add debounce function to avoid busy loop while watching by @Songmu in https://github.com/k1LoW/deck/pull/227
