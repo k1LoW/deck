@@ -1,0 +1,20 @@
+analyzers:
+  disable:
+    - mixedcaps # disable mixedcaps analyzer. because the underscores analyzer is more detailed.
+    - funcfmt
+# analyzers-settings:
+#  dontpanic:
+#    exclude-test: true         # exclude test files (default: false)
+#  handlerrors:
+#    exclude-test: true         # exclude test files (default: false)
+#  ifacenames:
+#    all: true                  # all interface names with the -er suffix are required (default: false)
+#  recvnames:
+#    max: 3                     # max length of receiver name (default: 2)
+#  varnames:
+#    small-varname-max: 4       # max length of variable name for small scope (default: -1)
+#    medium-varname-max: 8      # max length of variable name for medium scope (default: -1)
+#    large-varname-max: 16      # max length of variable name for large scope (default: -1)
+#    very-large-varname-max: 32 # max length of variable name for very large scope (default: -1)
+# exclude-files: # exclude files from analysis
+#   - path/to/**/*.go

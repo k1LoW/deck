@@ -18,7 +18,7 @@ const (
 	actionTypeDelete                   // Delete slide at a specific index (not used in this diff)
 )
 
-func (at actionType) String() string {
+func (at actionType) String() string { //nostyle:recvtype
 	switch at {
 	case actionTypeAppend:
 		return "append"

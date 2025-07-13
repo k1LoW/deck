@@ -1265,7 +1265,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			Text:     text,
 		},
 	})
-	bulletRangeSlice := []*bulletRange{}
+	var bulletRangeSlice []*bulletRange
 	for _, r := range bulletRanges {
 		bulletRangeSlice = append(bulletRangeSlice, r)
 	}

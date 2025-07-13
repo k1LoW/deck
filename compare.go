@@ -6,7 +6,7 @@ import (
 	"slices"
 )
 
-func (s Slides) Compare(other Slides) bool {
+func (s Slides) Compare(other Slides) bool { //nostyle:recvtype
 	if len(s) != len(other) {
 		return false
 	}
