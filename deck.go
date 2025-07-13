@@ -1197,6 +1197,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 	currentBullet := BulletNone
 	for j, paragraph := range paragraphs {
 		plen := 0
+		startIndex := count
 		if paragraph.Bullet != BulletNone {
 			if paragraph.Nesting > 0 {
 				text += strings.Repeat("\t", paragraph.Nesting)
@@ -1204,24 +1205,26 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			}
 		}
 		for _, fragment := range paragraph.Fragments {
+			fValue := fragment.Value
 			flen := countString(fragment.Value)
 			for _, req := range d.getInlineStyleRequests(fragment) {
 				req.ObjectId = objectID
 				req.TextRange = &slides.Range{
 					Type:       "FIXED_RANGE",
-					StartIndex: ptrInt64(count),
-					EndIndex:   ptrInt64(count + int64(flen)),
+					StartIndex: ptrInt64(startIndex),
+					EndIndex:   ptrInt64(startIndex + int64(flen)),
 				}
 				styleReqs = append(styleReqs, &slides.Request{
 					UpdateTextStyle: req,
 				})
 			}
-			plen += flen
-			text += fragment.Value
 			if fragment.SoftLineBreak {
-				text += "\n"
-				plen++
+				fValue += "\n"
+				flen++
 			}
+			plen += flen
+			text += fValue
+			startIndex += int64(flen)
 		}
 
 		if len(paragraphs) > j+1 {
