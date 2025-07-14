@@ -65,6 +65,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/list_simple.md"},
 		{"testdata/list_and_paragraph.md"},
 		{"testdata/paragraph_and_list.md"},
+		{"testdata/paragraphs.md"},
 		{"testdata/bold_and_italic.md"},
 		{"testdata/emoji.md"},
 		{"testdata/code.md"},
@@ -76,7 +77,6 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/images.md"},
 		{"testdata/blockquote.md"},
 		{"testdata/codeblock.md"},
-		{"testdata/paragraphs.md"},
 	}
 
 	for _, tt := range tests {
@@ -194,6 +194,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/list_simple.md"},
 		//{"testdata/list_and_paragraph.md"}, // FIXME: paragraph is not supported yet
 		//{"testdata/paragraph_and_list.md"},  // FIXME: paragraph is not supported yet
+		//{"testdata/paragraphs.md"},
 		{"testdata/bold_and_italic.md"},
 		{"testdata/emoji.md"},
 		{"testdata/code.md"},
@@ -203,7 +204,6 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/nested_list.md"},
 		//{"testdata/images.md"},
 		//{"testdata/blockquote.md"},
-		//{"testdata/paragraphs.md"},
 	}
 
 	cmpopts := cmp.Options{
