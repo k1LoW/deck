@@ -205,7 +205,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 	}
 
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName"),
 		cmpopts.IgnoreUnexported(deck.Slide{}, deck.Image{}),
 		cmpopts.EquateEmpty(),
 	}

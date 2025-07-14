@@ -26,8 +26,7 @@
                 "value": "NOTICE"
               },
               {
-                "value": "!",
-                "soft_line_break": true
+                "value": "!\n"
               },
               {
                 "value": "Hello "
@@ -48,8 +47,7 @@
                 "value": "WARNING"
               },
               {
-                "value": "!",
-                "soft_line_break": true
+                "value": "!\n"
               },
               {
                 "value": "Hello "
@@ -70,8 +68,7 @@
                 "value": "NESTED"
               },
               {
-                "value": "!",
-                "soft_line_break": true
+                "value": "!\n"
               },
               {
                 "value": "But flatten"
@@ -89,8 +86,7 @@
                 "value": "NESTED NESTED"
               },
               {
-                "value": "!",
-                "soft_line_break": true
+                "value": "!\n"
               },
               {
                 "value": "But flatten"

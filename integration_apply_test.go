@@ -36,7 +36,7 @@ func TestApply(t *testing.T) {
 	})
 
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 		cmpopts.IgnoreUnexported(Slide{}),
 	}
 
