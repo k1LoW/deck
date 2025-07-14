@@ -856,13 +856,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 
 	// set images
 	for i, image := range slide.Images {
-		found := false
-		for _, currentImage := range currentImages {
-			if currentImage.Compare(image) {
-				found = true
-				break
-			}
-		}
+		found := slices.ContainsFunc(currentImages, func(currentImage *Image) bool {
+			return currentImage.Compare(image)
+		})
 		if found {
 			continue
 		}
@@ -925,13 +921,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 
 	// set text boxes
 	for i, bq := range slide.BlockQuotes {
-		found := false
-		for _, currentTextBox := range currentTextBoxes {
-			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
-				found = true
-				break
-			}
-		}
+		found := slices.ContainsFunc(currentTextBoxes, func(currentTextBox *textBox) bool {
+			return paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs)
+		})
 		if found {
 			continue
 		}
@@ -1017,13 +1009,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if !currentImage.fromMarkdown {
 			continue
 		}
-		found := false
-		for _, image := range slide.Images {
-			if currentImage.Compare(image) {
-				found = true
-				break
-			}
-		}
+		found := slices.ContainsFunc(slide.Images, func(image *Image) bool {
+			return currentImage.Compare(image)
+		})
 		if found {
 			continue
 		}
@@ -1043,13 +1031,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if !currentTextBox.fromMarkdown {
 			continue
 		}
-		found := false
-		for _, bq := range slide.BlockQuotes {
-			if paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs) {
-				found = true
-				break
-			}
-		}
+		found := slices.ContainsFunc(slide.BlockQuotes, func(bq *BlockQuote) bool {
+			return paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs)
+		})
 		if found {
 			continue
 		}
@@ -2056,10 +2040,7 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 				if element.ParagraphMarker.Bullet.Glyph != "" {
 					glyph := element.ParagraphMarker.Bullet.Glyph
 					// Check for numbered bullets (1, 2, 3, etc.)
-					if strings.Contains(glyph, "1") || strings.Contains(glyph, "2") || strings.Contains(glyph, "3") ||
-						strings.Contains(glyph, "4") || strings.Contains(glyph, "5") || strings.Contains(glyph, "6") ||
-						strings.Contains(glyph, "7") || strings.Contains(glyph, "8") || strings.Contains(glyph, "9") ||
-						strings.Contains(glyph, "0") {
+					if strings.ContainsAny(glyph, "0123456789") {
 						currentBullet = BulletNumber
 					} else {
 						currentBullet = BulletDash
