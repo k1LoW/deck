@@ -182,14 +182,12 @@ func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
 	}
 	for i := range merged1 {
 		if strings.TrimRight(merged1[i].Value, "\n") != strings.TrimRight(merged2[i].Value, "\n") {
-			// FIXME: SoftLineBreak is not considered in equality check
 			return false
 		}
 		if merged1[i].Bold != merged2[i].Bold ||
 			merged1[i].Italic != merged2[i].Italic ||
 			merged1[i].Link != merged2[i].Link ||
 			merged1[i].Code != merged2[i].Code {
-			// MEMO: skip ClassName and SoftLineBreak for comparison
 			return false
 		}
 	}
@@ -215,9 +213,6 @@ func mergeFragments(in []*Fragment) []*Fragment {
 	}
 	for i := range len(in) {
 		value := in[i].Value
-		if in[i].SoftLineBreak {
-			value += "\n"
-		}
 		if i > 0 {
 			// Merge with previous fragment if possible
 			if in[i-1].Bold == in[i].Bold &&
@@ -230,13 +225,12 @@ func mergeFragments(in []*Fragment) []*Fragment {
 			}
 		}
 		merged = append(merged, &Fragment{
-			Value:         in[i].Value,
-			Bold:          in[i].Bold,
-			Italic:        in[i].Italic,
-			Link:          in[i].Link,
-			Code:          in[i].Code,
-			SoftLineBreak: false,
-			ClassName:     in[i].ClassName,
+			Value:     in[i].Value,
+			Bold:      in[i].Bold,
+			Italic:    in[i].Italic,
+			Link:      in[i].Link,
+			Code:      in[i].Code,
+			ClassName: in[i].ClassName,
 		})
 	}
 

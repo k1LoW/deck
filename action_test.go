@@ -1392,7 +1392,7 @@ var tests = []struct {
 
 func TestGenerateActions(t *testing.T) {
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 		cmpopts.IgnoreUnexported(Slide{}),
 	}
 
@@ -1429,7 +1429,7 @@ func TestGenerateActionsWithImages(t *testing.T) {
 	}
 
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 		cmpopts.IgnoreUnexported(Slide{}, Image{}),
 	}
 
@@ -1628,7 +1628,7 @@ func TestAdjustSlideCount(t *testing.T) {
 
 			// Compare with expected results
 			cmpopts := cmp.Options{
-				cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+				cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 				cmpopts.IgnoreUnexported(Slide{}),
 			}
 
@@ -2063,7 +2063,7 @@ func TestCopySlides(t *testing.T) {
 	}
 
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 		cmpopts.IgnoreUnexported(Slide{}),
 	}
 
@@ -2145,7 +2145,7 @@ func TestDiffSlidesDoesNotModifyOriginal(t *testing.T) {
 
 	// Check that original slides were not modified
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+		cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 		cmpopts.IgnoreUnexported(Slide{}),
 	}
 
@@ -2782,7 +2782,7 @@ func FuzzGenerateActions(f *testing.F) {
 		}
 
 		cmpOpts := cmp.Options{
-			cmpopts.IgnoreFields(Fragment{}, "ClassName", "SoftLineBreak"),
+			cmpopts.IgnoreFields(Fragment{}, "ClassName"),
 			cmpopts.IgnoreUnexported(Slide{}),
 			cmpopts.EquateEmpty(),
 		}

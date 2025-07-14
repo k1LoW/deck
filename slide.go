@@ -51,13 +51,12 @@ type Paragraph struct {
 
 // Fragment represents a text fragment within a paragraph.
 type Fragment struct {
-	Value         string `json:"value"`
-	Bold          bool   `json:"bold,omitempty"`
-	Italic        bool   `json:"italic,omitempty"`
-	Link          string `json:"link,omitempty"`
-	Code          bool   `json:"code,omitempty"`
-	SoftLineBreak bool   `json:"soft_line_break,omitempty"`
-	ClassName     string `json:"class_name,omitempty"`
+	Value     string `json:"value"`
+	Bold      bool   `json:"bold,omitempty"`
+	Italic    bool   `json:"italic,omitempty"`
+	Link      string `json:"link,omitempty"`
+	Code      bool   `json:"code,omitempty"`
+	ClassName string `json:"class_name,omitempty"`
 }
 
 type BlockQuote struct {

@@ -10,9 +10,8 @@
           {
             "fragments": [
               {
-                "value": "C",
-                "bold": true,
-                "soft_line_break": true
+                "value": "C ",
+                "bold": true
               },
               {
                 "value": "D"

@@ -1225,10 +1225,6 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 					UpdateTextStyle: req,
 				})
 			}
-			if fragment.SoftLineBreak {
-				fValue += "\n"
-				flen++
-			}
 			plen += flen
 			text += fValue
 			startIndex += int64(flen)
@@ -2108,13 +2104,11 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 			}
 
 			// Process line breaks
-			softLineBreak := false
 			if strings.HasSuffix(content, "\n") {
 				// When checking the API response, a newline is always added to the end of the value of the
 				// TextRun element before the modified paragraph, but since it is not necessary for the
 				// information structure, we will delete it.
 				content = strings.TrimSuffix(content, "\n")
-				softLineBreak = true
 			}
 
 			// When checking the API response, inline line breaks seem to be converted as vertical tabs,
@@ -2122,12 +2116,11 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 			content = strings.ReplaceAll(content, "\v", "\n")
 			if content != "" {
 				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
-					Value:         content,
-					Bold:          bold,
-					Italic:        italic,
-					Code:          code,
-					Link:          link,
-					SoftLineBreak: softLineBreak,
+					Value:  content,
+					Bold:   bold,
+					Italic: italic,
+					Code:   code,
+					Link:   link,
 				})
 			}
 
