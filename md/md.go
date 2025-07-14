@@ -514,9 +514,12 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				}
 				continue // Skip empty text fragments
 			}
-
+			value := convert(childNode.Segment.Value(b))
+			if childNode.HardLineBreak() {
+				value += "\n"
+			}
 			frags = append(frags, &deck.Fragment{
-				Value:         convert(childNode.Segment.Value(b)),
+				Value:         value,
 				SoftLineBreak: childNode.SoftLineBreak(),
 				ClassName:     className,
 			})
