@@ -2117,6 +2117,9 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 				softLineBreak = true
 			}
 
+			// When checking the API response, inline line breaks seem to be converted as vertical tabs,
+			// so we will normalize them to line breaks.
+			content = strings.ReplaceAll(content, "\v", "\n")
 			if content != "" {
 				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
 					Value:         content,
