@@ -2025,7 +2025,9 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 	var currentBullet Bullet
 
 	for _, element := range text.TextElements {
-		if element.ParagraphMarker != nil {
+
+		switch {
+		case element.ParagraphMarker != nil:
 			// Start of a new paragraph
 			if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
 				// Check if this is a continuation of a non-bullet paragraph
@@ -2078,39 +2080,13 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 				currentBullet = BulletNone
 				currentParagraph.Bullet = currentBullet
 			}
-		}
+		case element.TextRun != nil:
+			if currentParagraph == nil {
+				continue
+			}
 
-		if element.TextRun != nil && currentParagraph != nil {
 			// Process text content
 			content := element.TextRun.Content
-
-			// Check if this is an empty content that should be treated as SoftLineBreak
-			if content == "" {
-				fragment := &Fragment{
-					Value:         "",
-					SoftLineBreak: true,
-					ClassName:     "",
-				}
-				currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
-				continue
-			}
-
-			// Handle special case where content is just a newline
-			if content == "\n" {
-				// Check if the previous fragment exists and can be marked with SoftLineBreak
-				if len(currentParagraph.Fragments) > 0 {
-					lastFragment := currentParagraph.Fragments[len(currentParagraph.Fragments)-1]
-					if lastFragment.Value != "" && !lastFragment.SoftLineBreak {
-						lastFragment.SoftLineBreak = true
-						continue
-					}
-				}
-				// If no previous fragment or it already has SoftLineBreak, add as newline fragment
-				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
-					Value: "\n",
-				})
-				continue
-			}
 
 			// Get styles from TextRun
 			var bold, italic, code bool
@@ -2134,25 +2110,27 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 			// Process line breaks
 			softLineBreak := false
 			if strings.HasSuffix(content, "\n") {
+				// When checking the API response, a newline is always added to the end of the value of the
+				// TextRun element before the modified paragraph, but since it is not necessary for the
+				// information structure, we will delete it.
 				content = strings.TrimSuffix(content, "\n")
 				softLineBreak = true
 			}
 
-			fragments := []*Fragment{{
-				Value:         content,
-				Bold:          bold,
-				Italic:        italic,
-				Code:          code,
-				Link:          link,
-				SoftLineBreak: softLineBreak,
-			}}
-
-			for _, fragment := range fragments {
-				// Only add non-empty fragments
-				if fragment.Value != "" {
-					currentParagraph.Fragments = append(currentParagraph.Fragments, fragment)
-				}
+			if content != "" {
+				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
+					Value:         content,
+					Bold:          bold,
+					Italic:        italic,
+					Code:          code,
+					Link:          link,
+					SoftLineBreak: softLineBreak,
+				})
 			}
+
+		case element.AutoText != nil:
+			// Only one of ParagraphMarker, TextRun, or AutoText in the element's properties will be non-nil.
+			// Currently, nothing happens with AutoText, but we will prepare a branch just in case.
 		}
 	}
 
