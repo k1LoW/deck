@@ -1,15 +1,15 @@
 # Block Quote
 
-> NOTICE!
+> NOTICE!  
 > Hello **World!**
 
 This is paragraph.
 
-> WARNING!
+> WARNING!  
 > Hello **Space!**
-> > NESTED!
+> > NESTED!  
 > > But flatten
-> > > NESTED NESTED!
+> > > NESTED NESTED!  
 > > > But flatten
 
 <!-- {"layout":"title-and-body"} -->

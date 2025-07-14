@@ -26,7 +26,7 @@
                 "value": "NOTICE"
               },
               {
-                "value": "! "
+                "value": "!\n"
               },
               {
                 "value": "Hello "
@@ -47,7 +47,7 @@
                 "value": "WARNING"
               },
               {
-                "value": "! "
+                "value": "!\n"
               },
               {
                 "value": "Hello "
@@ -68,7 +68,7 @@
                 "value": "NESTED"
               },
               {
-                "value": "! "
+                "value": "!\n"
               },
               {
                 "value": "But flatten"
@@ -86,7 +86,7 @@
                 "value": "NESTED NESTED"
               },
               {
-                "value": "! "
+                "value": "!\n"
               },
               {
                 "value": "But flatten"
