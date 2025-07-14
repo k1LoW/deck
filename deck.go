@@ -1196,7 +1196,10 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			}
 		}
 		for _, fragment := range paragraph.Fragments {
-			fValue := fragment.Value
+			// In Google Slides, pressing Enter creates a paragraph break, and pressing Shift + Enter
+			// creates an inline line break. The inline line break seems to be treated as a vertical
+			// tab around API data, so convert it to a vertical tab.
+			fValue := strings.ReplaceAll(fragment.Value, "\n", "\v")
 			flen := countString(fragment.Value)
 			for _, req := range d.getInlineStyleRequests(fragment) {
 				req.ObjectId = objectID
@@ -1215,11 +1218,8 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		}
 
 		if len(paragraphs) > j+1 {
-			nextParagraph := paragraphs[j+1]
-			if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
-				text += "\n"
-				plen++
-			}
+			text += "\n"
+			plen++
 		}
 
 		if paragraph.Bullet != BulletNone {

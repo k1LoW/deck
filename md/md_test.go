@@ -37,6 +37,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/blockquote.md"},
 		{"../testdata/ignore.md"},
 		{"../testdata/skip.md"},
+		{"../testdata/paragraphs.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
