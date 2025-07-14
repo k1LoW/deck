@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.40.2](https://github.com/k1LoW/deck/compare/v0.40.1...v0.40.2) - 2025-07-14
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/245
+
 ## [v0.40.1](https://github.com/k1LoW/deck/compare/v0.40.0...v0.40.1) - 2025-07-13
 ### Fix bug 🐛
 - fix(md): resolve concurrency issue in code block image generation by @k1LoW in https://github.com/k1LoW/deck/pull/244
