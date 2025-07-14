@@ -450,8 +450,10 @@ type fragment struct {
 func toDeckFragments(frags []*fragment) []*deck.Fragment {
 	deckFrags := make([]*deck.Fragment, len(frags))
 	for i, f := range frags {
-		if i < len(frags)-1 && f.SoftLineBreak {
-			f.Fragment.Value += " " // Append space for soft line breaks
+		if f.SoftLineBreak && i < len(frags)-1 {
+			// In the original Markdown and CommonMark specifications, SoftLineBreak between inline text
+			// elements should be converted to a space character.
+			f.Fragment.Value += " "
 		}
 		deckFrags[i] = f.Fragment
 	}

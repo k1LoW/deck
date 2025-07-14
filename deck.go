@@ -2103,13 +2103,10 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 				}
 			}
 
-			// Process line breaks
-			if strings.HasSuffix(content, "\n") {
-				// When checking the API response, a newline is always added to the end of the value of the
-				// TextRun element before the modified paragraph, but since it is not necessary for the
-				// information structure, we will delete it.
-				content = strings.TrimSuffix(content, "\n")
-			}
+			// When checking the API response, a newline is always added to the end of the value of the
+			// TextRun element before the modified paragraph, but since it is not necessary for the
+			// information structure, we will delete it.
+			content = strings.TrimSuffix(content, "\n")
 
 			// When checking the API response, inline line breaks seem to be converted as vertical tabs,
 			// so we will normalize them to line breaks.
