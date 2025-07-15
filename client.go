@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -27,10 +28,30 @@ var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
 
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/k1LoW/deck)"
 
+// HTTP client cache for reusing clients with the same configuration
+// This is primarily for parallel test execution to avoid creating multiple clients
+var httpClientCache sync.Map
+
+// generateConfigKey creates a cache key from OAuth2 config
+func generateConfigKey(cfg *oauth2.Config) string {
+	// Use client ID and scopes as the key since these define the client behavior
+	key := fmt.Sprintf("%s:%v", cfg.ClientID, cfg.Scopes)
+	// Hash the key to avoid very long cache keys
+	hash := sha256.Sum256([]byte(key))
+	return base64.URLEncoding.EncodeToString(hash[:])
+}
+
 func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.Client, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+
+	// Check cache first
+	configKey := generateConfigKey(cfg)
+	if cachedClient, exists := httpClientCache.Load(configKey); exists {
+		return cachedClient.(*http.Client), nil
+	}
+
 	tokenPath := filepath.Join(config.StateHomePath(), "token.json")
 	token, err := d.tokenFromFile(tokenPath)
 	if err != nil {
@@ -84,7 +105,12 @@ func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.C
 	retryClient.RetryWaitMax = 30 * time.Second
 	retryClient.Logger = newAPILogger(d.logger)
 
-	return retryClient.StandardClient(), nil
+	standardClient := retryClient.StandardClient()
+
+	// Cache the client
+	httpClientCache.Store(configKey, standardClient)
+
+	return standardClient, nil
 }
 
 func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (_ *oauth2.Token, err error) {
