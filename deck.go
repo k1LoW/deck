@@ -1704,7 +1704,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 
 	for _, element := range currentSlide.PageElements {
 		// copy images from the current slide to the new slide
-		if element.Image != nil {
+		if element.Image != nil && element.Description != descriptionImageFromMarkdown {
 			req.Requests = append(req.Requests, &slides.Request{
 				CreateImage: &slides.CreateImageRequest{
 					ElementProperties: &slides.PageElementProperties{
@@ -1717,7 +1717,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 			})
 		}
 		// copy shapes from the current slide to the new slide
-		if element.Shape != nil && element.Shape.Placeholder == nil {
+		if element.Shape != nil && element.Shape.Placeholder == nil && element.Description != descriptionTextboxFromMarkdown {
 			type paragraphInfo struct {
 				startIndex   int64
 				endIndex     int64
