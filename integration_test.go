@@ -27,15 +27,10 @@ const (
 )
 
 // global presentation pool instance
-var (
-	presentationPool     chan string
-	presentationPoolOnce sync.Once
-)
+var presentationPool chan string
 
 // setupPresentationPool creates a pool of presentations for parallel tests
-func setupPresentationPool(t *testing.T, ctx context.Context) {
-	t.Helper()
-
+func setupPresentationPool(ctx context.Context) ([]string, error) {
 	// Get parallel count from GOMAXPROCS or test.parallel flag
 	parallelCount := min(runtime.GOMAXPROCS(0), 5)
 
@@ -69,28 +64,47 @@ func setupPresentationPool(t *testing.T, ctx context.Context) {
 			mu.Unlock()
 
 			presentationPool <- presentationID
-			t.Logf("Created presentation %d: https://docs.google.com/presentation/d/%s", i, presentationID)
 			return nil
 		})
 	}
 
 	if err := eg.Wait(); err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 
-	t.Cleanup(func() {
-		var wg sync.WaitGroup
-		for _, id := range created {
-			wg.Add(1)
-			go func(presentationID string) {
-				defer wg.Done()
-				if err := deck.Delete(context.Background(), presentationID); err != nil {
-					t.Logf("Failed to delete presentation %s: %v", presentationID, err)
-				}
-			}(id)
-		}
-		wg.Wait()
-	})
+	return created, nil
+}
+
+// TestMain runs setup and cleanup for integration tests
+func TestMain(m *testing.M) {
+	if os.Getenv("TEST_INTEGRATION") == "" {
+		os.Exit(m.Run())
+	}
+
+	// Setup presentation pool
+	ctx := context.Background()
+	createdPresentations, err := setupPresentationPool(ctx)
+	if err != nil {
+		fmt.Printf("Failed to setup presentation pool: %v\n", err)
+		os.Exit(1)
+	}
+
+	code := m.Run()
+
+	// Cleanup presentations after all tests
+	var wg sync.WaitGroup
+	for _, id := range createdPresentations {
+		wg.Add(1)
+		go func(presentationID string) {
+			defer wg.Done()
+			if err := deck.Delete(context.Background(), presentationID); err != nil {
+				fmt.Printf("Failed to delete presentation %s: %v\n", presentationID, err)
+			}
+		}(id)
+	}
+	wg.Wait()
+
+	os.Exit(code)
 }
 
 // acquirePresentation gets a presentation ID from the pool
@@ -124,11 +138,6 @@ func TestApplyMarkdown(t *testing.T) {
 	}
 
 	ctx := context.Background()
-
-	// Setup presentation pool once
-	presentationPoolOnce.Do(func() {
-		setupPresentationPool(t, ctx)
-	})
 
 	tests := []struct {
 		in string
@@ -249,11 +258,6 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 	}
 
 	ctx := context.Background()
-
-	// Setup presentation pool once
-	presentationPoolOnce.Do(func() {
-		setupPresentationPool(t, ctx)
-	})
 
 	tests := []struct {
 		in string
