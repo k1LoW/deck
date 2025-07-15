@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.42.0](https://github.com/k1LoW/deck/compare/v0.41.0...v0.42.0) - 2025-07-15
+### New Features 🎉
+- feat: HTML element styling feature by @Songmu in https://github.com/k1LoW/deck/pull/225
+
 ## [v0.41.0](https://github.com/k1LoW/deck/compare/v0.40.2...v0.41.0) - 2025-07-15
 ### New Features 🎉
 - feat: support HardLineBreak and remove `deck.Fragment.SoftLineBreak` field by @Songmu in https://github.com/k1LoW/deck/pull/247
