@@ -1,14 +1,8 @@
 [
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
-      "Nested List"
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "no nest"
+      "Nested List: no nested"
     ],
     "bodies": [
       {
@@ -42,47 +36,9 @@
     ]
   },
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
-      "4-space padding"
-    ],
-    "bodies": [
-      {
-        "paragraphs": [
-          {
-            "fragments": [
-              {
-                "value": "A"
-              }
-            ],
-            "bullet": "-"
-          },
-          {
-            "fragments": [
-              {
-                "value": "B"
-              }
-            ],
-            "bullet": "-",
-            "nesting": 1
-          },
-          {
-            "fragments": [
-              {
-                "value": "C"
-              }
-            ],
-            "bullet": "-",
-            "nesting": 2
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "2-space padding"
+      "Nested List: 4-space padding"
     ],
     "bodies": [
       {
@@ -118,9 +74,47 @@
     ]
   },
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
-      "Nested in the middle"
+      "Nested List: 2-space padding"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "A"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "B"
+              }
+            ],
+            "bullet": "-",
+            "nesting": 1
+          },
+          {
+            "fragments": [
+              {
+                "value": "C"
+              }
+            ],
+            "bullet": "-",
+            "nesting": 2
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "title-and-body",
+    "titles": [
+      "Nested List: Nested in the middle"
     ],
     "bodies": [
       {

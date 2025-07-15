@@ -30,9 +30,10 @@ jobs:
       - name: Run lint
         uses: reviewdog/action-golangci-lint@f9bba13753278f6a73b27a56a3ffb1bfda90ed71 # v2.8.0
         with:
-          fail_on_error: true
+          fail_level: error
           go_version_file: go.mod
           golangci_lint_flags: --timeout=5m
+          cache: false
 
       - name: Run tests
         run: make ci

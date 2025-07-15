@@ -1,14 +1,8 @@
 [
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
       "List and paragraph"
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "Title"
     ],
     "bodies": [
       {
@@ -42,13 +36,11 @@
           {
             "fragments": [
               {
-                "value": "C",
-                "bold": true,
-                "soft_line_break": true
+                "value": "C ",
+                "bold": true
               },
               {
-                "value": "D",
-                "soft_line_break": true
+                "value": "D "
               },
               {
                 "value": "E"

@@ -4,6 +4,7 @@ go 1.23.10
 
 require (
 	github.com/briandowns/spinner v1.23.2
+	github.com/chromedp/chromedp v0.13.7
 	github.com/corona10/goimagehash v1.1.0
 	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.9.0
@@ -15,6 +16,7 @@ require (
 	github.com/k1LoW/exec v0.3.0
 	github.com/k1LoW/expand v0.16.2
 	github.com/k1LoW/tail v0.1.0
+	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/mattn/go-colorable v0.1.14
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/samber/slog-multi v1.4.1
@@ -22,8 +24,8 @@ require (
 	github.com/tenntenn/golden v0.5.5
 	github.com/yuin/goldmark v1.7.12
 	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.15.0
-	google.golang.org/api v0.240.0
+	golang.org/x/sync v0.16.0
+	google.golang.org/api v0.241.0
 )
 
 require (
@@ -31,10 +33,16 @@ require (
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	github.com/buildkite/interpolate v0.1.5 // indirect
+	github.com/chromedp/cdproto v0.0.0-20250403032234-65de8f5d025b // indirect
+	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/expr-lang/expr v1.17.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/go-json-experiment/json v0.0.0-20250211171154-1ae217ad3535 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/gobwas/httphead v0.1.0 // indirect
+	github.com/gobwas/pool v0.2.1 // indirect
+	github.com/gobwas/ws v1.4.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.6 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.2 // indirect
@@ -42,6 +50,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/mapfs v0.0.0-20210615234106-095c008854e6 // indirect
 	github.com/josharian/txtarfs v0.0.0-20240408113805-5dc76b8fe6bf // indirect
+	github.com/lestrrat-go/option v1.0.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/samber/lo v1.51.0 // indirect

@@ -1,9 +1,5 @@
 # List and paragraph
 
----
-
-# Title
-
 - A
 - B
 
@@ -16,3 +12,4 @@ E<br>*F*
 - G
 - H
 
+<!-- {"layout":"title-and-body"} -->

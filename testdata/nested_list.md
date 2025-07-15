@@ -1,33 +1,38 @@
-# Nested List
-
----
-
-# no nest
+# Nested List: no nested
 
 - A
 - B
 - C
 
+<!-- {"layout":"title-and-body"} -->
+
 ---
 
-# 4-space padding
+# Nested List: 4-space padding
 
 - A
     - B
         - C
 
+<!-- {"layout":"title-and-body"} -->
+
 ---
 
-# 2-space padding
+# Nested List: 2-space padding
 
 - A
   - B
     - C
+    
+<!-- {"layout":"title-and-body"} -->
 
 ---
 
-# Nested in the middle
+# Nested List: Nested in the middle
 
 - A
   - B
 - C
+
+<!-- {"layout":"title-and-body"} -->
+

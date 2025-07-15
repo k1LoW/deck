@@ -1,14 +1,8 @@
 [
   {
-    "layout": "",
+    "layout": "title-and-body",
     "titles": [
       "Inline Style"
-    ]
-  },
-  {
-    "layout": "",
-    "titles": [
-      "Title"
     ],
     "subtitles": [
       "Hello style"

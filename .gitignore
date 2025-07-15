@@ -1,6 +1,7 @@
 coverage.out
 deck
 *.json
+*.diff.png
 *~lock~*
 .DS_Store
 md/testdata/fuzz

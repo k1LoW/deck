@@ -1,0 +1,38 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "paragraphs"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Paragraph1"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Paragraph2\n"
+              },
+              {
+                "value": "inline line break"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Paragraph3"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

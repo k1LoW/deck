@@ -191,14 +191,10 @@ func TestImageString(t *testing.T) {
 				t.Fatalf("Failed to load image: %v", err)
 			}
 
-			str := img.String()
-			if str == "" {
-				t.Error("String() method returned empty string")
-			}
+			got := img.String()
 
-			// Check if it starts with data:image/xxx;base64,
 			expectedPrefix := fmt.Sprintf("data:%s;base64,", img.mimeType)
-			if len(str) < len(expectedPrefix) || str[:len(expectedPrefix)] != expectedPrefix {
+			if len(got) < len(expectedPrefix) || got[:len(expectedPrefix)] != expectedPrefix {
 				t.Errorf("String() format is incorrect. Expected prefix: %s", expectedPrefix)
 			}
 		})

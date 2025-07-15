@@ -27,6 +27,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -275,48 +276,42 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 
 	logger.Info("watching for changes", slog.String("file", absPath))
 
+	var events []fsnotify.Event
 	for {
 		select {
 		case event, ok := <-watcher.Events:
 			if !ok {
 				return nil
 			}
+			// drain all stacked events
+			events = append(events, event)
 
-			if filepath.Base(event.Name) != fileName {
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			logger.Error("watcher error", slog.String("error", err.Error()))
+
+		case <-ctx.Done():
+			return nil
+		case <-time.After(time.Second):
+			fileModified := slices.ContainsFunc(events, func(event fsnotify.Event) bool {
+				return filepath.Base(event.Name) == fileName &&
+					(event.Op&fsnotify.Write == fsnotify.Write ||
+						event.Op&fsnotify.Create == fsnotify.Create)
+			})
+			events = nil
+			if !fileModified {
 				continue
 			}
+			logger.Info("file modified", slog.String("file", fileName))
 
-			if event.Op&fsnotify.Write != fsnotify.Write &&
-				event.Op&fsnotify.Create != fsnotify.Create {
+			newMD, err := md.ParseFile(filePath)
+			if err != nil {
+				logger.Error("failed to parse file", slog.String("error", err.Error()))
 				continue
 			}
-
-			logger.Info("file modified", slog.String("file", event.Name))
-
-			var newContents md.Contents
-			var parseErr error
-
-			for retry := range 3 {
-				var newMD *md.MD
-				newMD, parseErr = md.ParseFile(filePath)
-				if parseErr == nil {
-					newContents = newMD.Contents
-					break
-				}
-
-				logger.Warn("failed to parse file, retrying...",
-					slog.String("error", parseErr.Error()),
-					slog.Int("retry", retry+1))
-
-				time.Sleep(100 * time.Millisecond)
-			}
-
-			if parseErr != nil {
-				logger.Error("failed to parse file after retries", slog.String("error", parseErr.Error()))
-				continue
-			}
-
-			changedPages := md.DiffContents(oldContents, newContents)
+			changedPages := md.DiffContents(oldContents, newMD.Contents)
 
 			if len(changedPages) == 0 {
 				logger.Info("no changes detected")
@@ -324,7 +319,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
-			slides, err := newContents.ToSlides(ctx, codeBlockToImageCmd)
+			slides, err := newMD.Contents.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))
 				continue
@@ -336,16 +331,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 
 			logger.Info("applied changes", slog.Any("pages", changedPages))
 
-			oldContents = newContents
-
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return nil
-			}
-			logger.Error("watcher error", slog.String("error", err.Error()))
-
-		case <-ctx.Done():
-			return nil
+			oldContents = newMD.Contents
 		}
 	}
 }

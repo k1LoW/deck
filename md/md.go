@@ -48,6 +48,8 @@ type MD struct {
 type Frontmatter struct {
 	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
+	// Whether to display line breaks in the document as line breaks
+	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 }
 
 // Contents represents a collection of slide contents.
@@ -120,10 +122,14 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 			frontmatter = nil
 		}
 	}
+	var breaks bool
+	if frontmatter != nil {
+		breaks = frontmatter.Breaks
+	}
 
 	var contents Contents
 	for _, bpage := range bpages {
-		c, err := ParseContent(baseDir, bpage)
+		c, err := ParseContent(baseDir, bpage, breaks)
 		if err != nil {
 			return nil, err
 		}
@@ -141,7 +147,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
+func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -176,7 +182,7 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 
 	// Second walk: parse content with determined title level
 	content := &Content{}
-	if err := walkBodies(doc, baseDir, b, content, titleLevel); err != nil {
+	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
 	}
 
@@ -208,20 +214,24 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
 			mu := sync.Mutex{}
 			eg := errgroup.Group{}
-			for _, codeBlock := range content.CodeBlocks {
+			blockMap := make(map[int]*deck.Image)
+			for i, codeBlock := range content.CodeBlocks {
 				eg.Go(func() error {
 					image, err := genCodeImage(ctx, codeBlockToImageCmd, codeBlock)
 					if err != nil {
 						return err
 					}
 					mu.Lock()
-					images = append(images, image)
+					blockMap[i] = image
 					mu.Unlock()
 					return nil
 				})
 			}
 			if err := eg.Wait(); err != nil {
 				return nil, fmt.Errorf("failed to convert code blocks to images: %w", err)
+			}
+			for i := range content.CodeBlocks {
+				images = append(images, blockMap[i])
 			}
 		}
 		slides[i] = &deck.Slide{
@@ -232,13 +242,14 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 			Subtitles:   content.Subtitles,
 			Bodies:      content.Bodies,
 			Images:      images,
+			BlockQuotes: content.BlockQuotes,
 			SpeakerNote: strings.Join(content.Comments, "\n\n"),
 		}
 	}
 	return slides, nil
 }
 
-func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int) error {
+func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int, breaks bool) error {
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
@@ -261,13 +272,10 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					}
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-						Fragments: []*deck.Fragment{
-							{
-								Value:         convert(v.Lines().Value(b)),
-								Bold:          true,
-								SoftLineBreak: false,
-							},
-						},
+						Fragments: []*deck.Fragment{{
+							Value: convert(v.Lines().Value(b)),
+							Bold:  true,
+						}},
 						Bullet:  deck.BulletNone,
 						Nesting: 0,
 					})
@@ -306,7 +314,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-					Fragments: frags,
+					Fragments: toDeckFragments(frags, breaks),
 					Bullet:    currentListMarker,
 					Nesting:   nesting,
 				})
@@ -324,7 +332,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-					Fragments: frags,
+					Fragments: toDeckFragments(frags, breaks),
 					Bullet:    deck.BulletNone,
 					Nesting:   0,
 				})
@@ -342,13 +350,10 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					content.Comments = append(content.Comments, block)
 				} else {
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-						Fragments: []*deck.Fragment{
-							{
-								Value:         convert(bytes.Trim(v.Lines().Value(b), " \n")),
-								Bold:          false,
-								SoftLineBreak: false,
-							},
-						},
+						Fragments: []*deck.Fragment{{
+							Value: convert(bytes.Trim(v.Lines().Value(b), " \n")),
+							Bold:  false,
+						}},
 						Bullet:  deck.BulletNone,
 						Nesting: 0,
 					})
@@ -368,7 +373,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 			case *ast.Blockquote:
 				blockQuoteContent := &Content{}
 				for v := n.FirstChild(); v != nil; v = v.NextSibling() {
-					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1); err != nil {
+					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1, breaks); err != nil {
 						return ast.WalkStop, err
 					}
 				}
@@ -451,14 +456,38 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 	return deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(b))
 }
 
+type fragment struct {
+	*deck.Fragment
+	SoftLineBreak bool
+}
+
+func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
+	deckFrags := make([]*deck.Fragment, len(frags))
+	for i, frag := range frags {
+		f := frag.Fragment
+		if frag.SoftLineBreak && i < len(frags)-1 {
+			// In the original Markdown and CommonMark specifications, SoftLineBreak between inline text
+			// elements should be converted to a space character.
+			// If breaks is true, it should be converted to a newline character.
+			breakChar := " "
+			if breaks {
+				breakChar = "\n"
+			}
+			f.Value += breakChar
+		}
+		deckFrags[i] = f
+	}
+	return deckFrags
+}
+
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []*deck.Image, err error) {
+func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck.Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
 
-	var frags []*deck.Fragment
+	var frags []*fragment
 	var images []*deck.Image
 	if n == nil {
 		return frags, images, nil
@@ -472,15 +501,16 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				return nil, nil, err
 			}
 			for _, child := range children {
-				frags = append(frags, &deck.Fragment{
-					Value:         child.Value,
-					Link:          child.Link,
-					Bold:          (childNode.Level == 2) || child.Bold,
-					Italic:        (childNode.Level == 1) || child.Italic,
-					Code:          child.Code,
+				frags = append(frags, &fragment{
 					SoftLineBreak: child.SoftLineBreak,
-					StyleName:     styleName,
-				})
+					Fragment: &deck.Fragment{
+						Value:     child.Value,
+						Link:      child.Link,
+						Bold:      (childNode.Level == 2) || child.Bold,
+						Italic:    (childNode.Level == 1) || child.Italic,
+						Code:      child.Code,
+						StyleName: styleName,
+					}})
 			}
 			images = append(images, childImages...)
 		case *ast.Link:
@@ -491,24 +521,26 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 			if len(children) == 0 {
 				continue
 			}
-			frags = append(frags, &deck.Fragment{
-				Value:         children[0].Value,
-				Link:          convert(childNode.Destination),
-				Bold:          children[0].Bold,
-				Italic:        children[0].Italic,
-				Code:          children[0].Code,
+			frags = append(frags, &fragment{
 				SoftLineBreak: children[0].SoftLineBreak,
-				StyleName:     styleName,
-			})
+				Fragment: &deck.Fragment{
+					Value:     children[0].Value,
+					Link:      convert(childNode.Destination),
+					Bold:      children[0].Bold,
+					Italic:    children[0].Italic,
+					Code:      children[0].Code,
+					StyleName: styleName,
+				}})
 			images = append(images, childImages...)
 		case *ast.AutoLink:
 			url := string(childNode.URL(b))
 			label := string(childNode.Label(b))
-			frags = append(frags, &deck.Fragment{
-				Value:     label,
-				Link:      url,
-				StyleName: styleName,
-			})
+			frags = append(frags, &fragment{
+				Fragment: &deck.Fragment{
+					Value:     label,
+					Link:      url,
+					StyleName: styleName,
+				}})
 		case *ast.Text:
 			v := convert(childNode.Segment.Value(b))
 			if v == "" {
@@ -517,12 +549,16 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 				}
 				continue // Skip empty text fragments
 			}
-
-			frags = append(frags, &deck.Fragment{
-				Value:         convert(childNode.Segment.Value(b)),
+			value := convert(childNode.Segment.Value(b))
+			if childNode.HardLineBreak() {
+				value += "\n"
+			}
+			frags = append(frags, &fragment{
 				SoftLineBreak: childNode.SoftLineBreak(),
-				StyleName:     styleName,
-			})
+				Fragment: &deck.Fragment{
+					Value:     value,
+					StyleName: styleName,
+				}})
 		case *ast.Image:
 			imageLink := string(childNode.Destination)
 			if !strings.Contains(imageLink, "://") && !filepath.IsAbs(imageLink) {
@@ -550,12 +586,12 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 
 			// <br> tag - add a newline fragment
 			if strings.HasPrefix(htmlContent, "<br") {
-				frags = append(frags, &deck.Fragment{
-					Value:         "\n",
-					Bold:          false,
-					SoftLineBreak: false,
-					StyleName:     styleName,
-				})
+				frags = append(frags, &fragment{
+					Fragment: &deck.Fragment{
+						Value:     "\n",
+						Bold:      false,
+						StyleName: styleName,
+					}})
 				styleName = "" // Reset class attribute
 				continue
 			}
@@ -582,38 +618,38 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*deck.Fragment, _ []
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
-				frags = append(frags, &deck.Fragment{
+				frags = append(frags, &fragment{Fragment: &deck.Fragment{
 					Value:     convert(childNode.Value),
 					StyleName: styleName,
-				})
+				}})
 			} else {
 				// Fallback for empty strings
-				frags = append(frags, &deck.Fragment{
+				frags = append(frags, &fragment{Fragment: &deck.Fragment{
 					Value: "",
-				})
+				}})
 			}
 		case *ast.CodeSpan:
 			children, childImages, err := toFragments(baseDir, b, childNode)
 			if err != nil {
 				return nil, nil, err
 			}
-			frags = append(frags, &deck.Fragment{
-				Value:         children[0].Value,
-				Link:          children[0].Link,
-				Bold:          children[0].Bold,
-				Italic:        children[0].Italic,
-				Code:          true,
+			frags = append(frags, &fragment{
 				SoftLineBreak: children[0].SoftLineBreak,
-				StyleName:     styleName,
-			})
+				Fragment: &deck.Fragment{
+					Value:     children[0].Value,
+					Link:      children[0].Link,
+					Bold:      children[0].Bold,
+					Italic:    children[0].Italic,
+					Code:      true,
+					StyleName: styleName,
+				}})
 			images = append(images, childImages...)
 		default:
 			// For all other node types, return a newline to match original behavior
-			frags = append(frags, &deck.Fragment{
-				Value:         "\n",
-				Bold:          false,
-				SoftLineBreak: false,
-			})
+			frags = append(frags, &fragment{Fragment: &deck.Fragment{
+				Value: "\n",
+				Bold:  false,
+			}})
 		}
 	}
 	return frags, images, nil

@@ -51,13 +51,12 @@ type Paragraph struct {
 
 // Fragment represents a text fragment within a paragraph.
 type Fragment struct {
-	Value         string `json:"value"`
-	Bold          bool   `json:"bold,omitempty"`
-	Italic        bool   `json:"italic,omitempty"`
-	Link          string `json:"link,omitempty"`
-	Code          bool   `json:"code,omitempty"`
-	SoftLineBreak bool   `json:"soft_line_break,omitempty"`
-	StyleName     string `json:"style_name,omitempty"`
+	Value     string `json:"value"`
+	Bold      bool   `json:"bold,omitempty"`
+	Italic    bool   `json:"italic,omitempty"`
+	Link      string `json:"link,omitempty"`
+	Code      bool   `json:"code,omitempty"`
+	StyleName string `json:"style_name,omitempty"`
 }
 
 type BlockQuote struct {
@@ -113,8 +112,12 @@ func NewImage(pathOrURL string) (_ *Image, err error) {
 		client := &http.Client{
 			Timeout: 30 * time.Second,
 		}
-
-		res, err := client.Get(pathOrURL)
+		req, err := http.NewRequest("GET", pathOrURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch image from URL %s: %w", pathOrURL, err)
+		}
+		req.Header.Set("User-Agent", userAgent)
+		res, err := client.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch image from URL %s: %w", pathOrURL, err)
 		}
@@ -158,7 +161,7 @@ func NewImageFromMarkdown(pathOrURL string) (_ *Image, err error) {
 	}()
 	i, err := NewImage(pathOrURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create image from code block: %w", err)
+		return nil, fmt.Errorf("failed to create image from path or URL: %w", err)
 	}
 	i.fromMarkdown = true
 	return i, nil

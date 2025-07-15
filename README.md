@@ -47,6 +47,16 @@ $ deck new --from yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
 xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
+You can also specify a markdown file:
+
+```console
+$ deck new presentation.md --title "Talk about deck"
+Applied frontmatter to presentation.md
+xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+```
+
+This will create (or update) the specified markdown file with frontmatter containing the presentation ID and title.
+
 ### Write desk in markdown
 
 The slide pages are represented by dividing them with horizontal lines `---`.
@@ -112,6 +122,7 @@ The frontmatter must be:
 
 - `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title`: title of the presentation. When specified, you can use the simplified command syntax.
+- `breaks`: (boolean) Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
 
 Note: This feature is reserved for future enhancements.
 
@@ -172,6 +183,27 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Code ( <code>\`code\`</code> )
 - `<br>` (for newline)
 - Image (`![Image](path/to/image.png)` )
+- Block quote ( `> block quote` )
+
+#### Line break handling
+
+By default, single line breaks in markdown are rendered as spaces in the slides, following the original Markdown and CommonMark specifications. You can change this behavior by setting `breaks: true` in the frontmatter:
+
+```markdown
+---
+breaks: true
+---
+
+This text has a
+line break that will
+render as an actual line break.
+```
+
+When `breaks: true` is set, line breaks in the markdown source are preserved as line breaks in the rendered slides, similar to how GitHub renders markdown on their website.
+
+When `breaks: false` (default), you can still create line breaks by using:
+- Hard line breaks: add two spaces at the end of a line (standard Markdown/CommonMark syntax)
+- HTML: use `<br>` tags
 
 #### Style for syntax
 
@@ -186,6 +218,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
 | HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, etc. ) |
+| `blockquote` | style for block quote. |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
 #### Code blocks to images

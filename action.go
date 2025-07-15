@@ -1,7 +1,6 @@
 package deck
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -19,7 +18,7 @@ const (
 	actionTypeDelete                   // Delete slide at a specific index (not used in this diff)
 )
 
-func (at actionType) String() string {
+func (at actionType) String() string { //nostyle:recvtype
 	switch at {
 	case actionTypeAppend:
 		return "append"
@@ -598,6 +597,10 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		if len(beforeSlide.Images) > 0 && len(afterSlide.Images) > 0 && imagesEqual(beforeSlide.Images, afterSlide.Images) {
 			score += 40
 		}
+
+		if len(beforeSlide.BlockQuotes) > 0 && len(afterSlide.BlockQuotes) > 0 && blockQuotesEqual(beforeSlide.BlockQuotes, afterSlide.BlockQuotes) {
+			score += 30
+		}
 	}
 
 	return score
@@ -635,37 +638,6 @@ func getSimilarityForMapping(beforeSlide, afterSlide *Slide, beforeIndex, afterI
 	}
 
 	return baseScore + positionBonus
-}
-
-func slidesEqual(slide1, slide2 *Slide) bool {
-	if slide1 == nil || slide2 == nil {
-		return slide1 == slide2
-	}
-
-	// Perfect match check using JSON comparison
-	slide1B, err1 := json.Marshal(slide1)
-	if err1 != nil {
-		return false
-	}
-
-	slide2B, err2 := json.Marshal(slide2)
-	if err2 != nil {
-		return false
-	}
-
-	return bytes.Equal(slide1B, slide2B)
-}
-
-func titlesEqual(titles1, titles2 []string) bool {
-	if len(titles1) != len(titles2) {
-		return false
-	}
-	for i := range titles1 {
-		if titles1[i] != titles2[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // generateUpdateActions generates update actions.
@@ -884,59 +856,6 @@ func generateMoveActions(before *Slides, after Slides, mapping *map[int]int) []*
 	*before = finalSlides
 
 	return actions
-}
-
-func subtitlesEqual(subtitles1, subtitles2 []string) bool {
-	if len(subtitles1) != len(subtitles2) {
-		return false
-	}
-	for i := range subtitles1 {
-		if subtitles1[i] != subtitles2[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func bodiesEqual(bodies1, bodies2 []*Body) bool {
-	if len(bodies1) != len(bodies2) {
-		return false
-	}
-
-	bodies1B, err := json.Marshal(bodies1)
-	if err != nil {
-		return false
-	}
-
-	bodies2B, err := json.Marshal(bodies2)
-	if err != nil {
-		return false
-	}
-
-	return bytes.Equal(bodies1B, bodies2B)
-}
-
-func imagesEqual(images1, images2 []*Image) bool {
-	if len(images1) != len(images2) {
-		return false
-	}
-	var imageChecksums1 []uint32
-	var imageChecksums2 []uint32
-	for _, img := range images1 {
-		if img == nil {
-			continue // Skip nil images
-		}
-		imageChecksums1 = append(imageChecksums1, img.Checksum())
-	}
-	for _, img := range images2 {
-		if img == nil {
-			continue // Skip nil images
-		}
-		imageChecksums2 = append(imageChecksums2, img.Checksum())
-	}
-	slices.Sort(imageChecksums1)
-	slices.Sort(imageChecksums2)
-	return slices.Equal(imageChecksums1, imageChecksums2)
 }
 
 // applyDeleteMarks applies delete marks from after slides to corresponding before slides

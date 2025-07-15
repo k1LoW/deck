@@ -1,5 +1,50 @@
 # Changelog
 
+## [v0.41.0](https://github.com/k1LoW/deck/compare/v0.40.2...v0.41.0) - 2025-07-15
+### New Features 🎉
+- feat: support HardLineBreak and remove `deck.Fragment.SoftLineBreak` field by @Songmu in https://github.com/k1LoW/deck/pull/247
+- feat: support proper paragraph separation in slide by @Songmu in https://github.com/k1LoW/deck/pull/251
+- feat: Add breaks frontmatter option to control line break rendering by @Songmu in https://github.com/k1LoW/deck/pull/254
+- chore: Merge UpdateTextStyleRequest into one by @Songmu in https://github.com/k1LoW/deck/pull/256
+### Fix bug 🐛
+- fix: does not copy images/shapes from markdown when update layout by @k1LoW in https://github.com/k1LoW/deck/pull/253
+### Other Changes
+- chore: use slices package to simplify code by @Songmu in https://github.com/k1LoW/deck/pull/249
+- chore: add client.go and move http client related code into it by @Songmu in https://github.com/k1LoW/deck/pull/257
+
+## [v0.40.2](https://github.com/k1LoW/deck/compare/v0.40.1...v0.40.2) - 2025-07-14
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/245
+
+## [v0.40.1](https://github.com/k1LoW/deck/compare/v0.40.0...v0.40.1) - 2025-07-13
+### Fix bug 🐛
+- fix(md): resolve concurrency issue in code block image generation by @k1LoW in https://github.com/k1LoW/deck/pull/244
+### Other Changes
+- feat(compare): add sorting logic for BlockQuotes in blockQuotesEqual function by @k1LoW in https://github.com/k1LoW/deck/pull/240
+- fix(compare): improve paragraph equality logic / reduce testdata(markdown pages) by @k1LoW in https://github.com/k1LoW/deck/pull/243
+
+## [v0.40.0](https://github.com/k1LoW/deck/compare/v0.39.0...v0.40.0) - 2025-07-13
+### New Features 🎉
+- feat: support block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/208
+- fix(compare): move comparison logic to a new file and simplify equality check by @k1LoW in https://github.com/k1LoW/deck/pull/238
+- feat(deck): add affine transform for images and block quotes by @k1LoW in https://github.com/k1LoW/deck/pull/239
+### Other Changes
+- test: improve integration test by @k1LoW in https://github.com/k1LoW/deck/pull/232
+- chore: add linter `funcorder` by @k1LoW in https://github.com/k1LoW/deck/pull/235
+- chore: `define (*Deck) getInlineStyleElements(*deck.Fragment)` and refactoring by @Songmu in https://github.com/k1LoW/deck/pull/236
+
+## [v0.39.0](https://github.com/k1LoW/deck/compare/v0.38.0...v0.39.0) - 2025-07-10
+### New Features 🎉
+- perf: add debounce function to avoid busy loop while watching by @Songmu in https://github.com/k1LoW/deck/pull/227
+### Other Changes
+- chore: fix lint errors and fix reviewdog/action-golangci-lint by @Songmu in https://github.com/k1LoW/deck/pull/229
+- chore: set User-Agent to HTTP Request for crawling manner by @Songmu in https://github.com/k1LoW/deck/pull/228
+
+## [v0.38.0](https://github.com/k1LoW/deck/compare/v0.37.1...v0.38.0) - 2025-07-09
+### New Features 🎉
+- feat(cmd): add markdown file support to deck new command by @Songmu in https://github.com/k1LoW/deck/pull/223
+- perf: optimize watch process by @Songmu in https://github.com/k1LoW/deck/pull/226
+
 ## [v0.37.1](https://github.com/k1LoW/deck/compare/v0.37.0...v0.37.1) - 2025-07-08
 ### Fix bug 🐛
 - fix: improve single-character list item rendering by @Songmu in https://github.com/k1LoW/deck/pull/220

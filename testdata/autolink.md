@@ -11,3 +11,5 @@ Naked URLs (should NOT be converted):
 Mixed content:
 - Visit <https://github.com> for more info
 - Or go to https://github.com directly
+
+<!-- {"layout":"title-and-body"} -->
