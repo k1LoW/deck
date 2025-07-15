@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.41.0](https://github.com/k1LoW/deck/compare/v0.40.2...v0.41.0) - 2025-07-15
+### New Features 🎉
+- feat: support HardLineBreak and remove `deck.Fragment.SoftLineBreak` field by @Songmu in https://github.com/k1LoW/deck/pull/247
+- feat: support proper paragraph separation in slide by @Songmu in https://github.com/k1LoW/deck/pull/251
+- feat: Add breaks frontmatter option to control line break rendering by @Songmu in https://github.com/k1LoW/deck/pull/254
+- chore: Merge UpdateTextStyleRequest into one by @Songmu in https://github.com/k1LoW/deck/pull/256
+### Fix bug 🐛
+- fix: does not copy images/shapes from markdown when update layout by @k1LoW in https://github.com/k1LoW/deck/pull/253
+### Other Changes
+- chore: use slices package to simplify code by @Songmu in https://github.com/k1LoW/deck/pull/249
+- chore: add client.go and move http client related code into it by @Songmu in https://github.com/k1LoW/deck/pull/257
+
 ## [v0.40.2](https://github.com/k1LoW/deck/compare/v0.40.1...v0.40.2) - 2025-07-14
 ### Other Changes
 - chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/245
