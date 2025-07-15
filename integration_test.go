@@ -194,7 +194,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/list_simple.md"},
 		{"testdata/list_and_paragraph.md"},
 		{"testdata/paragraph_and_list.md"},
-		//{"testdata/paragraphs.md"},
+		{"testdata/paragraphs.md"},
 		{"testdata/bold_and_italic.md"},
 		{"testdata/emoji.md"},
 		{"testdata/code.md"},
@@ -202,7 +202,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
 		{"testdata/nested_list.md"},
-		//{"testdata/images.md"},
+		{"testdata/images.md"},
 		//{"testdata/blockquote.md"},
 	}
 
