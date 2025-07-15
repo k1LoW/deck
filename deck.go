@@ -1196,7 +1196,10 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			}
 		}
 		for _, fragment := range paragraph.Fragments {
-			fValue := fragment.Value
+			// In Google Slides, pressing Enter creates a paragraph break, and pressing Shift + Enter
+			// creates an inline line break. The inline line break seems to be treated as a vertical
+			// tab around API data, so convert it to a vertical tab.
+			fValue := strings.ReplaceAll(fragment.Value, "\n", "\v")
 			flen := countString(fragment.Value)
 			for _, req := range d.getInlineStyleRequests(fragment) {
 				req.ObjectId = objectID
@@ -1215,11 +1218,8 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		}
 
 		if len(paragraphs) > j+1 {
-			nextParagraph := paragraphs[j+1]
-			if paragraph.Bullet != nextParagraph.Bullet || paragraph.Bullet != BulletNone {
-				text += "\n"
-				plen++
-			}
+			text += "\n"
+			plen++
 		}
 
 		if paragraph.Bullet != BulletNone {
@@ -2010,28 +2010,11 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 		case element.ParagraphMarker != nil:
 			// Start of a new paragraph
 			if currentParagraph != nil && len(currentParagraph.Fragments) > 0 {
-				// Check if this is a continuation of a non-bullet paragraph
-				// If the previous paragraph had no bullet and this one also has no bullet,
-				// merge them with a newline fragment
-				if currentParagraph.Bullet == BulletNone &&
-					(element.ParagraphMarker.Bullet == nil) {
-					// Add newline fragment to continue the paragraph
-					currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
-						Value: "\n",
-					})
-					// Don't create a new paragraph, continue with the current one
-				} else {
-					paragraphs = append(paragraphs, currentParagraph)
-					currentParagraph = &Paragraph{
-						Fragments: []*Fragment{},
-						Nesting:   0,
-					}
-				}
-			} else {
-				currentParagraph = &Paragraph{
-					Fragments: []*Fragment{},
-					Nesting:   0,
-				}
+				paragraphs = append(paragraphs, currentParagraph)
+			}
+			currentParagraph = &Paragraph{
+				Fragments: []*Fragment{},
+				Nesting:   0,
 			}
 
 			// Process bullet points
