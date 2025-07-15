@@ -12,7 +12,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-
 const (
 	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
 	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"

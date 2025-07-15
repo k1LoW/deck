@@ -18,7 +18,6 @@ import (
 	"github.com/lestrrat-go/backoff/v2"
 )
 
-
 var testCodeBlockToImageCmd = func() string {
 	abs, err := filepath.Abs("testdata/txt2img/main.go")
 	if err != nil {
