@@ -1137,12 +1137,12 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 					if t.TextRun == nil {
 						continue
 					}
-					className := strings.Trim(t.TextRun.Content, " \n")
-					if className == "" {
+					styleName := strings.Trim(t.TextRun.Content, " \n")
+					if styleName == "" {
 						continue
 					}
-					d.styles[className] = t.TextRun.Style
-					d.shapes[className] = e.Shape.ShapeProperties
+					d.styles[styleName] = t.TextRun.Style
+					d.shapes[styleName] = e.Shape.ShapeProperties
 				}
 			}
 		}
@@ -1394,8 +1394,8 @@ func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.Update
 		}
 	}
 
-	if fragment.ClassName != "" {
-		s, ok := d.styles[fragment.ClassName]
+	if fragment.StyleName != "" {
+		s, ok := d.styles[fragment.StyleName]
 		if ok {
 			reqs = append(reqs, buildCustomStyleRequest(s))
 		}

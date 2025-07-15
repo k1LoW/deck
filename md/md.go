@@ -25,9 +25,17 @@ import (
 )
 
 var allowedInlineHTMLElements = []string{
-	"<a", "<abbr", "<b", "<cite", "<code", "<data", "<dfn", "<em", "<i", "<kbd",
-	"<mark", "<q", "<rp", "<rt", "<ruby", "<s", "<samp", "<small", "<span",
-	"<strong", "<sub", "<sup", "<time", "<u", "<var",
+	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd",
+	"mark", "q", "rp", "rt", "ruby", "s", "samp", "small", "span",
+	"strong", "sub", "sup", "time", "u", "var",
+}
+
+var allowdInlineElmReg *regexp.Regexp
+
+func init() {
+	// Compile the regular expression to match allowed inline HTML elements
+	allowedElements := strings.Join(allowedInlineHTMLElements, "|")
+	allowdInlineElmReg = regexp.MustCompile(`^<(` + allowedElements + `)[\s>]`)
 }
 
 // MD represents a markdown presentation.
@@ -484,7 +492,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 	if n == nil {
 		return frags, images, nil
 	}
-	var className string
+	var styleName string
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
@@ -501,7 +509,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 						Bold:      (childNode.Level == 2) || child.Bold,
 						Italic:    (childNode.Level == 1) || child.Italic,
 						Code:      child.Code,
-						ClassName: className,
+						StyleName: styleName,
 					}})
 			}
 			images = append(images, childImages...)
@@ -521,7 +529,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 					Bold:      children[0].Bold,
 					Italic:    children[0].Italic,
 					Code:      children[0].Code,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 			images = append(images, childImages...)
 		case *ast.AutoLink:
@@ -531,7 +539,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 				Fragment: &deck.Fragment{
 					Value:     label,
 					Link:      url,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 		case *ast.Text:
 			v := convert(childNode.Segment.Value(b))
@@ -549,7 +557,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 				SoftLineBreak: childNode.SoftLineBreak(),
 				Fragment: &deck.Fragment{
 					Value:     value,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 		case *ast.Image:
 			imageLink := string(childNode.Destination)
@@ -566,13 +574,13 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			htmlContent := string(childNode.Segments.Value(b))
 
 			if !strings.HasPrefix(htmlContent, "<") {
-				className = "" // Reset class attribute for closing tags
+				styleName = "" // Reset class attribute for closing tags
 				continue       // Skip if it doesn't look like HTML
 			}
 
 			// Check if it's a closing tag
 			if strings.HasPrefix(htmlContent, "</") && strings.HasSuffix(htmlContent, ">") {
-				className = "" // Reset class attribute for closing tags
+				styleName = "" // Reset class attribute for closing tags
 				continue
 			}
 
@@ -582,22 +590,17 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 					Fragment: &deck.Fragment{
 						Value:     "\n",
 						Bold:      false,
-						ClassName: className,
+						StyleName: styleName,
 					}})
-				className = "" // Reset class attribute
+				styleName = "" // Reset class attribute
 				continue
 			}
 
 			// Check if the HTML content is an allowed inline element
-			isAllowed := false
-			for _, elem := range allowedInlineHTMLElements {
-				if strings.HasPrefix(htmlContent, elem) {
-					isAllowed = true
-					break
-				}
-			}
+			stuffs := allowdInlineElmReg.FindStringSubmatch(htmlContent)
+			isAllowed := len(stuffs) == 2
 			if !isAllowed {
-				className = "" // Reset class attribute for disallowed elements
+				styleName = "" // Reset class attribute for disallowed elements
 				continue       // Skip disallowed inline HTML elements
 			}
 
@@ -605,17 +608,19 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			matches := classRe.FindStringSubmatch(htmlContent)
 			if len(matches) > 1 {
 				if matches[1] != "" {
-					className = matches[1] // For double quotes
+					styleName = matches[1] // For double quotes
 				} else if len(matches) > 2 && matches[2] != "" {
-					className = matches[2] // For single quotes
+					styleName = matches[2] // For single quotes
 				}
+			} else {
+				styleName = stuffs[1] // Use the matched element name as style name
 			}
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
 				frags = append(frags, &fragment{Fragment: &deck.Fragment{
 					Value:     convert(childNode.Value),
-					ClassName: className,
+					StyleName: styleName,
 				}})
 			} else {
 				// Fallback for empty strings
@@ -636,7 +641,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 					Bold:      children[0].Bold,
 					Italic:    children[0].Italic,
 					Code:      true,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 			images = append(images, childImages...)
 		default:

@@ -1,0 +1,261 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "HTML Element Style Tests"
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Title"
+    ],
+    "subtitles": [
+      "HTML Elements as Style Names"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is "
+              },
+              {
+                "value": "strong text",
+                "style_name": "strong"
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "emphasized text",
+                "style_name": "em"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Here is "
+              },
+              {
+                "value": "bold text",
+                "style_name": "b"
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "italic text",
+                "style_name": "i"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Some "
+              },
+              {
+                "value": "marked text",
+                "style_name": "mark"
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "small text",
+                "style_name": "small"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Technical terms: "
+              },
+              {
+                "value": "code text",
+                "style_name": "code"
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "keyboard input",
+                "style_name": "kbd"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Citations: "
+              },
+              {
+                "value": "citation text",
+                "style_name": "cite"
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "quoted text",
+                "style_name": "q"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Ruby annotation: "
+              },
+              {
+                "value": "ruby text",
+                "style_name": "ruby"
+              },
+              {
+                "value": "annotation",
+                "style_name": "rt"
+              },
+              {
+                "value": "."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Mixed Usage"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Text with "
+              },
+              {
+                "value": "class-based style",
+                "style_name": "notice"
+              },
+              {
+                "value": " and "
+              },
+              {
+                "value": "element-based style",
+                "style_name": "strong"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Nested: "
+              },
+              {
+                "value": "bold ",
+                "style_name": "strong"
+              },
+              {
+                "value": "and italic",
+                "style_name": "em"
+              },
+              {
+                "value": " text"
+              },
+              {
+                "value": "."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Edge Cases"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Empty element: "
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Multiple elements: "
+              },
+              {
+                "value": "bold",
+                "style_name": "b"
+              },
+              {
+                "value": " "
+              },
+              {
+                "value": "italic",
+                "style_name": "i"
+              },
+              {
+                "value": " "
+              },
+              {
+                "value": "underlined",
+                "style_name": "u"
+              },
+              {
+                "value": "."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "With spaces: "
+              },
+              {
+                "value": " spaced strong ",
+                "style_name": "strong"
+              },
+              {
+                "value": "."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

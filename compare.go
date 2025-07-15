@@ -219,7 +219,7 @@ func mergeFragments(in []*Fragment) []*Fragment {
 				in[i-1].Italic == in[i].Italic &&
 				in[i-1].Link == in[i].Link &&
 				in[i-1].Code == in[i].Code &&
-				in[i-1].ClassName == in[i].ClassName {
+				in[i-1].StyleName == in[i].StyleName {
 				merged[len(merged)-1].Value += value
 				continue
 			}
@@ -230,7 +230,7 @@ func mergeFragments(in []*Fragment) []*Fragment {
 			Italic:    in[i].Italic,
 			Link:      in[i].Link,
 			Code:      in[i].Code,
-			ClassName: in[i].ClassName,
+			StyleName: in[i].StyleName,
 		})
 	}
 
