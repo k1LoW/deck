@@ -33,7 +33,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "title-and-body",
@@ -71,7 +72,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "title-and-body",
@@ -109,7 +111,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "title-and-body",
@@ -146,7 +149,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "title-and-body",
@@ -221,6 +225,7 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   }
 ]

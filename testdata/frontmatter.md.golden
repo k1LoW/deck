@@ -19,7 +19,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
@@ -62,6 +63,7 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   }
 ]

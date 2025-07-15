@@ -3,7 +3,8 @@
     "layout": "",
     "titles": [
       "HTML Element Style Tests"
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
@@ -141,7 +142,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
@@ -195,7 +197,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
@@ -256,6 +259,7 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   }
 ]

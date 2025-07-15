@@ -70,17 +70,18 @@ type CodeBlock struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout      string             `json:"layout"`
-	Freeze      bool               `json:"freeze,omitempty"`
-	Ignore      bool               `json:"ignore,omitempty"`
-	Skip        bool               `json:"skip,omitempty"`
-	Titles      []string           `json:"titles,omitempty"`
-	Subtitles   []string           `json:"subtitles,omitempty"`
-	Bodies      []*deck.Body       `json:"bodies,omitempty"`
-	Images      []*deck.Image      `json:"images,omitempty"`
-	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
-	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
-	Comments    []string           `json:"comments,omitempty"`
+	Layout            string             `json:"layout"`
+	Freeze            bool               `json:"freeze,omitempty"`
+	Ignore            bool               `json:"ignore,omitempty"`
+	Skip              bool               `json:"skip,omitempty"`
+	Titles            []string           `json:"titles,omitempty"`
+	Subtitles         []string           `json:"subtitles,omitempty"`
+	Bodies            []*deck.Body       `json:"bodies,omitempty"`
+	Images            []*deck.Image      `json:"images,omitempty"`
+	CodeBlocks        []*CodeBlock       `json:"code_blocks,omitempty"`
+	BlockQuotes       []*deck.BlockQuote `json:"block_quotes,omitempty"`
+	Comments          []string           `json:"comments,omitempty"`
+	TitleHeadingLevel int                `json:"title_heading_level,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -157,8 +158,9 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 
+	const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 	// First walk: determine title level
-	titleLevel := 6
+	titleLevel := sentinelLevel
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		// Only check on entering, skip on leaving
 		if !entering {
@@ -182,6 +184,9 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 
 	// Second walk: parse content with determined title level
 	content := &Content{}
+	if titleLevel < sentinelLevel {
+		content.TitleHeadingLevel = titleLevel
+	}
 	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
 	}

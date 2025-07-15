@@ -28,7 +28,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
@@ -85,7 +86,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
@@ -128,7 +130,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 2
   },
   {
     "layout": "",
@@ -197,7 +200,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 2
   },
   {
     "layout": "",
@@ -299,7 +303,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 2
   },
   {
     "layout": "",
@@ -368,7 +373,8 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 3
   },
   {
     "layout": "",
@@ -444,6 +450,7 @@
           }
         ]
       }
-    ]
+    ],
+    "title_heading_level": 2
   }
 ]

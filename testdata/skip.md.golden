@@ -3,19 +3,22 @@
     "layout": "",
     "titles": [
       "Skip"
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
     "skip": true,
     "titles": [
       "Skip this Page"
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
     "titles": [
       "Hello"
-    ]
+    ],
+    "title_heading_level": 1
   }
 ]

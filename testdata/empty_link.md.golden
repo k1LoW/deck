@@ -3,6 +3,7 @@
     "layout": "title-and-body",
     "titles": [
       "Empty link"
-    ]
+    ],
+    "title_heading_level": 1
   }
 ]

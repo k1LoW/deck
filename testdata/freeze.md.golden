@@ -4,12 +4,14 @@
     "freeze": true,
     "titles": [
       "Freeze"
-    ]
+    ],
+    "title_heading_level": 1
   },
   {
     "layout": "",
     "titles": [
       "Hello"
-    ]
+    ],
+    "title_heading_level": 1
   }
 ]
