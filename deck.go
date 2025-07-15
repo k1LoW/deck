@@ -1175,6 +1175,43 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	return nil
 }
 
+func mergeFields(a, b string) string {
+	fields := strings.Split(a, ",")
+	fields = append(fields, strings.Split(b, ",")...)
+	sort.Strings(fields)
+	fields = slices.Compact(fields)
+	return strings.Join(fields, ",")
+}
+
+func mergeStyles(a, b *slides.TextStyle, fStr string) *slides.TextStyle {
+	if a == nil {
+		return b
+	}
+	fields := strings.Split(fStr, ",")
+	if slices.Contains(fields, "link") {
+		a.Link = b.Link
+	}
+	if slices.Contains(fields, "bold") {
+		a.Bold = b.Bold
+	}
+	if slices.Contains(fields, "italic") {
+		a.Italic = b.Italic
+	}
+	if slices.Contains(fields, "underline") {
+		a.Underline = b.Underline
+	}
+	if slices.Contains(fields, "foregroundColor") {
+		a.ForegroundColor = b.ForegroundColor
+	}
+	if slices.Contains(fields, "fontFamily") {
+		a.FontFamily = b.FontFamily
+	}
+	if slices.Contains(fields, "backgroundColor") {
+		a.BackgroundColor = b.BackgroundColor
+	}
+	return a
+}
+
 func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, styleReqs []*slides.Request, err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -1201,15 +1238,28 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			// tab around API data, so convert it to a vertical tab.
 			fValue := strings.ReplaceAll(fragment.Value, "\n", "\v")
 			flen := countString(fragment.Value)
-			for _, req := range d.getInlineStyleRequests(fragment) {
-				req.ObjectId = objectID
-				req.TextRange = &slides.Range{
-					Type:       "FIXED_RANGE",
-					StartIndex: ptrInt64(startIndex),
-					EndIndex:   ptrInt64(startIndex + int64(flen)),
-				}
+
+			var (
+				fields string
+				style  *slides.TextStyle
+			)
+			for _, r := range d.getInlineStyleRequests(fragment) {
+				// Merge elements with the latter taking priority.
+				fields = mergeFields(fields, r.Fields)
+				style = mergeStyles(style, r.Style, r.Fields)
+			}
+			if style != nil {
 				styleReqs = append(styleReqs, &slides.Request{
-					UpdateTextStyle: req,
+					UpdateTextStyle: &slides.UpdateTextStyleRequest{
+						ObjectId: objectID,
+						Style:    style,
+						Fields:   fields,
+						TextRange: &slides.Range{
+							Type:       "FIXED_RANGE",
+							StartIndex: ptrInt64(startIndex),
+							EndIndex:   ptrInt64(startIndex + int64(flen)),
+						},
+					},
 				})
 			}
 			plen += flen
