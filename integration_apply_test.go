@@ -9,10 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-const (
-	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
-	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
-)
 
 func TestApply(t *testing.T) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
