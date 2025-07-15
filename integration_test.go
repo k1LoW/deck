@@ -7,6 +7,8 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -16,12 +18,97 @@ import (
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/md"
 	"github.com/lestrrat-go/backoff/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
 	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
 	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
 )
+
+// global presentation pool instance
+var (
+	presentationPool     chan string
+	presentationPoolOnce sync.Once
+)
+
+// setupPresentationPool creates a pool of presentations for parallel tests
+func setupPresentationPool(t *testing.T, ctx context.Context) {
+	t.Helper()
+
+	// Get parallel count from GOMAXPROCS or test.parallel flag
+	parallelCount := min(runtime.GOMAXPROCS(0), 5)
+
+	presentationPool = make(chan string, parallelCount)
+
+	// Track created presentations for cleanup
+	var created []string
+	var mu sync.Mutex
+
+	eg, egCtx := errgroup.WithContext(ctx)
+
+	for i := range parallelCount {
+		eg.Go(func() error {
+			d, err := deck.CreateFrom(egCtx, basePresentationID)
+			if err != nil {
+				return fmt.Errorf("failed to create presentation %d: %w", i, err)
+			}
+
+			title := fmt.Sprintf("%s (%d)", titleForTest, i)
+			if err := d.UpdateTitle(egCtx, title); err != nil {
+				return fmt.Errorf("failed to update title for presentation %d: %w", i, err)
+			}
+
+			presentationID := d.ID()
+			if err := d.AllowReadingByAnyone(egCtx); err != nil {
+				return fmt.Errorf("failed to allow reading for presentation %d: %w", i, err)
+			}
+
+			mu.Lock()
+			created = append(created, presentationID)
+			mu.Unlock()
+
+			presentationPool <- presentationID
+			t.Logf("Created presentation %d: https://docs.google.com/presentation/d/%s", i, presentationID)
+			return nil
+		})
+	}
+
+	if err := eg.Wait(); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Cleanup(func() {
+		var wg sync.WaitGroup
+		for _, id := range created {
+			wg.Add(1)
+			go func(presentationID string) {
+				defer wg.Done()
+				if err := deck.Delete(context.Background(), presentationID); err != nil {
+					t.Logf("Failed to delete presentation %s: %v", presentationID, err)
+				}
+			}(id)
+		}
+		wg.Wait()
+	})
+}
+
+// acquirePresentation gets a presentation ID from the pool
+func acquirePresentation(t *testing.T) string {
+	t.Helper()
+	select {
+	case id := <-presentationPool:
+		return id
+	case <-time.After(30 * time.Second):
+		t.Fatal("timeout waiting for available presentation")
+		return ""
+	}
+}
+
+// releasePresentation returns a presentation ID to the pool
+func releasePresentation(id string) {
+	presentationPool <- id
+}
 
 var testCodeBlockToImageCmd = func() string {
 	abs, err := filepath.Abs("testdata/txt2img/main.go")
@@ -37,23 +124,10 @@ func TestApplyMarkdown(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	d, err := deck.CreateFrom(ctx, basePresentationID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
-		t.Fatalf("failed to update title: %v", err)
-	}
-	presentationID := d.ID()
-	if err := d.AllowReadingByAnyone(ctx); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
 
-	t.Cleanup(func() {
-		if err := deck.Delete(ctx, presentationID); err != nil {
-			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
-		}
+	// Setup presentation pool once
+	presentationPoolOnce.Do(func() {
+		setupPresentationPool(t, ctx)
 	})
 
 	tests := []struct {
@@ -81,6 +155,12 @@ func TestApplyMarkdown(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+
+			// Acquire a presentation from the pool
+			presentationID := acquirePresentation(t)
+			defer releasePresentation(presentationID)
+
 			b, err := os.ReadFile(tt.in)
 			if err != nil {
 				t.Fatal(err)
@@ -169,20 +249,10 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	d, err := deck.CreateFrom(ctx, basePresentationID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
-		t.Fatalf("failed to update title: %v", err)
-	}
-	presentationID := d.ID()
-	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
 
-	t.Cleanup(func() {
-		if err := deck.Delete(ctx, presentationID); err != nil {
-			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
-		}
+	// Setup presentation pool once
+	presentationPoolOnce.Do(func() {
+		setupPresentationPool(t, ctx)
 	})
 
 	tests := []struct {
@@ -214,6 +284,12 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+
+			// Acquire a presentation from the pool
+			presentationID := acquirePresentation(t)
+			defer releasePresentation(presentationID)
+
 			b, err := os.ReadFile(tt.in)
 			if err != nil {
 				t.Fatal(err)
