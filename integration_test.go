@@ -193,7 +193,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/br.md"},
 		{"testdata/list_simple.md"},
 		{"testdata/list_and_paragraph.md"},
-		//{"testdata/paragraph_and_list.md"},  // FIXME: paragraph is not supported yet
+		{"testdata/paragraph_and_list.md"},
 		//{"testdata/paragraphs.md"},
 		{"testdata/bold_and_italic.md"},
 		{"testdata/emoji.md"},
