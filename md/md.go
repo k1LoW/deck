@@ -40,6 +40,8 @@ type MD struct {
 type Frontmatter struct {
 	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
+	// Whether to display line breaks in the document as line breaks
+	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 }
 
 // Contents represents a collection of slide contents.
@@ -112,10 +114,14 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 			frontmatter = nil
 		}
 	}
+	var breaks bool
+	if frontmatter != nil {
+		breaks = frontmatter.Breaks
+	}
 
 	var contents Contents
 	for _, bpage := range bpages {
-		c, err := ParseContent(baseDir, bpage)
+		c, err := ParseContent(baseDir, bpage, breaks)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +139,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
+func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -168,7 +174,7 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 
 	// Second walk: parse content with determined title level
 	content := &Content{}
-	if err := walkBodies(doc, baseDir, b, content, titleLevel); err != nil {
+	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
 	}
 
@@ -235,7 +241,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 	return slides, nil
 }
 
-func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int) error {
+func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int, breaks bool) error {
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
@@ -300,7 +306,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-					Fragments: toDeckFragments(frags),
+					Fragments: toDeckFragments(frags, breaks),
 					Bullet:    currentListMarker,
 					Nesting:   nesting,
 				})
@@ -318,7 +324,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-					Fragments: toDeckFragments(frags),
+					Fragments: toDeckFragments(frags, breaks),
 					Bullet:    deck.BulletNone,
 					Nesting:   0,
 				})
@@ -359,7 +365,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 			case *ast.Blockquote:
 				blockQuoteContent := &Content{}
 				for v := n.FirstChild(); v != nil; v = v.NextSibling() {
-					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1); err != nil {
+					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1, breaks); err != nil {
 						return ast.WalkStop, err
 					}
 				}
@@ -447,14 +453,19 @@ type fragment struct {
 	SoftLineBreak bool
 }
 
-func toDeckFragments(frags []*fragment) []*deck.Fragment {
+func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
 	deckFrags := make([]*deck.Fragment, len(frags))
 	for i, frag := range frags {
 		f := frag.Fragment
 		if frag.SoftLineBreak && i < len(frags)-1 {
 			// In the original Markdown and CommonMark specifications, SoftLineBreak between inline text
 			// elements should be converted to a space character.
-			f.Value += " "
+			// If breaks is true, it should be converted to a newline character.
+			breakChar := " "
+			if breaks {
+				breakChar = "\n"
+			}
+			f.Value += breakChar
 		}
 		deckFrags[i] = f
 	}

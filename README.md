@@ -122,6 +122,7 @@ The frontmatter must be:
 
 - `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title`: title of the presentation. When specified, you can use the simplified command syntax.
+- `breaks`: (boolean) Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
 
 Note: This feature is reserved for future enhancements.
 
@@ -183,6 +184,26 @@ The system continues to operate despite an arbitrary number of messages being dr
 - `<br>` (for newline)
 - Image (`![Image](path/to/image.png)` )
 - Block quote ( `> block quote` )
+
+#### Line break handling
+
+By default, single line breaks in markdown are rendered as spaces in the slides, following the original Markdown and CommonMark specifications. You can change this behavior by setting `breaks: true` in the frontmatter:
+
+```markdown
+---
+breaks: true
+---
+
+This text has a
+line break that will
+render as an actual line break.
+```
+
+When `breaks: true` is set, line breaks in the markdown source are preserved as line breaks in the rendered slides, similar to how GitHub renders markdown on their website.
+
+When `breaks: false` (default), you can still create line breaks by using:
+- Hard line breaks: add two spaces at the end of a line (standard Markdown/CommonMark syntax)
+- HTML: use `<br>` tags
 
 #### Style for syntax
 

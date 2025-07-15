@@ -1,0 +1,86 @@
+[
+  {
+    "layout": "",
+    "titles": [
+      "Testing Soft Line Breaks"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is a test\n"
+              },
+              {
+                "value": "with soft line break\n"
+              },
+              {
+                "value": "that should render as breaks."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "List with soft breaks"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "First item with\n"
+              },
+              {
+                "value": "soft break"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Second item with\n"
+              },
+              {
+                "value": "another soft break"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Blockquote with breaks"
+    ],
+    "block_quotes": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is a quote\n"
+              },
+              {
+                "value": "with soft line breaks\n"
+              },
+              {
+                "value": "in multiple places."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
