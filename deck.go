@@ -1211,7 +1211,6 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 	currentBullet := BulletNone
 	for j, paragraph := range paragraphs {
 		plen := 0
-		startIndex := count
 		if paragraph.Bullet != BulletNone {
 			if paragraph.Nesting > 0 {
 				text += strings.Repeat("\t", paragraph.Nesting)
@@ -1235,6 +1234,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 				style = mergeStyles(style, r.Style, r.Fields)
 			}
 			if style != nil {
+				startIndex := count + int64(plen)
 				styleReqs = append(styleReqs, &slides.Request{
 					UpdateTextStyle: &slides.UpdateTextStyleRequest{
 						ObjectId: objectID,
@@ -1250,7 +1250,6 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			}
 			plen += flen
 			text += fValue
-			startIndex += int64(flen)
 		}
 
 		if len(paragraphs) > j+1 {
