@@ -36,3 +36,15 @@
 
 <!-- {"layout":"title-and-body"} -->
 
+---
+
+# Nested List: With inline styles
+
+- Normal text with [link](https://example.com/test)
+  - **Bold list item with nested indent**
+    - *Italic list item with deeper indent*
+      - `Code list item with deepest indent`
+- **[Bold link at first level](https://example.com/bold)**
+  - *[Italic link at second level](https://example.com/italic)*
+
+<!-- {"layout":"title-and-body"} -->

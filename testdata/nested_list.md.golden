@@ -147,5 +147,80 @@
         ]
       }
     ]
+  },
+  {
+    "layout": "title-and-body",
+    "titles": [
+      "Nested List: With inline styles"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Normal text with "
+              },
+              {
+                "value": "link",
+                "link": "https://example.com/test"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Bold list item with nested indent",
+                "bold": true
+              }
+            ],
+            "bullet": "-",
+            "nesting": 1
+          },
+          {
+            "fragments": [
+              {
+                "value": "Italic list item with deeper indent",
+                "italic": true
+              }
+            ],
+            "bullet": "-",
+            "nesting": 2
+          },
+          {
+            "fragments": [
+              {
+                "value": "Code list item with deepest indent",
+                "code": true
+              }
+            ],
+            "bullet": "-",
+            "nesting": 3
+          },
+          {
+            "fragments": [
+              {
+                "value": "Bold link at first level",
+                "bold": true,
+                "link": "https://example.com/bold"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "Italic link at second level",
+                "italic": true,
+                "link": "https://example.com/italic"
+              }
+            ],
+            "bullet": "-",
+            "nesting": 1
+          }
+        ]
+      }
+    ]
   }
 ]
