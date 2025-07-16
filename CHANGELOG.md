@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.42.1](https://github.com/k1LoW/deck/compare/v0.42.0...v0.42.1) - 2025-07-16
+### Fix bug 🐛
+- fix: proper inline styling in lists by @Songmu in https://github.com/k1LoW/deck/pull/261
+
 ## [v0.42.0](https://github.com/k1LoW/deck/compare/v0.41.0...v0.42.0) - 2025-07-15
 ### New Features 🎉
 - feat: HTML element styling feature by @Songmu in https://github.com/k1LoW/deck/pull/225
