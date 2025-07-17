@@ -114,7 +114,7 @@ func TestApplyFrontmatterToMD(t *testing.T) {
 			title:          "Test Title",
 			presentationID: "test-id-123",
 			expectedContent: `---
-presentationId: test-id-123
+presentationID: test-id-123
 title: Test Title
 ---
 `,
@@ -127,7 +127,7 @@ This is the content.`,
 			title:          "Test Title",
 			presentationID: "test-id-123",
 			expectedContent: `---
-presentationId: test-id-123
+presentationID: test-id-123
 title: Test Title
 ---
 # My Presentation
@@ -146,22 +146,22 @@ date: 2023-01-01
 			expectedContent: `---
 author: John Doe
 date: "2023-01-01"
-presentationId: new-id-456
+presentationID: new-id-456
 title: Updated Title
 ---
 # My Presentation`,
 		},
 		{
-			name: "existing file with frontmatter - update presentationId only",
+			name: "existing file with frontmatter - update presentationID only",
 			initialContent: `---
 title: Existing Title
-presentationId: old-id
+presentationID: old-id
 ---
 # Content`,
 			title:          "",
 			presentationID: "new-id-789",
 			expectedContent: `---
-presentationId: new-id-789
+presentationID: new-id-789
 title: Existing Title
 ---
 # Content`,

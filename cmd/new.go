@@ -36,7 +36,7 @@ var newCmd = &cobra.Command{
 	Short: "create new presentation",
 	Long: `create new presentation.
 
-If a markdown file is specified, frontmatter with title and presentationId will be added to the file.
+If a markdown file is specified, frontmatter with title and presentationID will be added to the file.
 If the file doesn't exist, it will be created.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
