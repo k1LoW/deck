@@ -25,4 +25,16 @@ graph TD
 Hello World
 ```
 
+```
+---
+Hello with ---
+```
+
+---
+
+# Test Page 2
+
+This is the second page.
+
 <!-- {"layout":"title-and-body"} -->
+

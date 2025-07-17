@@ -111,7 +111,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	// Extract YAML frontmatter if present
 	var frontmatter *Frontmatter
 	mayHaveFrontmatter := bytes.HasPrefix(b, []byte("---\n"))
-	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
+	bpages := splitPages(bytes.TrimPrefix(b, []byte("---\n")))
 
 	if mayHaveFrontmatter && len(bpages) > 0 {
 		maybeYAMLContent := bpages[0]
@@ -804,6 +804,51 @@ func toBullet(m byte) deck.Bullet {
 	default:
 		return deck.BulletNone
 	}
+}
+
+// splitPages splits markdown content by "---" delimiters
+// while respecting code blocks (``` fenced blocks) to avoid splitting inside them.
+func splitPages(b []byte) [][]byte {
+	var (
+		codeBlockMarker  = []byte("```")
+		contentSeparator = []byte("---")
+		newline          = []byte("\n")
+	)
+
+	lines := bytes.Split(b, newline)
+
+	var pages [][]byte
+	var currentPage [][]byte
+	inCodeBlock := false
+
+	for _, line := range lines {
+		// Check if this line starts or ends a code block
+		if bytes.HasPrefix(bytes.TrimSpace(line), codeBlockMarker) {
+			inCodeBlock = !inCodeBlock
+			currentPage = append(currentPage, line)
+			continue
+		}
+
+		// Check if this is a page separator (only if not in code block)
+		if !inCodeBlock && bytes.Equal(bytes.TrimSpace(line), contentSeparator) {
+			// End current page and start a new one
+			if len(currentPage) > 0 {
+				pages = append(pages, bytes.Join(currentPage, newline))
+				currentPage = nil
+			}
+			continue
+		}
+
+		// Add line to current page
+		currentPage = append(currentPage, line)
+	}
+
+	// Add the last page if it has content
+	if len(currentPage) > 0 {
+		pages = append(pages, bytes.Join(currentPage, newline))
+	}
+
+	return pages
 }
 
 func environToMap() map[string]string {
