@@ -48,7 +48,7 @@ func ApplyFrontmatterToMD(mdFile, title, presentationID string) (err error) {
 	if title != "" {
 		frontmatter["title"] = title
 	}
-	frontmatter["presentationId"] = presentationID
+	frontmatter["presentationID"] = presentationID
 
 	// Marshal frontmatter back to YAML
 	frontmatterYAML, err := yaml.Marshal(frontmatter)
