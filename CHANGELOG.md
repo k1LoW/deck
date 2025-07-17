@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.42.2](https://github.com/k1LoW/deck/compare/v0.42.1...v0.42.2) - 2025-07-17
+### Fix bug 🐛
+- fix: improve split markdown as contents by @k1LoW in https://github.com/k1LoW/deck/pull/267
+- fix case of presentationID by @Songmu in https://github.com/k1LoW/deck/pull/266
+
 ## [v0.42.1](https://github.com/k1LoW/deck/compare/v0.42.0...v0.42.1) - 2025-07-16
 ### Fix bug 🐛
 - fix: proper inline styling in lists by @Songmu in https://github.com/k1LoW/deck/pull/261
