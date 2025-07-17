@@ -1,6 +1,6 @@
 [
   {
-    "layout": "title-and-body",
+    "layout": "",
     "titles": [
       "Code Block"
     ],
@@ -19,6 +19,28 @@
       },
       {
         "content": "Hello World\n"
+      },
+      {
+        "content": "---\nHello with ---\n"
+      }
+    ]
+  },
+  {
+    "layout": "title-and-body",
+    "titles": [
+      "Test Page 2"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is the second page."
+              }
+            ]
+          }
+        ]
       }
     ]
   }
