@@ -96,14 +96,19 @@ func imagesEqual(images1, images2 []*Image) bool {
 	if len(images1) != len(images2) {
 		return false
 	}
-	slices.SortFunc(images1, func(a *Image, b *Image) int {
+	sorted1 := make([]*Image, len(images1))
+	copy(sorted1, images1)
+	sorted2 := make([]*Image, len(images2))
+	copy(sorted2, images2)
+
+	slices.SortFunc(sorted1, func(a *Image, b *Image) int {
 		return int(a.Checksum()) - int(b.Checksum())
 	})
-	slices.SortFunc(images2, func(a *Image, b *Image) int {
+	slices.SortFunc(sorted2, func(a *Image, b *Image) int {
 		return int(a.Checksum()) - int(b.Checksum())
 	})
-	for i, img := range images1 {
-		if !img.Compare(images2[i]) {
+	for i, img := range sorted1 {
+		if !img.Compare(sorted2[i]) {
 			return false
 		}
 	}
