@@ -70,18 +70,20 @@ type CodeBlock struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout      string             `json:"layout"`
-	Freeze      bool               `json:"freeze,omitempty"`
-	Ignore      bool               `json:"ignore,omitempty"`
-	Skip        bool               `json:"skip,omitempty"`
-	Titles      []string           `json:"titles,omitempty"`
-	Subtitles   []string           `json:"subtitles,omitempty"`
-	Bodies      []*deck.Body       `json:"bodies,omitempty"`
-	Images      []*deck.Image      `json:"images,omitempty"`
-	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
-	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
-	Comments    []string           `json:"comments,omitempty"`
-	Headings    map[int][]string   `json:"headings,omitempty"`
+	Layout         string             `json:"layout"`
+	Freeze         bool               `json:"freeze,omitempty"`
+	Ignore         bool               `json:"ignore,omitempty"`
+	Skip           bool               `json:"skip,omitempty"`
+	Titles         []string           `json:"titles,omitempty"`
+	TitleBodies    []*deck.Body       `json:"-"`
+	Subtitles      []string           `json:"subtitles,omitempty"`
+	SubtitleBodies []*deck.Body       `json:"-"`
+	Bodies         []*deck.Body       `json:"bodies,omitempty"`
+	Images         []*deck.Image      `json:"images,omitempty"`
+	CodeBlocks     []*CodeBlock       `json:"code_blocks,omitempty"`
+	BlockQuotes    []*deck.BlockQuote `json:"block_quotes,omitempty"`
+	Comments       []string           `json:"comments,omitempty"`
+	Headings       map[int][]string   `json:"headings,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -262,30 +264,48 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 			switch v := n.(type) {
 			case *ast.Heading:
 				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
-				text := convert(v.Lines().Value(b))
+				var text string
+				// don't support images in headings
+				frags, _, err := toFragments(baseDir, b, v)
+				if err != nil {
+					return ast.WalkStop, err
+				}
+				deckFrags := toDeckFragments(frags, breaks)
+				for _, frag := range deckFrags {
+					if frag.Value != "" {
+						text += frag.Value
+					}
+				}
 				content.Headings[v.Level] = append(content.Headings[v.Level], text)
 
 				switch v.Level {
 				case titleLevel:
 					content.Titles = append(content.Titles, text)
+					content.TitleBodies = append(content.TitleBodies, &deck.Body{
+						Paragraphs: []*deck.Paragraph{{
+							Fragments: deckFrags,
+						}},
+					})
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case titleLevel + 1:
 					content.Subtitles = append(content.Subtitles, text)
+					content.SubtitleBodies = append(content.SubtitleBodies, &deck.Body{
+						Paragraphs: []*deck.Paragraph{{
+							Fragments: deckFrags,
+						}},
+					})
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-						Fragments: []*deck.Fragment{{
-							Value: text,
-							Bold:  true,
-						}},
-						Bullet:  deck.BulletNone,
-						Nesting: 0,
+						Fragments: deckFrags,
+						Bullet:    deck.BulletNone,
+						Nesting:   0,
 					})
 				}
 			case *ast.List:
