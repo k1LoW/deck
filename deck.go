@@ -882,7 +882,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			req.Requests = append(req.Requests, &slides.Request{
 				ReplaceImage: &slides.ReplaceImageRequest{
 					ImageObjectId:      imagePlaceholders[i].objectID,
-					ImageReplaceMethod: "CENTER_INSIDE",
+					ImageReplaceMethod: "CENTER_CROP",
 					Url:                f.WebContentLink,
 				},
 			})
