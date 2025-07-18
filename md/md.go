@@ -241,15 +241,17 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 			}
 		}
 		slides[i] = &deck.Slide{
-			Layout:      content.Layout,
-			Freeze:      content.Freeze,
-			Skip:        content.Skip,
-			Titles:      content.Titles,
-			Subtitles:   content.Subtitles,
-			Bodies:      content.Bodies,
-			Images:      images,
-			BlockQuotes: content.BlockQuotes,
-			SpeakerNote: strings.Join(content.Comments, "\n\n"),
+			Layout:         content.Layout,
+			Freeze:         content.Freeze,
+			Skip:           content.Skip,
+			Titles:         content.Titles,
+			TitleBodies:    content.TitleBodies,
+			Subtitles:      content.Subtitles,
+			SubtitleBodies: content.SubtitleBodies,
+			Bodies:         content.Bodies,
+			Images:         images,
+			BlockQuotes:    content.BlockQuotes,
+			SpeakerNote:    strings.Join(content.Comments, "\n\n"),
 		}
 	}
 	return slides, nil

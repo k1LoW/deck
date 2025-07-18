@@ -23,15 +23,17 @@ import (
 type Slides []*Slide
 
 type Slide struct {
-	Layout      string        `json:"layout"`
-	Freeze      bool          `json:"freeze,omitempty"`
-	Skip        bool          `json:"skip,omitempty"`
-	Titles      []string      `json:"titles,omitempty"`
-	Subtitles   []string      `json:"subtitles,omitempty"`
-	Bodies      []*Body       `json:"bodies,omitempty"`
-	Images      []*Image      `json:"images,omitempty"`
-	BlockQuotes []*BlockQuote `json:"block_quotes,omitempty"`
-	SpeakerNote string        `json:"speaker_note,omitempty"`
+	Layout         string        `json:"layout"`
+	Freeze         bool          `json:"freeze,omitempty"`
+	Skip           bool          `json:"skip,omitempty"`
+	Titles         []string      `json:"titles,omitempty"`
+	TitleBodies    []*Body       `json:"title_bodies,omitempty"`
+	Subtitles      []string      `json:"subtitles,omitempty"`
+	SubtitleBodies []*Body       `json:"subtitle_bodies,omitempty"`
+	Bodies         []*Body       `json:"bodies,omitempty"`
+	Images         []*Image      `json:"images,omitempty"`
+	BlockQuotes    []*BlockQuote `json:"block_quotes,omitempty"`
+	SpeakerNote    string        `json:"speaker_note,omitempty"`
 
 	new    bool
 	delete bool
