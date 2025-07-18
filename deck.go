@@ -66,8 +66,6 @@ type placeholder struct {
 	objectID string
 	x        float64
 	y        float64
-	sizeX    float64
-	sizeY    float64
 }
 
 type bulletRange struct {
@@ -728,8 +726,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				objectID: element.ObjectId,
 				x:        element.Transform.TranslateX,
 				y:        element.Transform.TranslateY,
-				sizeX:    element.Size.Width.Magnitude * element.Transform.ScaleX,
-				sizeY:    element.Size.Height.Magnitude * element.Transform.ScaleY,
 			})
 		case element.Image != nil:
 			var (
@@ -838,6 +834,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	// set images
+	sort.Slice(imagePlaceholders, func(i, j int) bool {
+		if imagePlaceholders[i].y == imagePlaceholders[j].y {
+			return imagePlaceholders[i].x < imagePlaceholders[j].x
+		}
+		return imagePlaceholders[i].y < imagePlaceholders[j].y
+	})
 	for i, image := range slide.Images {
 		found := slices.ContainsFunc(currentImages, func(currentImage *Image) bool {
 			return currentImage.Compare(image)
@@ -874,49 +876,36 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if f.WebContentLink == "" {
 			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
 		}
-
-		imageObjectID := fmt.Sprintf("image-%s", uuid.New().String())
-		imageReq := &slides.CreateImageRequest{
-			ObjectId: imageObjectID,
-			ElementProperties: &slides.PageElementProperties{
-				PageObjectId: currentSlide.ObjectId,
-				Transform: &slides.AffineTransform{
-					ScaleX:     1.0,
-					ScaleY:     1.0,
-					TranslateX: float64(i+1) * 100000,
-					TranslateY: float64(i+1) * 100000,
-					Unit:       "EMU",
-				},
-			},
-			Url: f.WebContentLink,
-		}
-
-		if len(imagePlaceholders) > 0 {
-			var imagePlaceholder placeholder
-			imagePlaceholder, imagePlaceholders = imagePlaceholders[i], imagePlaceholders[1:]
-			imageReq.ElementProperties.Size = &slides.Size{
-				Height: &slides.Dimension{
-					Magnitude: imagePlaceholder.sizeY,
-					Unit:      "EMU",
-				},
-				Width: &slides.Dimension{
-					Magnitude: imagePlaceholder.sizeX,
-					Unit:      "EMU",
-				},
-			}
-			imageReq.ElementProperties.Transform.TranslateX = imagePlaceholder.x
-			imageReq.ElementProperties.Transform.TranslateY = imagePlaceholder.y
-
+		var imageObjectID string
+		if len(imagePlaceholders) > i {
+			imageObjectID = imagePlaceholders[i].objectID
 			req.Requests = append(req.Requests, &slides.Request{
-				DeleteObject: &slides.DeleteObjectRequest{
-					ObjectId: imagePlaceholder.objectID,
+				ReplaceImage: &slides.ReplaceImageRequest{
+					ImageObjectId:      imagePlaceholders[i].objectID,
+					ImageReplaceMethod: "CENTER_CROP",
+					Url:                f.WebContentLink,
 				},
 			})
+		} else {
+			imageObjectID = fmt.Sprintf("image-%s", uuid.New().String())
+			imageReq := &slides.CreateImageRequest{
+				ObjectId: imageObjectID,
+				ElementProperties: &slides.PageElementProperties{
+					PageObjectId: currentSlide.ObjectId,
+					Transform: &slides.AffineTransform{
+						ScaleX:     1.0,
+						ScaleY:     1.0,
+						TranslateX: float64(i+1) * 100000,
+						TranslateY: float64(i+1) * 100000,
+						Unit:       "EMU",
+					},
+				},
+				Url: f.WebContentLink,
+			}
+			req.Requests = append(req.Requests, &slides.Request{
+				CreateImage: imageReq,
+			})
 		}
-		req.Requests = append(req.Requests, &slides.Request{
-			CreateImage: imageReq,
-		})
-
 		if image.fromMarkdown {
 			req.Requests = append(req.Requests, &slides.Request{
 				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
