@@ -694,6 +694,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
 		currentTextBoxes          []*textBox
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
+		req                       = &slides.BatchUpdatePresentationRequest{}
 	)
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
@@ -706,33 +707,21 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if element.Shape.Text != nil {
-					if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-						return err
-					}
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			case "SUBTITLE":
 				subtitles = append(subtitles, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if element.Shape.Text != nil {
-					if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-						return err
-					}
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			case "BODY":
 				bodies = append(bodies, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if element.Shape.Text != nil {
-					if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-						return err
-					}
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			}
 		case element.Image != nil && element.Image.Placeholder != nil:
 			imagePlaceholders = append(imagePlaceholders, placeholder{
@@ -775,11 +764,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			if element.Shape.Placeholder.Type == "BODY" {
 				speakerNotesID = element.ObjectId
-				if element.Shape.Text != nil {
-					if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
-						return err
-					}
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			}
 		}
 	}
@@ -788,7 +773,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	// set titles
-	req := &slides.BatchUpdatePresentationRequest{}
 	sort.Slice(titles, func(i, j int) bool {
 		if titles[i].y == titles[j].y {
 			return titles[i].x < titles[j].x
@@ -1471,46 +1455,37 @@ func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest
 	}
 }
 
-func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{
-			{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					ObjectId: placeholderID,
-					Style: &slides.TextStyle{
-						Bold:   false,
-						Italic: false,
-					},
-					TextRange: &slides.Range{
-						Type: "ALL",
-					},
-					Fields: "*",
-				},
+func (d *Deck) clearPlaceholderRequests(elm *slides.PageElement) []*slides.Request {
+	if elm.Shape.Text == nil {
+		return nil
+	}
+	return []*slides.Request{{
+		UpdateTextStyle: &slides.UpdateTextStyleRequest{
+			ObjectId: elm.ObjectId,
+			Style: &slides.TextStyle{
+				Bold:   false,
+				Italic: false,
 			},
-			{
-				DeleteParagraphBullets: &slides.DeleteParagraphBulletsRequest{
-					ObjectId: placeholderID,
-					TextRange: &slides.Range{
-						Type: "ALL",
-					},
-				},
+			TextRange: &slides.Range{
+				Type: "ALL",
 			},
-			{
-				DeleteText: &slides.DeleteTextRequest{
-					ObjectId: placeholderID,
-					TextRange: &slides.Range{
-						Type: "ALL",
-					},
-				},
+			Fields: "*",
+		},
+	}, {
+		DeleteParagraphBullets: &slides.DeleteParagraphBulletsRequest{
+			ObjectId: elm.ObjectId,
+			TextRange: &slides.Range{
+				Type: "ALL",
 			},
 		},
-	}
-
-	_, err = d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do()
-	return err
+	}, {
+		DeleteText: &slides.DeleteTextRequest{
+			ObjectId: elm.ObjectId,
+			TextRange: &slides.Range{
+				Type: "ALL",
+			},
+		},
+	}}
 }
 
 // countString counts the number of characters in a string, considering UTF-16 surrogate pairs.
