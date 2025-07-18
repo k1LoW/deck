@@ -99,8 +99,7 @@ func TestAction(t *testing.T) {
 			},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.InsertPage(ctx, 0, &Slide{
-					Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})});
-					err != nil {
+					Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -117,8 +116,7 @@ func TestAction(t *testing.T) {
 			},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.InsertPage(ctx, 1, &Slide{
-					Layout: "title-and-body", Titles: []string{"Slide 1.5"}, TitleBodies: toBodies([]string{"Slide 1.5"})});
-					err != nil {
+					Layout: "title-and-body", Titles: []string{"Slide 1.5"}, TitleBodies: toBodies([]string{"Slide 1.5"})}); err != nil {
 					t.Fatal(err)
 				}
 			},
