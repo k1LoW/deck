@@ -30,20 +30,6 @@ func TestAction(t *testing.T) {
 		}
 	})
 
-	toBodies := func(titles []string) []*Body {
-		bodies := make([]*Body, len(titles))
-		for i, title := range titles {
-			bodies[i] = &Body{
-				Paragraphs: []*Paragraph{{
-					Fragments: []*Fragment{{
-						Value: title,
-					}},
-				}},
-			}
-		}
-		return bodies
-	}
-
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(Fragment{}, "StyleName"),
 		cmpopts.IgnoreFields(Slide{}, "TitleBodies", "SubtitleBodies"),

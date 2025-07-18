@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
-// toBodies is a helper function to create Bodies from string titles
+// toBodies is a helper function to create Bodies from string titles.
 func toBodies(titles []string) []*Body {
 	bodies := make([]*Body, len(titles))
 	for i, title := range titles {
