@@ -30,8 +30,23 @@ func TestAction(t *testing.T) {
 		}
 	})
 
+	toBodies := func(titles []string) []*Body {
+		bodies := make([]*Body, len(titles))
+		for i, title := range titles {
+			bodies[i] = &Body{
+				Paragraphs: []*Paragraph{{
+					Fragments: []*Fragment{{
+						Value: title,
+					}},
+				}},
+			}
+		}
+		return bodies
+	}
+
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(Fragment{}, "StyleName"),
+		cmpopts.IgnoreFields(Slide{}, "TitleBodies", "SubtitleBodies"),
 		cmpopts.IgnoreUnexported(Slide{}),
 	}
 
@@ -44,10 +59,17 @@ func TestAction(t *testing.T) {
 		{
 			name: "append slide (index 1)",
 			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
+				{Layout: "title-and-body",
+					Titles:      []string{"Slide 1"},
+					TitleBodies: toBodies([]string{"Slide 1"}),
+				},
 			},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.AppendPage(ctx, &Slide{Layout: "title-and-body", Titles: []string{"Slide 2"}}); err != nil {
+				if err := d.AppendPage(ctx, &Slide{
+					Layout:      "title-and-body",
+					Titles:      []string{"Slide 2"},
+					TitleBodies: toBodies([]string{"Slide 2"}),
+				}); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -60,7 +82,9 @@ func TestAction(t *testing.T) {
 			name:   "append slide (index 0)",
 			before: Slides{},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.AppendPage(ctx, &Slide{Layout: "title-and-body", Titles: []string{"Slide 1"}}); err != nil {
+				if err := d.AppendPage(ctx, &Slide{Layout: "title-and-body",
+					Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})}); err != nil {
+
 					t.Fatal(err)
 				}
 			},
@@ -71,10 +95,12 @@ func TestAction(t *testing.T) {
 		{
 			name: "insert slide (index 0)",
 			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
 			},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.InsertPage(ctx, 0, &Slide{Layout: "title-and-body", Titles: []string{"Slide 2"}}); err != nil {
+				if err := d.InsertPage(ctx, 0, &Slide{
+					Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})});
+					err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -86,11 +112,13 @@ func TestAction(t *testing.T) {
 		{
 			name: "insert slide (index 1)",
 			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})},
 			},
 			actions: func(t *testing.T, d *Deck) {
-				if err := d.InsertPage(ctx, 1, &Slide{Layout: "title-and-body", Titles: []string{"Slide 1.5"}}); err != nil {
+				if err := d.InsertPage(ctx, 1, &Slide{
+					Layout: "title-and-body", Titles: []string{"Slide 1.5"}, TitleBodies: toBodies([]string{"Slide 1.5"})});
+					err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -103,8 +131,8 @@ func TestAction(t *testing.T) {
 		{
 			name: "move slide (index 1)",
 			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})},
 			},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.movePage(ctx, 1, 0); err != nil {
@@ -119,8 +147,8 @@ func TestAction(t *testing.T) {
 		{
 			name: "move slide (index 0)",
 			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})},
 			},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.movePage(ctx, 0, 1); err != nil {
@@ -135,17 +163,17 @@ func TestAction(t *testing.T) {
 		{
 			name: "generateActions generated move operations",
 			before: Slides{
-				{Layout: "title", Titles: []string{"Delete Me 1"}},
-				{Layout: "title", Titles: []string{"Delete Me 2"}},
-				{Layout: "title", Titles: []string{"Keep Me A"}},
-				{Layout: "title", Titles: []string{"Keep Me B"}},
+				{Layout: "title", Titles: []string{"Delete Me 1"}, TitleBodies: toBodies([]string{"Delete Me 1"})},
+				{Layout: "title", Titles: []string{"Delete Me 2"}, TitleBodies: toBodies([]string{"Delete Me 2"})},
+				{Layout: "title", Titles: []string{"Keep Me A"}, TitleBodies: toBodies([]string{"Keep Me A"})},
+				{Layout: "title", Titles: []string{"Keep Me B"}, TitleBodies: toBodies([]string{"Keep Me B"})},
 			},
 			actions: func(t *testing.T, d *Deck) {
 				// Test using the actual generateActions generated actions
 				targetSlides := Slides{
-					{Layout: "title", Titles: []string{"Keep Me B"}},
-					{Layout: "title", Titles: []string{"Keep Me A"}},
-					{Layout: "title", Titles: []string{"New Page"}},
+					{Layout: "title", Titles: []string{"Keep Me B"}, TitleBodies: toBodies([]string{"Keep Me B"})},
+					{Layout: "title", Titles: []string{"Keep Me A"}, TitleBodies: toBodies([]string{"Keep Me A"})},
+					{Layout: "title", Titles: []string{"New Page"}, TitleBodies: toBodies([]string{"New Page"})},
 				}
 
 				// Apply the target slides using generateActions
