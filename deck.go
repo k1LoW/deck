@@ -712,8 +712,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
+				if element.Shape.Text != nil {
+					if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
+						return err
+					}
 				}
 			case "SUBTITLE":
 				subtitles = append(subtitles, placeholder{
@@ -721,8 +723,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
+				if element.Shape.Text != nil {
+					if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
+						return err
+					}
 				}
 			case "BODY":
 				bodies = append(bodies, placeholder{
@@ -730,8 +734,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
+				if element.Shape.Text != nil {
+					if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
+						return err
+					}
 				}
 			}
 		case element.Image != nil && element.Image.Placeholder != nil:
@@ -775,8 +781,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			if element.Shape.Placeholder.Type == "BODY" {
 				speakerNotesID = element.ObjectId
-				if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
-					return err
+				if element.Shape.Text != nil {
+					if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -1491,8 +1499,8 @@ func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err 
 		},
 	}
 
-	_, _ = d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do()
-	return nil
+	_, err = d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do()
+	return err
 }
 
 // countString counts the number of characters in a string, considering UTF-16 surrogate pairs.
