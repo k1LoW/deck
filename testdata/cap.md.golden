@@ -45,6 +45,16 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "CAP theorem"
+      ],
+      "2": [
+        "In Database theory",
+        "Consistency",
+        "Availability",
+        "Partition tolerance"
+      ]
+    }
   }
 ]

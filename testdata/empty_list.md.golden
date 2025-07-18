@@ -18,6 +18,10 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Empty list"
+      ]
+    }
   }
 ]

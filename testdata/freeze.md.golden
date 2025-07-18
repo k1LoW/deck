@@ -5,13 +5,21 @@
     "titles": [
       "Freeze"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Freeze"
+      ]
+    }
   },
   {
     "layout": "",
     "titles": [
       "Hello"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Hello"
+      ]
+    }
   }
 ]

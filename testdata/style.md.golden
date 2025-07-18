@@ -93,6 +93,13 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Inline Style"
+      ],
+      "2": [
+        "Hello style"
+      ]
+    }
   }
 ]

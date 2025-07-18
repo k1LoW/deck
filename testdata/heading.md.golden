@@ -29,7 +29,12 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Normal H1 only slide",
+        "Another H1 slide"
+      ]
+    }
   },
   {
     "layout": "",
@@ -87,7 +92,16 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "H1 and H2 slide",
+        "Next H1 slide"
+      ],
+      "2": [
+        "H2 subtitle",
+        "Another H2 subtitle"
+      ]
+    }
   },
   {
     "layout": "",
@@ -131,7 +145,13 @@
         ]
       }
     ],
-    "title_heading_level": 2
+    "headings": {
+      "2": [
+        "H2 only slide",
+        "Another H2 slide",
+        "Third H2 slide"
+      ]
+    }
   },
   {
     "layout": "",
@@ -201,7 +221,17 @@
         ]
       }
     ],
-    "title_heading_level": 2
+    "headings": {
+      "2": [
+        "H2 and H3 slide",
+        "Next H2 slide"
+      ],
+      "3": [
+        "H3 subtitle",
+        "Another H3 subtitle",
+        "H3 under next H2"
+      ]
+    }
   },
   {
     "layout": "",
@@ -304,7 +334,21 @@
         ]
       }
     ],
-    "title_heading_level": 2
+    "headings": {
+      "2": [
+        "H2, H3 and H4 slide",
+        "Next H2 slide"
+      ],
+      "3": [
+        "H3 subtitle",
+        "Another H3 subtitle"
+      ],
+      "4": [
+        "H4 content",
+        "Another H4 content",
+        "H4 under this H3"
+      ]
+    }
   },
   {
     "layout": "",
@@ -374,7 +418,17 @@
         ]
       }
     ],
-    "title_heading_level": 3
+    "headings": {
+      "3": [
+        "H3 and H4 slide",
+        "Next H3 slide"
+      ],
+      "4": [
+        "H4 subtitle",
+        "Another H4 subtitle",
+        "H4 under next H3"
+      ]
+    }
   },
   {
     "layout": "",
@@ -451,6 +505,16 @@
         ]
       }
     ],
-    "title_heading_level": 2
+    "headings": {
+      "2": [
+        "H2 and H4 slide (skipping H3)",
+        "Next H2 slide"
+      ],
+      "4": [
+        "H4 content directly under H2",
+        "Another H4 content",
+        "Direct H4 again"
+      ]
+    }
   }
 ]

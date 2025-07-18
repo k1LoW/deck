@@ -4,7 +4,11 @@
     "titles": [
       "Skip"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Skip"
+      ]
+    }
   },
   {
     "layout": "",
@@ -12,13 +16,21 @@
     "titles": [
       "Skip this Page"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Skip this Page"
+      ]
+    }
   },
   {
     "layout": "",
     "titles": [
       "Hello"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Hello"
+      ]
+    }
   }
 ]

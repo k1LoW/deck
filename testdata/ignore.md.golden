@@ -17,7 +17,11 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "First Slide"
+      ]
+    }
   },
   {
     "layout": "",
@@ -37,7 +41,11 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Third Slide"
+      ]
+    }
   },
   {
     "layout": "",
@@ -57,6 +65,10 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Fifth Slide"
+      ]
+    }
   }
 ]

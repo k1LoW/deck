@@ -20,7 +20,14 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Title"
+      ],
+      "2": [
+        "Subtitle"
+      ]
+    }
   },
   {
     "layout": "section",
@@ -31,7 +38,11 @@
       "comment",
       "comment"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Title"
+      ]
+    }
   },
   {
     "layout": "",
@@ -146,7 +157,11 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Title"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -170,7 +185,15 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2",
+        "3"
+      ]
+    }
   },
   {
     "layout": "title-and-body-3col",
@@ -218,6 +241,16 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    }
   }
 ]

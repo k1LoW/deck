@@ -70,18 +70,18 @@ type CodeBlock struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout            string             `json:"layout"`
-	Freeze            bool               `json:"freeze,omitempty"`
-	Ignore            bool               `json:"ignore,omitempty"`
-	Skip              bool               `json:"skip,omitempty"`
-	Titles            []string           `json:"titles,omitempty"`
-	Subtitles         []string           `json:"subtitles,omitempty"`
-	Bodies            []*deck.Body       `json:"bodies,omitempty"`
-	Images            []*deck.Image      `json:"images,omitempty"`
-	CodeBlocks        []*CodeBlock       `json:"code_blocks,omitempty"`
-	BlockQuotes       []*deck.BlockQuote `json:"block_quotes,omitempty"`
-	Comments          []string           `json:"comments,omitempty"`
-	TitleHeadingLevel int                `json:"title_heading_level,omitempty"`
+	Layout      string             `json:"layout"`
+	Freeze      bool               `json:"freeze,omitempty"`
+	Ignore      bool               `json:"ignore,omitempty"`
+	Skip        bool               `json:"skip,omitempty"`
+	Titles      []string           `json:"titles,omitempty"`
+	Subtitles   []string           `json:"subtitles,omitempty"`
+	Bodies      []*deck.Body       `json:"bodies,omitempty"`
+	Images      []*deck.Image      `json:"images,omitempty"`
+	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
+	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
+	Comments    []string           `json:"comments,omitempty"`
+	Headings    map[int][]string   `json:"headings,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -183,9 +183,8 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	}
 
 	// Second walk: parse content with determined title level
-	content := &Content{}
-	if titleLevel < sentinelLevel {
-		content.TitleHeadingLevel = titleLevel
+	content := &Content{
+		Headings: make(map[int][]string),
 	}
 	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
@@ -262,15 +261,19 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 		if entering {
 			switch v := n.(type) {
 			case *ast.Heading:
+				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
+				text := convert(v.Lines().Value(b))
+				content.Headings[v.Level] = append(content.Headings[v.Level], text)
+
 				switch v.Level {
 				case titleLevel:
-					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
+					content.Titles = append(content.Titles, text)
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case titleLevel + 1:
-					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
+					content.Subtitles = append(content.Subtitles, text)
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
@@ -278,7 +281,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{{
-							Value: convert(v.Lines().Value(b)),
+							Value: text,
 							Bold:  true,
 						}},
 						Bullet:  deck.BulletNone,

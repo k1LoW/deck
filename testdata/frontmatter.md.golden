@@ -20,7 +20,14 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Title with Frontmatter"
+      ],
+      "2": [
+        "Subtitle"
+      ]
+    }
   },
   {
     "layout": "",
@@ -64,6 +71,10 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Second Slide"
+      ]
+    }
   }
 ]

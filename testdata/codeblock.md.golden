@@ -24,7 +24,11 @@
         "content": "---\nHello with ---\n"
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Code Block"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -44,6 +48,10 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Test Page 2"
+      ]
+    }
   }
 ]

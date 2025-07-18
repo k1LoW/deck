@@ -4,7 +4,11 @@
     "titles": [
       "HTML Element Style Tests"
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "HTML Element Style Tests"
+      ]
+    }
   },
   {
     "layout": "",
@@ -143,7 +147,14 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Title"
+      ],
+      "2": [
+        "HTML Elements as Style Names"
+      ]
+    }
   },
   {
     "layout": "",
@@ -198,7 +209,11 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Mixed Usage"
+      ]
+    }
   },
   {
     "layout": "",
@@ -260,6 +275,10 @@
         ]
       }
     ],
-    "title_heading_level": 1
+    "headings": {
+      "1": [
+        "Edge Cases"
+      ]
+    }
   }
 ]
