@@ -626,11 +626,8 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err err
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	layoutMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutMap[l.LayoutProperties.DisplayName] = l
-	}
 
+	layoutMap := d.layoutMap()
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
 		return fmt.Errorf("layout not found: %q", slide.Layout)
@@ -665,11 +662,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	layoutMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutMap[l.LayoutProperties.DisplayName] = l
-	}
 
+	layoutMap := d.layoutMap()
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
 		return fmt.Errorf("layout not found: %q", slide.Layout)
@@ -693,10 +687,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		titles                    []placeholder
 		subtitles                 []placeholder
 		bodies                    []placeholder
+		imagePlaceholders         []placeholder
 		currentImages             []*Image
 		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
 		currentTextBoxes          []*textBox
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
+		req                       = &slides.BatchUpdatePresentationRequest{}
 	)
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
@@ -709,28 +705,28 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			case "SUBTITLE":
 				subtitles = append(subtitles, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			case "BODY":
 				bodies = append(bodies, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				if err := d.clearPlaceholder(ctx, element.ObjectId); err != nil {
-					return err
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			}
+		case element.Image != nil && element.Image.Placeholder != nil:
+			imagePlaceholders = append(imagePlaceholders, placeholder{
+				objectID: element.ObjectId,
+				x:        element.Transform.TranslateX,
+				y:        element.Transform.TranslateY,
+			})
 		case element.Image != nil:
 			var (
 				image *Image
@@ -764,9 +760,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			if element.Shape.Placeholder.Type == "BODY" {
 				speakerNotesID = element.ObjectId
-				if err := d.clearPlaceholder(ctx, speakerNotesID); err != nil {
-					return err
-				}
+				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
 			}
 		}
 	}
@@ -775,7 +769,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	// set titles
-	req := &slides.BatchUpdatePresentationRequest{}
 	sort.Slice(titles, func(i, j int) bool {
 		if titles[i].y == titles[j].y {
 			return titles[i].x < titles[j].x
@@ -841,6 +834,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	}
 
 	// set images
+	sort.Slice(imagePlaceholders, func(i, j int) bool {
+		if imagePlaceholders[i].y == imagePlaceholders[j].y {
+			return imagePlaceholders[i].x < imagePlaceholders[j].x
+		}
+		return imagePlaceholders[i].y < imagePlaceholders[j].y
+	})
 	for i, image := range slide.Images {
 		found := slices.ContainsFunc(currentImages, func(currentImage *Image) bool {
 			return currentImage.Compare(image)
@@ -877,10 +876,19 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		if f.WebContentLink == "" {
 			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
 		}
-
-		imageObjectID := fmt.Sprintf("image-%s", uuid.New().String())
-		req.Requests = append(req.Requests, &slides.Request{
-			CreateImage: &slides.CreateImageRequest{
+		var imageObjectID string
+		if len(imagePlaceholders) > i {
+			imageObjectID = imagePlaceholders[i].objectID
+			req.Requests = append(req.Requests, &slides.Request{
+				ReplaceImage: &slides.ReplaceImageRequest{
+					ImageObjectId:      imagePlaceholders[i].objectID,
+					ImageReplaceMethod: "CENTER_CROP",
+					Url:                f.WebContentLink,
+				},
+			})
+		} else {
+			imageObjectID = fmt.Sprintf("image-%s", uuid.New().String())
+			imageReq := &slides.CreateImageRequest{
 				ObjectId: imageObjectID,
 				ElementProperties: &slides.PageElementProperties{
 					PageObjectId: currentSlide.ObjectId,
@@ -893,8 +901,11 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					},
 				},
 				Url: f.WebContentLink,
-			},
-		})
+			}
+			req.Requests = append(req.Requests, &slides.Request{
+				CreateImage: imageReq,
+			})
+		}
 		if image.fromMarkdown {
 			req.Requests = append(req.Requests, &slides.Request{
 				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
@@ -1104,6 +1115,14 @@ func (d *Deck) movePage(ctx context.Context, from_index, to_index int) (err erro
 	return nil
 }
 
+func (d *Deck) layoutMap() map[string]*slides.Page {
+	layoutMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutMap[l.LayoutProperties.DisplayName] = l
+	}
+	return layoutMap
+}
+
 func (d *Deck) refresh(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -1137,20 +1156,28 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 					if t.TextRun == nil {
 						continue
 					}
-					className := strings.Trim(t.TextRun.Content, " \n")
-					if className == "" {
+					styleName := strings.Trim(t.TextRun.Content, " \n")
+					if styleName == "" {
 						continue
 					}
-					d.styles[className] = t.TextRun.Style
-					d.shapes[className] = e.Shape.ShapeProperties
+					d.styles[styleName] = t.TextRun.Style
+					d.shapes[styleName] = e.Shape.ShapeProperties
 				}
 			}
 		}
 	}
-	if d.defaultTitleLayout == "" {
+
+	// If the default layouts that were derived are renamed or otherwise disappear, search for them again.
+	// The defaultLayout may be an empty string, but even in that case, the layout search from the map
+	// will fail, so this case is also covered.
+	layoutMap := d.layoutMap()
+	_, defaultTitleLayoutFound := layoutMap[d.defaultTitleLayout]
+	_, defaultLayoutFound := layoutMap[d.defaultLayout]
+
+	if !defaultTitleLayoutFound {
 		d.defaultTitleLayout = d.presentation.Layouts[0].LayoutProperties.DisplayName
 	}
-	if d.defaultLayout == "" {
+	if !defaultLayoutFound {
 		if len(d.presentation.Layouts) > 1 {
 			d.defaultLayout = d.presentation.Layouts[1].LayoutProperties.DisplayName
 		} else {
@@ -1159,6 +1186,43 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+func mergeFields(a, b string) string {
+	fields := strings.Split(a, ",")
+	fields = append(fields, strings.Split(b, ",")...)
+	sort.Strings(fields)
+	fields = slices.Compact(fields)
+	return strings.Join(fields, ",")
+}
+
+func mergeStyles(a, b *slides.TextStyle, fStr string) *slides.TextStyle {
+	if a == nil {
+		return b
+	}
+	fields := strings.Split(fStr, ",")
+	if slices.Contains(fields, "link") {
+		a.Link = b.Link
+	}
+	if slices.Contains(fields, "bold") {
+		a.Bold = b.Bold
+	}
+	if slices.Contains(fields, "italic") {
+		a.Italic = b.Italic
+	}
+	if slices.Contains(fields, "underline") {
+		a.Underline = b.Underline
+	}
+	if slices.Contains(fields, "foregroundColor") {
+		a.ForegroundColor = b.ForegroundColor
+	}
+	if slices.Contains(fields, "fontFamily") {
+		a.FontFamily = b.FontFamily
+	}
+	if slices.Contains(fields, "backgroundColor") {
+		a.BackgroundColor = b.BackgroundColor
+	}
+	return a
 }
 
 func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, styleReqs []*slides.Request, err error) {
@@ -1174,7 +1238,6 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 	currentBullet := BulletNone
 	for j, paragraph := range paragraphs {
 		plen := 0
-		startIndex := count
 		if paragraph.Bullet != BulletNone {
 			if paragraph.Nesting > 0 {
 				text += strings.Repeat("\t", paragraph.Nesting)
@@ -1187,20 +1250,33 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			// tab around API data, so convert it to a vertical tab.
 			fValue := strings.ReplaceAll(fragment.Value, "\n", "\v")
 			flen := countString(fragment.Value)
-			for _, req := range d.getInlineStyleRequests(fragment) {
-				req.ObjectId = objectID
-				req.TextRange = &slides.Range{
-					Type:       "FIXED_RANGE",
-					StartIndex: ptrInt64(startIndex),
-					EndIndex:   ptrInt64(startIndex + int64(flen)),
-				}
+
+			var (
+				fields string
+				style  *slides.TextStyle
+			)
+			for _, r := range d.getInlineStyleRequests(fragment) {
+				// Merge elements with the latter taking priority.
+				fields = mergeFields(fields, r.Fields)
+				style = mergeStyles(style, r.Style, r.Fields)
+			}
+			if style != nil {
+				startIndex := count + int64(plen)
 				styleReqs = append(styleReqs, &slides.Request{
-					UpdateTextStyle: req,
+					UpdateTextStyle: &slides.UpdateTextStyleRequest{
+						ObjectId: objectID,
+						Style:    style,
+						Fields:   fields,
+						TextRange: &slides.Range{
+							Type:       "FIXED_RANGE",
+							StartIndex: ptrInt64(startIndex),
+							EndIndex:   ptrInt64(startIndex + int64(flen)),
+						},
+					},
 				})
 			}
 			plen += flen
 			text += fValue
-			startIndex += int64(flen)
 		}
 
 		if len(paragraphs) > j+1 {
@@ -1344,8 +1420,8 @@ func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.Update
 		}
 	}
 
-	if fragment.ClassName != "" {
-		s, ok := d.styles[fragment.ClassName]
+	if fragment.StyleName != "" {
+		s, ok := d.styles[fragment.StyleName]
 		if ok {
 			reqs = append(reqs, buildCustomStyleRequest(s))
 		}
@@ -1368,46 +1444,37 @@ func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest
 	}
 }
 
-func (d *Deck) clearPlaceholder(ctx context.Context, placeholderID string) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{
-			{
-				UpdateTextStyle: &slides.UpdateTextStyleRequest{
-					ObjectId: placeholderID,
-					Style: &slides.TextStyle{
-						Bold:   false,
-						Italic: false,
-					},
-					TextRange: &slides.Range{
-						Type: "ALL",
-					},
-					Fields: "*",
-				},
+func (d *Deck) clearPlaceholderRequests(elm *slides.PageElement) []*slides.Request {
+	if elm.Shape.Text == nil {
+		return nil
+	}
+	return []*slides.Request{{
+		UpdateTextStyle: &slides.UpdateTextStyleRequest{
+			ObjectId: elm.ObjectId,
+			Style: &slides.TextStyle{
+				Bold:   false,
+				Italic: false,
 			},
-			{
-				DeleteParagraphBullets: &slides.DeleteParagraphBulletsRequest{
-					ObjectId: placeholderID,
-					TextRange: &slides.Range{
-						Type: "ALL",
-					},
-				},
+			TextRange: &slides.Range{
+				Type: "ALL",
 			},
-			{
-				DeleteText: &slides.DeleteTextRequest{
-					ObjectId: placeholderID,
-					TextRange: &slides.Range{
-						Type: "ALL",
-					},
-				},
+			Fields: "*",
+		},
+	}, {
+		DeleteParagraphBullets: &slides.DeleteParagraphBulletsRequest{
+			ObjectId: elm.ObjectId,
+			TextRange: &slides.Range{
+				Type: "ALL",
 			},
 		},
-	}
-
-	_, _ = d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do()
-	return nil
+	}, {
+		DeleteText: &slides.DeleteTextRequest{
+			ObjectId: elm.ObjectId,
+			TextRange: &slides.Range{
+				Type: "ALL",
+			},
+		},
+	}}
 }
 
 // countString counts the number of characters in a string, considering UTF-16 surrogate pairs.
@@ -1488,7 +1555,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 
 	for _, element := range currentSlide.PageElements {
 		// copy images from the current slide to the new slide
-		if element.Image != nil {
+		if element.Image != nil && element.Description != descriptionImageFromMarkdown {
 			req.Requests = append(req.Requests, &slides.Request{
 				CreateImage: &slides.CreateImageRequest{
 					ElementProperties: &slides.PageElementProperties{
@@ -1501,7 +1568,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 			})
 		}
 		// copy shapes from the current slide to the new slide
-		if element.Shape != nil && element.Shape.Placeholder == nil {
+		if element.Shape != nil && element.Shape.Placeholder == nil && element.Description != descriptionTextboxFromMarkdown {
 			type paragraphInfo struct {
 				startIndex   int64
 				endIndex     int64

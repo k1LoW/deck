@@ -16,7 +16,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "First Slide"
+      ]
+    }
   },
   {
     "layout": "",
@@ -35,7 +40,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Third Slide"
+      ]
+    }
   },
   {
     "layout": "",
@@ -54,6 +64,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Fifth Slide"
+      ]
+    }
   }
 ]

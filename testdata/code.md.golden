@@ -44,6 +44,14 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Inline Code"
+      ],
+      "2": [
+        "Hello `code`"
+      ]
+    }
   }
 ]

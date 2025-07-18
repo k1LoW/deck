@@ -56,7 +56,7 @@ type Fragment struct {
 	Italic    bool   `json:"italic,omitempty"`
 	Link      string `json:"link,omitempty"`
 	Code      bool   `json:"code,omitempty"`
-	ClassName string `json:"class_name,omitempty"`
+	StyleName string `json:"style_name,omitempty"`
 }
 
 type BlockQuote struct {

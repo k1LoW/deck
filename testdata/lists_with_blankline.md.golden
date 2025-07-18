@@ -25,6 +25,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Lists with blank line"
+      ]
+    }
   }
 ]

@@ -3,6 +3,11 @@
     "layout": "title-and-body",
     "titles": [
       "Empty link"
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Empty link"
+      ]
+    }
   }
 ]

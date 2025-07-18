@@ -72,6 +72,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "List and paragraph"
+      ]
+    }
   }
 ]

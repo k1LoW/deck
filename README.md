@@ -122,6 +122,7 @@ The frontmatter must be:
 
 - `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title`: title of the presentation. When specified, you can use the simplified command syntax.
+- `breaks`: (boolean) Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
 
 Note: This feature is reserved for future enhancements.
 
@@ -184,6 +185,26 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Image (`![Image](path/to/image.png)` )
 - Block quote ( `> block quote` )
 
+#### Line break handling
+
+By default, single line breaks in markdown are rendered as spaces in the slides, following the original Markdown and CommonMark specifications. You can change this behavior by setting `breaks: true` in the frontmatter:
+
+```markdown
+---
+breaks: true
+---
+
+This text has a
+line break that will
+render as an actual line break.
+```
+
+When `breaks: true` is set, line breaks in the markdown source are preserved as line breaks in the rendered slides, similar to how GitHub renders markdown on their website.
+
+When `breaks: false` (default), you can still create line breaks by using:
+- Hard line breaks: add two spaces at the end of a line (standard Markdown/CommonMark syntax)
+- HTML: use `<br>` tags
+
 #### Style for syntax
 
 Create a layout named `style` and add a `Text box` to enter specific word. The styles (`bold`, `italic`, `underline`, `backgroundColor`, `foregroundColor`, `fontFamily`) will be applied as the style for each Markdown syntax.
@@ -196,6 +217,7 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
+| HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, etc. ) |
 | `blockquote` | style for block quote. |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
@@ -350,18 +372,82 @@ For example, it is a good idea to provide the following rules for creating deck 
 
     Unless otherwise specified, please follow the rules below.
 
-    - Use `---` to indicate page breaks in slides.
+    ## Basic Structure
+    - Use `---` (three hyphens) to indicate page breaks between slides.
     - Within each slide, the minimum heading level will be treated as the title, and the next level as the subtitle. Higher level headings will be treated as body content. It is recommended to use only one title heading per slide.
-    - The following syntax can be used in the page body. Note that it cannot be used in headings.
-        - Bold ( `**bold**` )
-        - Italic ( `*italic*` `__italic__` )
-        - List ( `-` `*` ) - Ordered list ( `1.` `1)` )
-        - Link ( `[Link](https://example.com)` )
-        - Code ( <code>\`code\`</code> )
-        - `<br>` (for newline)
-        - Code Block
-    - Speaker notes for each page should be written in comments ( `<!--` `-->` ). However, if the comment is JSON, it is a page setting, so do not overwrite it. Instead, write the speaker notes in a new comment.
-    - If the comment ( `<!--` `-->` ) is JSON, it is a page setting. If the value `“freeze”:true` is present, do not modify the page content at all.
+
+    ## YAML Frontmatter
+    You can include YAML frontmatter at the beginning of the file:
+    ```yaml
+    ---
+    title: "Presentation Title"
+    presentationID: "presentation_id"
+    breaks: true
+    author: "Author Name"
+    date: "2024-01-01"
+    tags: ["tag1", "tag2"]
+    custom:
+      nested: "value"
+      number: 42
+    ---
+    ```
+
+    ## Supported Markdown Syntax
+    The following syntax can be used in the slide content:
+
+    ### Text Formatting
+    - **Bold** (`**bold**`)
+    - *Italic* (`*italic*` or `__italic__`)
+    - `Inline code` (<code>\`code\`</code>)
+    - Combined formatting (e.g., ***bold and italic***)
+
+    ### Lists
+    - Bullet lists (`-` or `*`)
+    - Numbered lists (`1.` or `1)`)
+    - Nested lists (with proper indentation)
+    - Alphabetical lists (a. b. c.)
+
+    ### Links and Images
+    - Links (`[Link text](https://example.com)`)
+    - Angle bracket autolinks (`<https://example.com>`)
+    - Images (`![alt text](image.jpg)`)
+    - Supports PNG, JPEG, GIF formats
+    - Supports both local files and URLs (HTTP/HTTPS)
+
+    ### Block Elements
+    - Block quotes (`> quoted text`)
+    - Nested block quotes
+    - Code blocks with language specification:
+      ```language
+      code content
+      ```
+    - Mermaid diagrams (in code blocks with `mermaid` language)
+
+    ### HTML Elements
+    You can use the following HTML inline elements:
+    - `<strong>`, `<em>`, `<b>`, `<i>`, `<mark>`, `<small>`
+    - `<code>`, `<kbd>`, `<cite>`, `<q>`, `<ruby>`, `<rt>`
+    - `<span>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<var>`
+    - `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`, `<rp>`
+    - `<br>` (for line breaks)
+    - Use `class` attribute for custom styling
+
+    ### Line Break Handling
+    - Default (`breaks: false`): Soft line breaks become spaces
+    - With `breaks: true`: Soft line breaks become actual line breaks
+    - Use `<br>` tags for explicit line breaks
+
+    ## Page Configuration
+    Use HTML comments for page settings and speaker notes:
+    - Page settings: `<!-- {"layout": "title-and-body"} -->`
+    - Available settings: `"freeze": true`, `"ignore": true`, `"skip": true`
+    - Speaker notes: `<!-- This is a speaker note -->` (use separate comments for notes)
+
+    ## Important Notes
+    - If a comment (`<!-- -->`) contains JSON, it's a page setting - do not overwrite it
+    - If `"freeze": true` is present in page settings, do not modify that page content at all
+    - Write speaker notes in separate comments, not in JSON configuration comments
+    - Code blocks can be converted to images using the `--code-block-to-image-command` option
 
 
 ## Install

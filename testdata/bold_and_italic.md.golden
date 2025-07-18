@@ -37,6 +37,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Bold and italic"
+      ]
+    }
   }
 ]

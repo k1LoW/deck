@@ -25,9 +25,17 @@ import (
 )
 
 var allowedInlineHTMLElements = []string{
-	"<a", "<abbr", "<b", "<cite", "<code", "<data", "<dfn", "<em", "<i", "<kbd",
-	"<mark", "<q", "<rp", "<rt", "<ruby", "<s", "<samp", "<small", "<span",
-	"<strong", "<sub", "<sup", "<time", "<u", "<var",
+	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd",
+	"mark", "q", "rp", "rt", "ruby", "s", "samp", "small", "span",
+	"strong", "sub", "sup", "time", "u", "var",
+}
+
+var allowdInlineElmReg *regexp.Regexp
+
+func init() {
+	// Compile the regular expression to match allowed inline HTML elements
+	allowedElements := strings.Join(allowedInlineHTMLElements, "|")
+	allowdInlineElmReg = regexp.MustCompile(`^<(` + allowedElements + `)[\s>]`)
 }
 
 // MD represents a markdown presentation.
@@ -40,6 +48,8 @@ type MD struct {
 type Frontmatter struct {
 	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
+	// Whether to display line breaks in the document as line breaks
+	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 }
 
 // Contents represents a collection of slide contents.
@@ -71,6 +81,7 @@ type Content struct {
 	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
 	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
 	Comments    []string           `json:"comments,omitempty"`
+	Headings    map[int][]string   `json:"headings,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -101,7 +112,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	// Extract YAML frontmatter if present
 	var frontmatter *Frontmatter
 	mayHaveFrontmatter := bytes.HasPrefix(b, []byte("---\n"))
-	bpages := bytes.Split(bytes.TrimPrefix(b, []byte("---\n")), []byte("\n---\n"))
+	bpages := splitPages(bytes.TrimPrefix(b, []byte("---\n")))
 
 	if mayHaveFrontmatter && len(bpages) > 0 {
 		maybeYAMLContent := bpages[0]
@@ -112,10 +123,14 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 			frontmatter = nil
 		}
 	}
+	var breaks bool
+	if frontmatter != nil {
+		breaks = frontmatter.Breaks
+	}
 
 	var contents Contents
 	for _, bpage := range bpages {
-		c, err := ParseContent(baseDir, bpage)
+		c, err := ParseContent(baseDir, bpage, breaks)
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +148,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
-func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
+func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -143,8 +158,9 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 
+	const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 	// First walk: determine title level
-	titleLevel := 6
+	titleLevel := sentinelLevel
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		// Only check on entering, skip on leaving
 		if !entering {
@@ -167,8 +183,10 @@ func ParseContent(baseDir string, b []byte) (_ *Content, err error) {
 	}
 
 	// Second walk: parse content with determined title level
-	content := &Content{}
-	if err := walkBodies(doc, baseDir, b, content, titleLevel); err != nil {
+	content := &Content{
+		Headings: make(map[int][]string),
+	}
+	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
 	}
 
@@ -235,7 +253,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 	return slides, nil
 }
 
-func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int) error {
+func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int, breaks bool) error {
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
@@ -243,15 +261,19 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 		if entering {
 			switch v := n.(type) {
 			case *ast.Heading:
+				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
+				text := convert(v.Lines().Value(b))
+				content.Headings[v.Level] = append(content.Headings[v.Level], text)
+
 				switch v.Level {
 				case titleLevel:
-					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
+					content.Titles = append(content.Titles, text)
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case titleLevel + 1:
-					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
+					content.Subtitles = append(content.Subtitles, text)
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
@@ -259,7 +281,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{{
-							Value: convert(v.Lines().Value(b)),
+							Value: text,
 							Bold:  true,
 						}},
 						Bullet:  deck.BulletNone,
@@ -300,7 +322,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-					Fragments: toDeckFragments(frags),
+					Fragments: toDeckFragments(frags, breaks),
 					Bullet:    currentListMarker,
 					Nesting:   nesting,
 				})
@@ -318,7 +340,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 					return ast.WalkContinue, nil
 				}
 				currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-					Fragments: toDeckFragments(frags),
+					Fragments: toDeckFragments(frags, breaks),
 					Bullet:    deck.BulletNone,
 					Nesting:   0,
 				})
@@ -359,7 +381,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 			case *ast.Blockquote:
 				blockQuoteContent := &Content{}
 				for v := n.FirstChild(); v != nil; v = v.NextSibling() {
-					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1); err != nil {
+					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1, breaks); err != nil {
 						return ast.WalkStop, err
 					}
 				}
@@ -447,14 +469,19 @@ type fragment struct {
 	SoftLineBreak bool
 }
 
-func toDeckFragments(frags []*fragment) []*deck.Fragment {
+func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
 	deckFrags := make([]*deck.Fragment, len(frags))
 	for i, frag := range frags {
 		f := frag.Fragment
 		if frag.SoftLineBreak && i < len(frags)-1 {
 			// In the original Markdown and CommonMark specifications, SoftLineBreak between inline text
 			// elements should be converted to a space character.
-			f.Value += " "
+			// If breaks is true, it should be converted to a newline character.
+			breakChar := " "
+			if breaks {
+				breakChar = "\n"
+			}
+			f.Value += breakChar
 		}
 		deckFrags[i] = f
 	}
@@ -473,7 +500,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 	if n == nil {
 		return frags, images, nil
 	}
-	var className string
+	var styleName string
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
@@ -490,7 +517,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 						Bold:      (childNode.Level == 2) || child.Bold,
 						Italic:    (childNode.Level == 1) || child.Italic,
 						Code:      child.Code,
-						ClassName: className,
+						StyleName: styleName,
 					}})
 			}
 			images = append(images, childImages...)
@@ -510,7 +537,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 					Bold:      children[0].Bold,
 					Italic:    children[0].Italic,
 					Code:      children[0].Code,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 			images = append(images, childImages...)
 		case *ast.AutoLink:
@@ -520,7 +547,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 				Fragment: &deck.Fragment{
 					Value:     label,
 					Link:      url,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 		case *ast.Text:
 			v := convert(childNode.Segment.Value(b))
@@ -538,7 +565,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 				SoftLineBreak: childNode.SoftLineBreak(),
 				Fragment: &deck.Fragment{
 					Value:     value,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 		case *ast.Image:
 			imageLink := string(childNode.Destination)
@@ -555,13 +582,13 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			htmlContent := string(childNode.Segments.Value(b))
 
 			if !strings.HasPrefix(htmlContent, "<") {
-				className = "" // Reset class attribute for closing tags
+				styleName = "" // Reset class attribute for closing tags
 				continue       // Skip if it doesn't look like HTML
 			}
 
 			// Check if it's a closing tag
 			if strings.HasPrefix(htmlContent, "</") && strings.HasSuffix(htmlContent, ">") {
-				className = "" // Reset class attribute for closing tags
+				styleName = "" // Reset class attribute for closing tags
 				continue
 			}
 
@@ -571,22 +598,17 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 					Fragment: &deck.Fragment{
 						Value:     "\n",
 						Bold:      false,
-						ClassName: className,
+						StyleName: styleName,
 					}})
-				className = "" // Reset class attribute
+				styleName = "" // Reset class attribute
 				continue
 			}
 
 			// Check if the HTML content is an allowed inline element
-			isAllowed := false
-			for _, elem := range allowedInlineHTMLElements {
-				if strings.HasPrefix(htmlContent, elem) {
-					isAllowed = true
-					break
-				}
-			}
+			stuffs := allowdInlineElmReg.FindStringSubmatch(htmlContent)
+			isAllowed := len(stuffs) == 2
 			if !isAllowed {
-				className = "" // Reset class attribute for disallowed elements
+				styleName = "" // Reset class attribute for disallowed elements
 				continue       // Skip disallowed inline HTML elements
 			}
 
@@ -594,17 +616,19 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			matches := classRe.FindStringSubmatch(htmlContent)
 			if len(matches) > 1 {
 				if matches[1] != "" {
-					className = matches[1] // For double quotes
+					styleName = matches[1] // For double quotes
 				} else if len(matches) > 2 && matches[2] != "" {
-					className = matches[2] // For single quotes
+					styleName = matches[2] // For single quotes
 				}
+			} else {
+				styleName = stuffs[1] // Use the matched element name as style name
 			}
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
 				frags = append(frags, &fragment{Fragment: &deck.Fragment{
 					Value:     convert(childNode.Value),
-					ClassName: className,
+					StyleName: styleName,
 				}})
 			} else {
 				// Fallback for empty strings
@@ -625,7 +649,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 					Bold:      children[0].Bold,
 					Italic:    children[0].Italic,
 					Code:      true,
-					ClassName: className,
+					StyleName: styleName,
 				}})
 			images = append(images, childImages...)
 		default:
@@ -788,6 +812,51 @@ func toBullet(m byte) deck.Bullet {
 	default:
 		return deck.BulletNone
 	}
+}
+
+// splitPages splits markdown content by "---" delimiters
+// while respecting code blocks (``` fenced blocks) to avoid splitting inside them.
+func splitPages(b []byte) [][]byte {
+	var (
+		codeBlockMarker  = []byte("```")
+		contentSeparator = []byte("---")
+		newline          = []byte("\n")
+	)
+
+	lines := bytes.Split(b, newline)
+
+	var pages [][]byte
+	var currentPage [][]byte
+	inCodeBlock := false
+
+	for _, line := range lines {
+		// Check if this line starts or ends a code block
+		if bytes.HasPrefix(bytes.TrimSpace(line), codeBlockMarker) {
+			inCodeBlock = !inCodeBlock
+			currentPage = append(currentPage, line)
+			continue
+		}
+
+		// Check if this is a page separator (only if not in code block)
+		if !inCodeBlock && bytes.Equal(bytes.TrimSpace(line), contentSeparator) {
+			// End current page and start a new one
+			if len(currentPage) > 0 {
+				pages = append(pages, bytes.Join(currentPage, newline))
+				currentPage = nil
+			}
+			continue
+		}
+
+		// Add line to current page
+		currentPage = append(currentPage, line)
+	}
+
+	// Add the last page if it has content
+	if len(currentPage) > 0 {
+		pages = append(pages, bytes.Join(currentPage, newline))
+	}
+
+	return pages
 }
 
 func environToMap() map[string]string {

@@ -43,6 +43,8 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/list_and_paragraph.md"},
 		{"testdata/paragraph_and_list.md"},
 		{"testdata/paragraphs.md"},
+		{"testdata/breaks_enabled.md"},
+		{"testdata/breaks_default.md"},
 		{"testdata/bold_and_italic.md"},
 		{"testdata/emoji.md"},
 		{"testdata/code.md"},
@@ -163,6 +165,8 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/list_and_paragraph.md"},
 		{"testdata/paragraph_and_list.md"},
 		{"testdata/paragraphs.md"},
+		//{"testdata/breaks_enabled.md"}, // FIXME: fragment merge processing is required
+		//{"testdata/breaks_default.md"},
 		{"testdata/bold_and_italic.md"},
 		{"testdata/emoji.md"},
 		{"testdata/code.md"},
@@ -175,7 +179,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 	}
 
 	cmpopts := cmp.Options{
-		cmpopts.IgnoreFields(deck.Fragment{}, "ClassName"),
+		cmpopts.IgnoreFields(deck.Fragment{}, "StyleName"),
 		cmpopts.IgnoreUnexported(deck.Slide{}, deck.Image{}),
 		cmpopts.EquateEmpty(),
 	}

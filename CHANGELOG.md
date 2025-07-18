@@ -1,5 +1,44 @@
 # Changelog
 
+## [v0.43.1](https://github.com/k1LoW/deck/compare/v0.43.0...v0.43.1) - 2025-07-18
+### Fix bug 🐛
+- fix(compare): ensure images are sorted without modifying input slices by @k1LoW in https://github.com/k1LoW/deck/pull/276
+### Other Changes
+- fix refresh; search defaultLayout again when disappering by @Songmu in https://github.com/k1LoW/deck/pull/271
+- fix clearPlaceholder by @Songmu in https://github.com/k1LoW/deck/pull/270
+- feat: define `md.Content.Headings` by @Songmu in https://github.com/k1LoW/deck/pull/258
+- chore: merge clear placeholder requests into batchUpdate request by @Songmu in https://github.com/k1LoW/deck/pull/275
+- fix: support for different number of images and placeholders / use replace image api by @k1LoW in https://github.com/k1LoW/deck/pull/272
+
+## [v0.43.0](https://github.com/k1LoW/deck/compare/v0.42.2...v0.43.0) - 2025-07-18
+### New Features 🎉
+- feat: support image placeholder by @Songmu in https://github.com/k1LoW/deck/pull/269
+
+## [v0.42.2](https://github.com/k1LoW/deck/compare/v0.42.1...v0.42.2) - 2025-07-17
+### Fix bug 🐛
+- fix: improve split markdown as contents by @k1LoW in https://github.com/k1LoW/deck/pull/267
+- fix case of presentationID by @Songmu in https://github.com/k1LoW/deck/pull/266
+
+## [v0.42.1](https://github.com/k1LoW/deck/compare/v0.42.0...v0.42.1) - 2025-07-16
+### Fix bug 🐛
+- fix: proper inline styling in lists by @Songmu in https://github.com/k1LoW/deck/pull/261
+
+## [v0.42.0](https://github.com/k1LoW/deck/compare/v0.41.0...v0.42.0) - 2025-07-15
+### New Features 🎉
+- feat: HTML element styling feature by @Songmu in https://github.com/k1LoW/deck/pull/225
+
+## [v0.41.0](https://github.com/k1LoW/deck/compare/v0.40.2...v0.41.0) - 2025-07-15
+### New Features 🎉
+- feat: support HardLineBreak and remove `deck.Fragment.SoftLineBreak` field by @Songmu in https://github.com/k1LoW/deck/pull/247
+- feat: support proper paragraph separation in slide by @Songmu in https://github.com/k1LoW/deck/pull/251
+- feat: Add breaks frontmatter option to control line break rendering by @Songmu in https://github.com/k1LoW/deck/pull/254
+- chore: Merge UpdateTextStyleRequest into one by @Songmu in https://github.com/k1LoW/deck/pull/256
+### Fix bug 🐛
+- fix: does not copy images/shapes from markdown when update layout by @k1LoW in https://github.com/k1LoW/deck/pull/253
+### Other Changes
+- chore: use slices package to simplify code by @Songmu in https://github.com/k1LoW/deck/pull/249
+- chore: add client.go and move http client related code into it by @Songmu in https://github.com/k1LoW/deck/pull/257
+
 ## [v0.40.2](https://github.com/k1LoW/deck/compare/v0.40.1...v0.40.2) - 2025-07-14
 ### Other Changes
 - chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/245
