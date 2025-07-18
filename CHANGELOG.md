@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.43.1](https://github.com/k1LoW/deck/compare/v0.43.0...v0.43.1) - 2025-07-18
+### Fix bug 🐛
+- fix(compare): ensure images are sorted without modifying input slices by @k1LoW in https://github.com/k1LoW/deck/pull/276
+### Other Changes
+- fix refresh; search defaultLayout again when disappering by @Songmu in https://github.com/k1LoW/deck/pull/271
+- fix clearPlaceholder by @Songmu in https://github.com/k1LoW/deck/pull/270
+- feat: define `md.Content.Headings` by @Songmu in https://github.com/k1LoW/deck/pull/258
+- chore: merge clear placeholder requests into batchUpdate request by @Songmu in https://github.com/k1LoW/deck/pull/275
+- fix: support for different number of images and placeholders / use replace image api by @k1LoW in https://github.com/k1LoW/deck/pull/272
+
 ## [v0.43.0](https://github.com/k1LoW/deck/compare/v0.42.2...v0.43.0) - 2025-07-18
 ### New Features 🎉
 - feat: support image placeholder by @Songmu in https://github.com/k1LoW/deck/pull/269
