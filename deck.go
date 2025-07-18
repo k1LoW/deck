@@ -66,6 +66,8 @@ type placeholder struct {
 	objectID string
 	x        float64
 	y        float64
+	sizeX    float64
+	sizeY    float64
 }
 
 type bulletRange struct {
@@ -693,6 +695,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		titles                    []placeholder
 		subtitles                 []placeholder
 		bodies                    []placeholder
+		imagePlaceholders         []placeholder
 		currentImages             []*Image
 		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
 		currentTextBoxes          []*textBox
@@ -731,6 +734,14 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 					return err
 				}
 			}
+		case element.Image != nil && element.Image.Placeholder != nil:
+			imagePlaceholders = append(imagePlaceholders, placeholder{
+				objectID: element.ObjectId,
+				x:        element.Transform.TranslateX,
+				y:        element.Transform.TranslateY,
+				sizeX:    element.Size.Width.Magnitude * element.Transform.ScaleX,
+				sizeY:    element.Size.Height.Magnitude * element.Transform.ScaleY,
+			})
 		case element.Image != nil:
 			var (
 				image *Image
@@ -879,22 +890,47 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 
 		imageObjectID := fmt.Sprintf("image-%s", uuid.New().String())
-		req.Requests = append(req.Requests, &slides.Request{
-			CreateImage: &slides.CreateImageRequest{
-				ObjectId: imageObjectID,
-				ElementProperties: &slides.PageElementProperties{
-					PageObjectId: currentSlide.ObjectId,
-					Transform: &slides.AffineTransform{
-						ScaleX:     1.0,
-						ScaleY:     1.0,
-						TranslateX: float64(i+1) * 100000,
-						TranslateY: float64(i+1) * 100000,
-						Unit:       "EMU",
-					},
+		imageReq := &slides.CreateImageRequest{
+			ObjectId: imageObjectID,
+			ElementProperties: &slides.PageElementProperties{
+				PageObjectId: currentSlide.ObjectId,
+				Transform: &slides.AffineTransform{
+					ScaleX:     1.0,
+					ScaleY:     1.0,
+					TranslateX: float64(i+1) * 100000,
+					TranslateY: float64(i+1) * 100000,
+					Unit:       "EMU",
 				},
-				Url: f.WebContentLink,
 			},
+			Url: f.WebContentLink,
+		}
+
+		if len(imagePlaceholders) > 0 {
+			var imagePlaceholder placeholder
+			imagePlaceholder, imagePlaceholders = imagePlaceholders[i], imagePlaceholders[1:]
+			imageReq.ElementProperties.Size = &slides.Size{
+				Height: &slides.Dimension{
+					Magnitude: imagePlaceholder.sizeY,
+					Unit:      "EMU",
+				},
+				Width: &slides.Dimension{
+					Magnitude: imagePlaceholder.sizeX,
+					Unit:      "EMU",
+				},
+			}
+			imageReq.ElementProperties.Transform.TranslateX = imagePlaceholder.x
+			imageReq.ElementProperties.Transform.TranslateY = imagePlaceholder.y
+
+			req.Requests = append(req.Requests, &slides.Request{
+				DeleteObject: &slides.DeleteObjectRequest{
+					ObjectId: imagePlaceholder.objectID,
+				},
+			})
+		}
+		req.Requests = append(req.Requests, &slides.Request{
+			CreateImage: imageReq,
 		})
+
 		if image.fromMarkdown {
 			req.Requests = append(req.Requests, &slides.Request{
 				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
