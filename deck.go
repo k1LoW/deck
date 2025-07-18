@@ -1878,7 +1878,8 @@ func extractText(text *slides.TextContent) string {
 			result.WriteString(element.TextRun.Content)
 		}
 	}
-	return strings.TrimSpace(result.String())
+	str := strings.ReplaceAll(result.String(), "\v", "\n")
+	return strings.TrimSpace(str)
 }
 
 // convertToParagraphs converts TextContent to a slice of Paragraphs.

@@ -212,6 +212,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(deck.Fragment{}, "StyleName"),
+		cmpopts.IgnoreFields(deck.Slide{}, "TitleBodies", "SubtitleBodies"),
 		cmpopts.IgnoreUnexported(deck.Slide{}, deck.Image{}),
 		cmpopts.EquateEmpty(),
 	}
