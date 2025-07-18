@@ -795,16 +795,16 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 		return titles[i].y < titles[j].y
 	})
-	for i, title := range slide.Titles {
+	for i, b := range slide.TitleBodies {
 		if len(titles) <= i {
-			continue
+			break
 		}
-		req.Requests = append(req.Requests, &slides.Request{
-			InsertText: &slides.InsertTextRequest{
-				ObjectId: titles[i].objectID,
-				Text:     title,
-			},
-		})
+		reqs, styleReqs, err := d.applyParagraphsRequests(titles[i].objectID, b.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs for title: %w", err)
+		}
+		req.Requests = append(req.Requests, reqs...)
+		req.Requests = append(req.Requests, styleReqs...)
 	}
 
 	// set subtitles
@@ -814,16 +814,16 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		}
 		return subtitles[i].y < subtitles[j].y
 	})
-	for i, subtitle := range slide.Subtitles {
+	for i, b := range slide.SubtitleBodies {
 		if len(subtitles) <= i {
-			continue
+			break
 		}
-		req.Requests = append(req.Requests, &slides.Request{
-			InsertText: &slides.InsertTextRequest{
-				ObjectId: subtitles[i].objectID,
-				Text:     subtitle,
-			},
-		})
+		reqs, styleReqs, err := d.applyParagraphsRequests(subtitles[i].objectID, b.Paragraphs)
+		if err != nil {
+			return fmt.Errorf("failed to apply paragraphs for subtitle: %w", err)
+		}
+		req.Requests = append(req.Requests, reqs...)
+		req.Requests = append(req.Requests, styleReqs...)
 	}
 
 	// set speaker notes
