@@ -3,7 +3,12 @@
     "layout": "",
     "titles": [
       "HTML Element Style Tests"
-    ]
+    ],
+    "headings": {
+      "1": [
+        "HTML Element Style Tests"
+      ]
+    }
   },
   {
     "layout": "",
@@ -141,7 +146,15 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Title"
+      ],
+      "2": [
+        "HTML Elements as Style Names"
+      ]
+    }
   },
   {
     "layout": "",
@@ -195,7 +208,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Mixed Usage"
+      ]
+    }
   },
   {
     "layout": "",
@@ -256,6 +274,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Edge Cases"
+      ]
+    }
   }
 ]

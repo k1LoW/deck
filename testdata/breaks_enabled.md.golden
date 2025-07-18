@@ -22,7 +22,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Testing Soft Line Breaks"
+      ]
+    }
   },
   {
     "layout": "",
@@ -56,7 +61,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "2": [
+        "List with soft breaks"
+      ]
+    }
   },
   {
     "layout": "",
@@ -81,6 +91,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "2": [
+        "Blockquote with breaks"
+      ]
+    }
   }
 ]

@@ -81,6 +81,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Autolink Test Cases"
+      ]
+    }
   }
 ]

@@ -23,7 +23,12 @@
       {
         "content": "---\nHello with ---\n"
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Code Block"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -42,6 +47,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Test Page 2"
+      ]
+    }
   }
 ]

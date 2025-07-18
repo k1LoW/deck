@@ -81,6 +81,7 @@ type Content struct {
 	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
 	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
 	Comments    []string           `json:"comments,omitempty"`
+	Headings    map[int][]string   `json:"headings,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -157,8 +158,9 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 
+	const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 	// First walk: determine title level
-	titleLevel := 6
+	titleLevel := sentinelLevel
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		// Only check on entering, skip on leaving
 		if !entering {
@@ -181,7 +183,9 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	}
 
 	// Second walk: parse content with determined title level
-	content := &Content{}
+	content := &Content{
+		Headings: make(map[int][]string),
+	}
 	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
 	}
@@ -257,15 +261,19 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 		if entering {
 			switch v := n.(type) {
 			case *ast.Heading:
+				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
+				text := convert(v.Lines().Value(b))
+				content.Headings[v.Level] = append(content.Headings[v.Level], text)
+
 				switch v.Level {
 				case titleLevel:
-					content.Titles = append(content.Titles, convert(v.Lines().Value(b)))
+					content.Titles = append(content.Titles, text)
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case titleLevel + 1:
-					content.Subtitles = append(content.Subtitles, convert(v.Lines().Value(b)))
+					content.Subtitles = append(content.Subtitles, text)
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
@@ -273,7 +281,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{{
-							Value: convert(v.Lines().Value(b)),
+							Value: text,
 							Bold:  true,
 						}},
 						Bullet:  deck.BulletNone,

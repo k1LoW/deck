@@ -92,6 +92,14 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Inline Style"
+      ],
+      "2": [
+        "Hello style"
+      ]
+    }
   }
 ]

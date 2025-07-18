@@ -19,7 +19,15 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Title"
+      ],
+      "2": [
+        "Subtitle"
+      ]
+    }
   },
   {
     "layout": "section",
@@ -29,7 +37,12 @@
     "comments": [
       "comment",
       "comment"
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Title"
+      ]
+    }
   },
   {
     "layout": "",
@@ -143,7 +156,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Title"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -166,7 +184,16 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2",
+        "3"
+      ]
+    }
   },
   {
     "layout": "title-and-body-3col",
@@ -213,6 +240,17 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "1"
+      ],
+      "2": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    }
   }
 ]

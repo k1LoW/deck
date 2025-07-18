@@ -33,7 +33,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Nested List: no nested"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -71,7 +76,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Nested List: 4-space padding"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -109,7 +119,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Nested List: 2-space padding"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -146,7 +161,12 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Nested List: Nested in the middle"
+      ]
+    }
   },
   {
     "layout": "title-and-body",
@@ -221,6 +241,11 @@
           }
         ]
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Nested List: With inline styles"
+      ]
+    }
   }
 ]

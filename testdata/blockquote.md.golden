@@ -96,6 +96,11 @@
         ],
         "nesting": 2
       }
-    ]
+    ],
+    "headings": {
+      "1": [
+        "Block Quote"
+      ]
+    }
   }
 ]
