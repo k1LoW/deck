@@ -3,11 +3,11 @@ package deck
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"runtime"
 	"sync"
 	"testing"
-	"time"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -18,14 +18,14 @@ const (
 )
 
 // global presentation pool instance
-var PresentationPool chan string
+var presentationPool chan string
 
 // SetupPresentationPool creates a pool of presentations for parallel tests
 func SetupPresentationPool(ctx context.Context) ([]string, error) {
 	// Get parallel count from GOMAXPROCS or test.parallel flag
 	parallelCount := min(runtime.GOMAXPROCS(0), 5)
 
-	PresentationPool = make(chan string, parallelCount)
+	presentationPool = make(chan string, parallelCount)
 
 	// Track created presentations for cleanup
 	var created []string
@@ -54,7 +54,7 @@ func SetupPresentationPool(ctx context.Context) ([]string, error) {
 			created = append(created, presentationID)
 			mu.Unlock()
 
-			PresentationPool <- presentationID
+			presentationPool <- presentationID
 			return nil
 		})
 	}
@@ -76,7 +76,7 @@ func TestMain(m *testing.M) {
 	ctx := context.Background()
 	createdPresentations, err := SetupPresentationPool(ctx)
 	if err != nil {
-		fmt.Printf("Failed to setup presentation pool: %v\n", err)
+		log.Printf("Failed to setup presentation pool: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -89,7 +89,7 @@ func TestMain(m *testing.M) {
 		go func(presentationID string) {
 			defer wg.Done()
 			if err := Delete(context.Background(), presentationID); err != nil {
-				fmt.Printf("Failed to delete presentation %s: %v\n", presentationID, err)
+				log.Printf("Failed to delete presentation %s: %v\n", presentationID, err)
 			}
 		}(id)
 	}
@@ -101,16 +101,11 @@ func TestMain(m *testing.M) {
 // AcquirePresentation gets a presentation ID from the pool
 func AcquirePresentation(t *testing.T) string {
 	t.Helper()
-	select {
-	case id := <-PresentationPool:
-		return id
-	case <-time.After(30 * time.Second):
-		t.Fatal("timeout waiting for available presentation")
-		return ""
-	}
+
+	return <-presentationPool
 }
 
 // ReleasePresentation returns a presentation ID to the pool
 func ReleasePresentation(id string) {
-	PresentationPool <- id
+	presentationPool <- id
 }
