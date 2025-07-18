@@ -267,8 +267,12 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 			case *ast.Heading:
 				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
 				var text string
+				defaultFragment := deck.Fragment{}
+				if v.Level > titleLevel+1 {
+					defaultFragment.Bold = true
+				}
 				// don't support images in headings
-				frags, _, err := toFragments(baseDir, b, v)
+				frags, _, err := toFragments(baseDir, b, v, defaultFragment)
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -314,7 +318,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
 				tb := v.FirstChild()
-				frags, images, err := toFragments(baseDir, b, tb)
+				frags, images, err := toFragments(baseDir, b, tb, deck.Fragment{})
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -353,7 +357,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 				if v.Parent() != nil && v.Parent().Kind() == ast.KindListItem {
 					return ast.WalkSkipChildren, nil
 				}
-				frags, images, err := toFragments(baseDir, b, v)
+				frags, images, err := toFragments(baseDir, b, v, deck.Fragment{})
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -512,7 +516,7 @@ func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
 
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck.Image, err error) {
+func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Fragment) (_ []*fragment, _ []*deck.Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -526,7 +530,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
-			children, childImages, err := toFragments(baseDir, b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode, defaultFragment)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -544,7 +548,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			}
 			images = append(images, childImages...)
 		case *ast.Link:
-			children, childImages, err := toFragments(baseDir, b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode, defaultFragment)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -583,12 +587,13 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			if childNode.HardLineBreak() {
 				value += "\n"
 			}
+			frag := defaultFragment
+			frag.Value = value
+			frag.StyleName = styleName
 			frags = append(frags, &fragment{
 				SoftLineBreak: childNode.SoftLineBreak(),
-				Fragment: &deck.Fragment{
-					Value:     value,
-					StyleName: styleName,
-				}})
+				Fragment:      &frag,
+			})
 		case *ast.Image:
 			imageLink := string(childNode.Destination)
 			if !strings.Contains(imageLink, "://") && !filepath.IsAbs(imageLink) {
@@ -648,10 +653,10 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
-				frags = append(frags, &fragment{Fragment: &deck.Fragment{
-					Value:     convert(childNode.Value),
-					StyleName: styleName,
-				}})
+				frag := defaultFragment
+				frag.Value = convert(childNode.Value)
+				frag.StyleName = styleName
+				frags = append(frags, &fragment{Fragment: &frag})
 			} else {
 				// Fallback for empty strings
 				frags = append(frags, &fragment{Fragment: &deck.Fragment{
@@ -659,7 +664,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 				}})
 			}
 		case *ast.CodeSpan:
-			children, childImages, err := toFragments(baseDir, b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode, defaultFragment)
 			if err != nil {
 				return nil, nil, err
 			}

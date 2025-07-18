@@ -5,7 +5,7 @@
       "Inline Code"
     ],
     "subtitles": [
-      "Hello `code`"
+      "Hello code"
     ],
     "bodies": [
       {
@@ -50,7 +50,7 @@
         "Inline Code"
       ],
       "2": [
-        "Hello `code`"
+        "Hello code"
       ]
     }
   }
