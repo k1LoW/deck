@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.43.0](https://github.com/k1LoW/deck/compare/v0.42.2...v0.43.0) - 2025-07-18
+### New Features 🎉
+- feat: support image placeholder by @Songmu in https://github.com/k1LoW/deck/pull/269
+
 ## [v0.42.2](https://github.com/k1LoW/deck/compare/v0.42.1...v0.42.2) - 2025-07-17
 ### Fix bug 🐛
 - fix: improve split markdown as contents by @k1LoW in https://github.com/k1LoW/deck/pull/267
