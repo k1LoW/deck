@@ -628,11 +628,8 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err err
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	layoutMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutMap[l.LayoutProperties.DisplayName] = l
-	}
 
+	layoutMap := d.layoutMap()
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
 		return fmt.Errorf("layout not found: %q", slide.Layout)
@@ -667,11 +664,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	layoutMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutMap[l.LayoutProperties.DisplayName] = l
-	}
 
+	layoutMap := d.layoutMap()
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
 		return fmt.Errorf("layout not found: %q", slide.Layout)
@@ -1140,6 +1134,14 @@ func (d *Deck) movePage(ctx context.Context, from_index, to_index int) (err erro
 	return nil
 }
 
+func (d *Deck) layoutMap() map[string]*slides.Page {
+	layoutMap := map[string]*slides.Page{}
+	for _, l := range d.presentation.Layouts {
+		layoutMap[l.LayoutProperties.DisplayName] = l
+	}
+	return layoutMap
+}
+
 func (d *Deck) refresh(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -1183,10 +1185,18 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 			}
 		}
 	}
-	if d.defaultTitleLayout == "" {
+
+	// If the default layouts that were derived are renamed or otherwise disappear, search for them again.
+	// The defaultLayout may be an empty string, but even in that case, the layout search from the map
+	// will fail, so this case is also covered.
+	layoutMap := d.layoutMap()
+	_, defaultTitleLayoutFound := layoutMap[d.defaultTitleLayout]
+	_, defaultLayoutFound := layoutMap[d.defaultLayout]
+
+	if !defaultTitleLayoutFound {
 		d.defaultTitleLayout = d.presentation.Layouts[0].LayoutProperties.DisplayName
 	}
-	if d.defaultLayout == "" {
+	if !defaultLayoutFound {
 		if len(d.presentation.Layouts) > 1 {
 			d.defaultLayout = d.presentation.Layouts[1].LayoutProperties.DisplayName
 		} else {
