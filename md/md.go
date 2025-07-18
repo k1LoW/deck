@@ -265,14 +265,15 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 		if entering {
 			switch v := n.(type) {
 			case *ast.Heading:
-				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
 				var text string
-				defaultFragment := deck.Fragment{}
+				seedFragment := deck.Fragment{}
 				if v.Level > titleLevel+1 {
-					defaultFragment.Bold = true
+					// Heading elements that are not at the level of titles or subtitles are embedded in the body,
+					// so they are bold by default.
+					seedFragment.Bold = true
 				}
-				// don't support images in headings
-				frags, _, err := toFragments(baseDir, b, v, defaultFragment)
+				// don't support images in headings for now
+				frags, _, err := toFragments(baseDir, b, v, seedFragment)
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -516,7 +517,7 @@ func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
 
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Fragment) (_ []*fragment, _ []*deck.Image, err error) {
+func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragment) (_ []*fragment, _ []*deck.Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -530,7 +531,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Frag
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
-			children, childImages, err := toFragments(baseDir, b, childNode, defaultFragment)
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -548,7 +549,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Frag
 			}
 			images = append(images, childImages...)
 		case *ast.Link:
-			children, childImages, err := toFragments(baseDir, b, childNode, defaultFragment)
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -587,7 +588,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Frag
 			if childNode.HardLineBreak() {
 				value += "\n"
 			}
-			frag := defaultFragment
+			frag := seedFragment
 			frag.Value = value
 			frag.StyleName = styleName
 			frags = append(frags, &fragment{
@@ -653,7 +654,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Frag
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
-				frag := defaultFragment
+				frag := seedFragment
 				frag.Value = convert(childNode.Value)
 				frag.StyleName = styleName
 				frags = append(frags, &fragment{Fragment: &frag})
@@ -664,7 +665,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, defaultFragment deck.Frag
 				}})
 			}
 		case *ast.CodeSpan:
-			children, childImages, err := toFragments(baseDir, b, childNode, defaultFragment)
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
 				return nil, nil, err
 			}
