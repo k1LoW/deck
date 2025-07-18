@@ -28,11 +28,11 @@ var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
 
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/k1LoW/deck)"
 
-// HTTP client cache for reusing clients with the same configuration
-// This is primarily for parallel test execution to avoid creating multiple clients
+// HTTP client cache for reusing clients with the same configuration.
+// This is primarily for parallel test execution to avoid creating multiple clients.
 var httpClientCache sync.Map
 
-// generateConfigKey creates a cache key from OAuth2 config
+// generateConfigKey creates a cache key from OAuth2 config.
 func generateConfigKey(cfg *oauth2.Config) string {
 	// Use client ID and scopes as the key since these define the client behavior
 	key := fmt.Sprintf("%s:%v", cfg.ClientID, cfg.Scopes)
@@ -49,7 +49,11 @@ func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.C
 	// Check cache first
 	configKey := generateConfigKey(cfg)
 	if cachedClient, exists := httpClientCache.Load(configKey); exists {
-		return cachedClient.(*http.Client), nil
+		client, ok := cachedClient.(*http.Client)
+		if !ok {
+			return nil, fmt.Errorf("cached client for key %s is not of type *http.Client", configKey)
+		}
+		return client, nil
 	}
 
 	tokenPath := filepath.Join(config.StateHomePath(), "token.json")

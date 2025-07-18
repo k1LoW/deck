@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 	"sync"
 	"testing"
 
@@ -17,13 +16,13 @@ const (
 	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
 )
 
-// global presentation pool instance
+// global presentation pool instance.
 var presentationPool chan string
 
-// SetupPresentationPool creates a pool of presentations for parallel tests
-func SetupPresentationPool(ctx context.Context) ([]string, error) {
-	// Get parallel count from GOMAXPROCS or test.parallel flag
-	parallelCount := min(runtime.GOMAXPROCS(0), 5)
+// initPresentationPool creates a pool of presentations for parallel tests.
+func initPresentationPool(ctx context.Context) ([]string, error) {
+	// After trying several times, we decided that 3 parallel is the best setting.
+	const parallelCount = 3
 
 	presentationPool = make(chan string, parallelCount)
 
@@ -66,7 +65,7 @@ func SetupPresentationPool(ctx context.Context) ([]string, error) {
 	return created, nil
 }
 
-// TestMain runs setup and cleanup for integration tests
+// TestMain runs setup and cleanup for integration tests.
 func TestMain(m *testing.M) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
 		os.Exit(m.Run())
@@ -74,7 +73,7 @@ func TestMain(m *testing.M) {
 
 	// Setup presentation pool
 	ctx := context.Background()
-	createdPresentations, err := SetupPresentationPool(ctx)
+	createdPresentations, err := initPresentationPool(ctx)
 	if err != nil {
 		log.Printf("Failed to setup presentation pool: %v\n", err)
 		os.Exit(1)
@@ -98,14 +97,14 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// AcquirePresentation gets a presentation ID from the pool
+// AcquirePresentation gets a presentation ID from the pool.
 func AcquirePresentation(t *testing.T) string {
 	t.Helper()
 
 	return <-presentationPool
 }
 
-// ReleasePresentation returns a presentation ID to the pool
+// ReleasePresentation returns a presentation ID to the pool.
 func ReleasePresentation(id string) {
 	presentationPool <- id
 }
