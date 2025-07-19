@@ -1555,7 +1555,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 
 	for _, element := range currentSlide.PageElements {
 		// copy images from the current slide to the new slide
-		if element.Image != nil && element.Description != descriptionImageFromMarkdown {
+		if element.Image != nil && element.Description != descriptionImageFromMarkdown && element.Image.ContentUrl != "" {
 			req.Requests = append(req.Requests, &slides.Request{
 				CreateImage: &slides.CreateImageRequest{
 					ElementProperties: &slides.PageElementProperties{
