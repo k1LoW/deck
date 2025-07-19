@@ -49,7 +49,13 @@ type Frontmatter struct {
 	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
 	// Whether to display line breaks in the document as line breaks
-	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
+	Breaks   bool               `yaml:"breaks,omitempty" json:"breaks,omitempty"`
+	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"` // default layout conditions
+}
+
+type DefaultCondition struct {
+	If     string `json:"if"`     // condition to check
+	Layout string `json:"layout"` // layout name to apply if condition is true
 }
 
 // Contents represents a collection of slide contents.
