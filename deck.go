@@ -319,15 +319,6 @@ func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err err
 	return nil
 }
 
-// ListSlideURLs lists URLs of the slides in the Google Slides presentation.
-func (d *Deck) ListSlideURLs() []string {
-	var slideURLs []string
-	for _, s := range d.presentation.Slides {
-		slideURLs = append(slideURLs, fmt.Sprintf("https://docs.google.com/presentation/d/%s/present?slide=id.%s", d.id, s.ObjectId))
-	}
-	return slideURLs
-}
-
 func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
 	defer func() {
 		err = errors.WithStack(err)
