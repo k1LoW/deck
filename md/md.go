@@ -70,18 +70,20 @@ type CodeBlock struct {
 
 // Content represents a single slide content.
 type Content struct {
-	Layout      string             `json:"layout"`
-	Freeze      bool               `json:"freeze,omitempty"`
-	Ignore      bool               `json:"ignore,omitempty"`
-	Skip        bool               `json:"skip,omitempty"`
-	Titles      []string           `json:"titles,omitempty"`
-	Subtitles   []string           `json:"subtitles,omitempty"`
-	Bodies      []*deck.Body       `json:"bodies,omitempty"`
-	Images      []*deck.Image      `json:"images,omitempty"`
-	CodeBlocks  []*CodeBlock       `json:"code_blocks,omitempty"`
-	BlockQuotes []*deck.BlockQuote `json:"block_quotes,omitempty"`
-	Comments    []string           `json:"comments,omitempty"`
-	Headings    map[int][]string   `json:"headings,omitempty"`
+	Layout         string             `json:"layout"`
+	Freeze         bool               `json:"freeze,omitempty"`
+	Ignore         bool               `json:"ignore,omitempty"`
+	Skip           bool               `json:"skip,omitempty"`
+	Titles         []string           `json:"titles,omitempty"`
+	TitleBodies    []*deck.Body       `json:"-"`
+	Subtitles      []string           `json:"subtitles,omitempty"`
+	SubtitleBodies []*deck.Body       `json:"-"`
+	Bodies         []*deck.Body       `json:"bodies,omitempty"`
+	Images         []*deck.Image      `json:"images,omitempty"`
+	CodeBlocks     []*CodeBlock       `json:"code_blocks,omitempty"`
+	BlockQuotes    []*deck.BlockQuote `json:"block_quotes,omitempty"`
+	Comments       []string           `json:"comments,omitempty"`
+	Headings       map[int][]string   `json:"headings,omitempty"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -239,15 +241,17 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 			}
 		}
 		slides[i] = &deck.Slide{
-			Layout:      content.Layout,
-			Freeze:      content.Freeze,
-			Skip:        content.Skip,
-			Titles:      content.Titles,
-			Subtitles:   content.Subtitles,
-			Bodies:      content.Bodies,
-			Images:      images,
-			BlockQuotes: content.BlockQuotes,
-			SpeakerNote: strings.Join(content.Comments, "\n\n"),
+			Layout:         content.Layout,
+			Freeze:         content.Freeze,
+			Skip:           content.Skip,
+			Titles:         content.Titles,
+			TitleBodies:    content.TitleBodies,
+			Subtitles:      content.Subtitles,
+			SubtitleBodies: content.SubtitleBodies,
+			Bodies:         content.Bodies,
+			Images:         images,
+			BlockQuotes:    content.BlockQuotes,
+			SpeakerNote:    strings.Join(content.Comments, "\n\n"),
 		}
 	}
 	return slides, nil
@@ -261,38 +265,61 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 		if entering {
 			switch v := n.(type) {
 			case *ast.Heading:
-				// TODO: apply inline styles to headings. ref. https://github.com/k1LoW/deck/issues/198
-				text := convert(v.Lines().Value(b))
+				var text string
+				seedFragment := deck.Fragment{}
+				if v.Level > titleLevel+1 {
+					// Heading elements that are not at the level of titles or subtitles are embedded in the body,
+					// so they are bold by default.
+					seedFragment.Bold = true
+				}
+				// don't support images in headings for now
+				frags, _, err := toFragments(baseDir, b, v, seedFragment)
+				if err != nil {
+					return ast.WalkStop, err
+				}
+				deckFrags := toDeckFragments(frags, breaks)
+				for _, frag := range deckFrags {
+					if frag.Value != "" {
+						text += frag.Value
+					}
+				}
 				content.Headings[v.Level] = append(content.Headings[v.Level], text)
 
 				switch v.Level {
 				case titleLevel:
 					content.Titles = append(content.Titles, text)
+					content.TitleBodies = append(content.TitleBodies, &deck.Body{
+						Paragraphs: []*deck.Paragraph{{
+							Fragments: deckFrags,
+						}},
+					})
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case titleLevel + 1:
 					content.Subtitles = append(content.Subtitles, text)
+					content.SubtitleBodies = append(content.SubtitleBodies, &deck.Body{
+						Paragraphs: []*deck.Paragraph{{
+							Fragments: deckFrags,
+						}},
+					})
 					if len(currentBody.Paragraphs) > 0 {
 						currentBody = &deck.Body{}
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				default:
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
-						Fragments: []*deck.Fragment{{
-							Value: text,
-							Bold:  true,
-						}},
-						Bullet:  deck.BulletNone,
-						Nesting: 0,
+						Fragments: deckFrags,
+						Bullet:    deck.BulletNone,
+						Nesting:   0,
 					})
 				}
 			case *ast.List:
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
 				tb := v.FirstChild()
-				frags, images, err := toFragments(baseDir, b, tb)
+				frags, images, err := toFragments(baseDir, b, tb, deck.Fragment{})
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -331,7 +358,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 				if v.Parent() != nil && v.Parent().Kind() == ast.KindListItem {
 					return ast.WalkSkipChildren, nil
 				}
-				frags, images, err := toFragments(baseDir, b, v)
+				frags, images, err := toFragments(baseDir, b, v, deck.Fragment{})
 				if err != nil {
 					return ast.WalkStop, err
 				}
@@ -490,7 +517,7 @@ func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
 
 // toFragments converts an AST node to a slice of Fragment structures.
 // It handles emphasis, links, text, and other node types to create formatted text fragments.
-func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck.Image, err error) {
+func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragment) (_ []*fragment, _ []*deck.Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -504,7 +531,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
 		switch childNode := c.(type) {
 		case *ast.Emphasis:
-			children, childImages, err := toFragments(baseDir, b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -522,7 +549,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			}
 			images = append(images, childImages...)
 		case *ast.Link:
-			children, childImages, err := toFragments(baseDir, b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -561,12 +588,13 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 			if childNode.HardLineBreak() {
 				value += "\n"
 			}
+			frag := seedFragment
+			frag.Value = value
+			frag.StyleName = styleName
 			frags = append(frags, &fragment{
 				SoftLineBreak: childNode.SoftLineBreak(),
-				Fragment: &deck.Fragment{
-					Value:     value,
-					StyleName: styleName,
-				}})
+				Fragment:      &frag,
+			})
 		case *ast.Image:
 			imageLink := string(childNode.Destination)
 			if !strings.Contains(imageLink, "://") && !filepath.IsAbs(imageLink) {
@@ -626,10 +654,10 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 		case *ast.String:
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
-				frags = append(frags, &fragment{Fragment: &deck.Fragment{
-					Value:     convert(childNode.Value),
-					StyleName: styleName,
-				}})
+				frag := seedFragment
+				frag.Value = convert(childNode.Value)
+				frag.StyleName = styleName
+				frags = append(frags, &fragment{Fragment: &frag})
 			} else {
 				// Fallback for empty strings
 				frags = append(frags, &fragment{Fragment: &deck.Fragment{
@@ -637,7 +665,7 @@ func toFragments(baseDir string, b []byte, n ast.Node) (_ []*fragment, _ []*deck
 				}})
 			}
 		case *ast.CodeSpan:
-			children, childImages, err := toFragments(baseDir, b, childNode)
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
 				return nil, nil, err
 			}
