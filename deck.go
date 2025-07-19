@@ -385,28 +385,6 @@ func (d *Deck) Export(ctx context.Context, w io.Writer) (err error) {
 	return nil
 }
 
-func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if err := d.refresh(ctx); err != nil {
-		return nil, fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if d.presentation == nil {
-		return nil, fmt.Errorf("presentation is not loaded")
-	}
-	layoutObjectIdMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutObjectIdMap[l.ObjectId] = l
-	}
-	slides := make(Slides, 0, len(d.presentation.Slides))
-	for _, p := range d.presentation.Slides {
-		slide := convertToSlide(p, layoutObjectIdMap)
-		slides = append(slides, slide)
-	}
-	return slides, nil
-}
-
 func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
