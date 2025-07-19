@@ -2,7 +2,6 @@ package deck
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/k1LoW/errors"
 	"google.golang.org/api/slides/v1"
@@ -52,13 +51,4 @@ func (d *Deck) ListLayouts() []string {
 		layouts = append(layouts, l.LayoutProperties.DisplayName)
 	}
 	return layouts
-}
-
-// ListSlideURLs lists URLs of the slides in the Google Slides presentation.
-func (d *Deck) ListSlideURLs() []string {
-	var slideURLs []string
-	for _, s := range d.presentation.Slides {
-		slideURLs = append(slideURLs, fmt.Sprintf("https://docs.google.com/presentation/d/%s/present?slide=id.%s", d.id, s.ObjectId))
-	}
-	return slideURLs
 }
