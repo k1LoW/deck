@@ -25,7 +25,9 @@ fuzz:
 	go test -fuzz=FuzzGenerateActions -fuzztime=1m .
 
 integration:
-	env TEST_INTEGRATION=1 go test -v . -test.failfast -run 'TestApply$$|TestRoundTripSlidesToGoogleSlidesPresentationAndBack$$|TestApplyMarkdown$$|TestAction$$' -timeout 30m
+	env TEST_INTEGRATION=1 go test -p 3 -v . -test.failfast -run \
+	  'TestApply$$|TestRoundTripSlidesToGoogleSlidesPresentationAndBack$$|TestApplyMarkdown$$|TestAction$$' \
+	  -timeout 30m
 
 depsdev:
 	go install github.com/Songmu/ghch/cmd/ghch@latest
