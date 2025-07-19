@@ -193,24 +193,6 @@ func Delete(ctx context.Context, id string) (err error) {
 	return nil
 }
 
-// AllowReadingByAnyone sets the permission of the presentation to allow anyone to read it.
-func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if d.id == "" {
-		return fmt.Errorf("presentation ID is not set")
-	}
-	permission := &drive.Permission{
-		Type: "anyone",
-		Role: "reader",
-	}
-	if _, err := d.driveSrv.Permissions.Create(d.id, permission).Context(ctx).Do(); err != nil {
-		return fmt.Errorf("failed to set permission: %w", err)
-	}
-	return nil
-}
-
 // ID returns the ID of the presentation.
 func (d *Deck) ID() string {
 	return d.id
