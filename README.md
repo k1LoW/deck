@@ -57,14 +57,14 @@ xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 
 This will create (or update) the specified markdown file with frontmatter containing the presentation ID and title.
 
-### Write desk in markdown
+### Write deck in markdown
 
 The slide pages are represented by dividing them with horizontal lines `---`.
 
 > [!NOTE]
 > The `---` at the beginning of the markdown is ignored.
 
-### Apply desk written in markdown to Google Slides presentation
+### Apply deck written in markdown to Google Slides presentation
 
 ```console
 $ deck apply deck.md --presentation-id xxxxxXXXXxxxxxXXXXxxxxxxxxxx
@@ -120,29 +120,29 @@ The frontmatter must be:
 
 #### Available fields
 
-- `presentationID`: Google Slides presentation ID. When specified, you can use the simplified command syntax.
-- `title`: title of the presentation. When specified, you can use the simplified command syntax.
-- `breaks`: (boolean) Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
-
-Note: This feature is reserved for future enhancements.
+- `presentationID` (string): Google Slides presentation ID. When specified, you can use the simplified command syntax.
+- `title` (string): title of the presentation. When specified, you can use the simplified command syntax.
+- `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
 
 ### Insertion rule
 
 `deck` inserts values according to the following rules regardless of the slide layout.
 
-- The minimum heading level within each slide content is treated as the title and inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
+- The shallowest heading level within each slide content is treated as the title and inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
   - In most cases, this will be H1 (`#`), which is the standard for slide titles
 - The next heading level (minimum level + 1) is treated as the subtitle and inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
   - When H1 is used for titles, H2 (`##`) becomes the subtitle
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
+    - The remaining contents are divided into one or more bodies by headings corresponding to the title or subtitle in the slide.
 
 For example:
 - **Standard case**: If a slide contains `#` (H1), then `#` becomes title and `##` becomes subtitle
-- **Alternative case**: If a slide only contains `##` (H2) or higher, then `##` becomes title and `###` becomes subtitle
-- This allows flexibility in creating slides from various markdown content structures while maintaining familiar heading hierarchies
+- **Alternative case**: If a slide only contains `##` (H2) or deeper, then `##` becomes title and `###` becomes subtitle
 
 > [!NOTE]
 > They are inserted in the order they appear in the markdown document, **from the placeholder at the top of the slide** (or from the placeholder on the left if the slides are the same height).
+>
+> Also, if there are not enough placeholders, the remaining contents will not be rendered.
 
 #### Input markdown document
 
@@ -184,6 +184,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - `<br>` (for newline)
 - Image (`![Image](path/to/image.png)` )
 - Block quote ( `> block quote` )
+- RAW inline HTML (e.g., `<mark>`, `<small>`, `<kbd>`, `<cite>`, `<q>`, `<span>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<var>`, `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`)
 
 #### Line break handling
 
@@ -217,8 +218,8 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
-| HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, etc. ) |
 | `blockquote` | style for block quote. |
+| HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, etc. ) |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
 #### Code blocks to images
