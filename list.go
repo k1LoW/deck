@@ -20,21 +20,7 @@ func List(ctx context.Context) (_ []*Presentation, err error) {
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
 	}
-	var presentations []*Presentation
-
-	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, f := range r.Files {
-		presentations = append(presentations, &Presentation{
-			ID:    f.Id,
-			Title: f.Name,
-		})
-	}
-
-	return presentations, nil
+	return d.List()
 }
 
 // List Google Slides presentations.
