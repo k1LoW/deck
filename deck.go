@@ -17,17 +17,7 @@ import (
 	"google.golang.org/api/slides/v1"
 )
 
-const (
-	layoutNameForStyle             = "style"
-	styleCode                      = "code"
-	styleBold                      = "bold"
-	styleItalic                    = "italic"
-	styleLink                      = "link"
-	styleBlockQuote                = "blockquote"
-	defaultCodeFontFamily          = "Noto Sans Mono"
-	descriptionImageFromMarkdown   = "Image generated from markdown"
-	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
-)
+const layoutNameForStyle = "style"
 
 type Deck struct {
 	id                 string

@@ -16,6 +16,17 @@ import (
 	"google.golang.org/api/slides/v1"
 )
 
+const (
+	styleCode                      = "code"
+	styleBold                      = "bold"
+	styleItalic                    = "italic"
+	styleLink                      = "link"
+	styleBlockQuote                = "blockquote"
+	defaultCodeFontFamily          = "Noto Sans Mono"
+	descriptionImageFromMarkdown   = "Image generated from markdown"
+	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
+)
+
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(ctx context.Context, slides Slides) (err error) {
 	defer func() {
