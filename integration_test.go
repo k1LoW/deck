@@ -18,11 +18,6 @@ import (
 	"github.com/lestrrat-go/backoff/v2"
 )
 
-const (
-	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
-	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
-)
-
 var testCodeBlockToImageCmd = func() string {
 	abs, err := filepath.Abs("testdata/txt2img/main.go")
 	if err != nil {
@@ -37,24 +32,6 @@ func TestApplyMarkdown(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	d, err := deck.CreateFrom(ctx, basePresentationID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
-		t.Fatalf("failed to update title: %v", err)
-	}
-	presentationID := d.ID()
-	if err := d.AllowReadingByAnyone(ctx); err != nil {
-		t.Fatal(err)
-	}
-	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
-
-	t.Cleanup(func() {
-		if err := deck.Delete(ctx, presentationID); err != nil {
-			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
-		}
-	})
 
 	tests := []struct {
 		in string
@@ -83,6 +60,12 @@ func TestApplyMarkdown(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+
+			// Acquire a presentation from the pool
+			presentationID := deck.AcquirePresentation(t)
+			defer deck.ReleasePresentation(presentationID)
+
 			b, err := os.ReadFile(tt.in)
 			if err != nil {
 				t.Fatal(err)
@@ -171,21 +154,6 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	d, err := deck.CreateFrom(ctx, basePresentationID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
-		t.Fatalf("failed to update title: %v", err)
-	}
-	presentationID := d.ID()
-	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
-
-	t.Cleanup(func() {
-		if err := deck.Delete(ctx, presentationID); err != nil {
-			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
-		}
-	})
 
 	tests := []struct {
 		in string
@@ -218,6 +186,12 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
+			t.Parallel()
+
+			// Acquire a presentation from the pool
+			presentationID := deck.AcquirePresentation(t)
+			defer deck.ReleasePresentation(presentationID)
+
 			b, err := os.ReadFile(tt.in)
 			if err != nil {
 				t.Fatal(err)

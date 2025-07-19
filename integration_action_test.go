@@ -14,21 +14,6 @@ func TestAction(t *testing.T) {
 		t.Skip("skipping integration test, set TEST_INTEGRATION=1 to run")
 	}
 	ctx := context.Background()
-	d, err := CreateFrom(ctx, basePresentationID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := d.UpdateTitle(ctx, titleForTest); err != nil {
-		t.Fatalf("failed to update title: %v", err)
-	}
-	presentationID := d.ID()
-	t.Logf("Presentation URL for test: https://docs.google.com/presentation/d/%s", presentationID)
-
-	t.Cleanup(func() {
-		if err := Delete(ctx, presentationID); err != nil {
-			t.Fatalf("failed to delete presentation %s: %v", presentationID, err)
-		}
-	})
 
 	cmpopts := cmp.Options{
 		cmpopts.IgnoreFields(Fragment{}, "StyleName"),
@@ -163,6 +148,12 @@ func TestAction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Acquire a presentation from the pool
+			presentationID := AcquirePresentation(t)
+			defer ReleasePresentation(presentationID)
+
 			d, err := New(ctx, WithPresentationID(presentationID))
 			if err != nil {
 				t.Fatal(err)
