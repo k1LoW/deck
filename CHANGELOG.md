@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.44.0](https://github.com/k1LoW/deck/compare/v0.43.1...v0.44.0) - 2025-07-19
+### New Features 🎉
+- chore: Execute integration tests in parallel in groups of three by @Songmu in https://github.com/k1LoW/deck/pull/279
+- feat: apply inline styles to headings by @Songmu in https://github.com/k1LoW/deck/pull/273
+### Other Changes
+- chore: README.md by @Songmu in https://github.com/k1LoW/deck/pull/280
+
 ## [v0.43.1](https://github.com/k1LoW/deck/compare/v0.43.0...v0.43.1) - 2025-07-18
 ### Fix bug 🐛
 - fix(compare): ensure images are sorted without modifying input slices by @k1LoW in https://github.com/k1LoW/deck/pull/276
