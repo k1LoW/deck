@@ -112,13 +112,10 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 		})
 	}
 
-	// Close result channel when all workers are done
-	go func() {
-		if err := g.Wait(); err != nil {
-			d.logger.Error("failed to preload some images", slog.Any("error", err))
-		}
-		close(resultCh)
-	}()
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("failed to preload images: %w", err)
+	}
+	close(resultCh)
 
 	// Collect results and build currentImageData directly with proper ordering
 	for res := range resultCh {
@@ -142,11 +139,6 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 			result[res.slideIndex].currentImages[res.imageIndex] = res.image
 			result[res.slideIndex].currentImageObjectIDMap[res.image] = res.objectID
 		}
-	}
-
-	// Wait for all workers to complete and check for errors
-	if err := g.Wait(); err != nil {
-		return nil, fmt.Errorf("failed to preload images: %w", err)
 	}
 
 	return result, nil
