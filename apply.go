@@ -27,6 +27,14 @@ const (
 	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
 )
 
+// imageUploadResult holds the result of parallel image uploading
+type imageUploadResult struct {
+	image          *Image
+	webContentLink string
+	uploadedID     string
+	err            error
+}
+
 // Apply the markdown slides to the presentation.
 func (d *Deck) Apply(ctx context.Context, slides Slides) (err error) {
 	defer func() {
@@ -132,10 +140,16 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	}
 	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
 
+	// Pre-fetch current images in parallel for all slides that will be processed
+	currentImages, err := d.preloadCurrentImages(ctx, actions)
+	if err != nil {
+		return fmt.Errorf("failed to preload current images: %w", err)
+	}
+
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
-			if err := d.AppendPage(ctx, action.slide); err != nil {
+			if err := d.AppendPage(ctx, action.slide, nil); err != nil {
 				return fmt.Errorf("failed to append slide: %w", err)
 			}
 		case actionTypeInsert:
@@ -144,7 +158,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			}
 		case actionTypeUpdate:
 			d.logger.Info("appling page", slog.Int("index", action.index))
-			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+			if err := d.applyPage(ctx, action.index, action.slide, currentImages[action.index]); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}
 			d.logger.Info("applied page", slog.Int("index", action.index))
@@ -162,7 +176,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	return nil
 }
 
-func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err error) {
+func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded *currentImageData) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -198,6 +212,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
 		req                       = &slides.BatchUpdatePresentationRequest{}
 	)
+
+	// Use preloaded image data if available, otherwise fetch on demand
+	if preloaded != nil {
+		currentImages = preloaded.currentImages
+		currentImageObjectIDMap = preloaded.currentImageObjectIDMap
+	}
+
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
 		switch {
@@ -231,7 +252,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				x:        element.Transform.TranslateX,
 				y:        element.Transform.TranslateY,
 			})
-		case element.Image != nil:
+		case element.Image != nil && preloaded == nil:
+			// Only fetch images on demand if preloaded data is not available
 			var (
 				image *Image
 				err   error

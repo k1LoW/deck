@@ -40,7 +40,7 @@ func TestAction(t *testing.T) {
 					Layout:      "title-and-body",
 					Titles:      []string{"Slide 2"},
 					TitleBodies: toBodies([]string{"Slide 2"}),
-				}); err != nil {
+				}, nil); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -54,7 +54,7 @@ func TestAction(t *testing.T) {
 			before: Slides{},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.AppendPage(ctx, &Slide{Layout: "title-and-body",
-					Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})}); err != nil {
+					Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})}, nil); err != nil {
 
 					t.Fatal(err)
 				}
