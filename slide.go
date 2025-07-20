@@ -100,7 +100,6 @@ type Image struct {
 	uploadMutex    sync.RWMutex
 	uploadState    uploadState
 	webContentLink string
-	uploadedID     string
 	uploadError    error
 }
 
@@ -372,7 +371,6 @@ func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 	} else {
 		i.uploadState = uploadStateCompleted
 		i.webContentLink = webContentLink
-		i.uploadedID = uploadedID
 		i.uploadError = nil
 	}
 }
