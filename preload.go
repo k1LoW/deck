@@ -71,7 +71,7 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 		return result, nil
 	}
 
-	// Process images in parallel using semaphore + errgroup
+	// Process images in parallel
 	const maxWorkers = 8
 	sem := semaphore.NewWeighted(int64(maxWorkers))
 	g, ctx := errgroup.WithContext(ctx)
@@ -159,7 +159,7 @@ type uploadedImageInfo struct {
 // startUploadingImages starts uploading new images asynchronously and returns a channel for cleanup
 func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, currentImages map[int]*currentImageData) <-chan uploadedImageInfo {
 	// Create channel for uploaded image IDs
-	uploadedCh := make(chan uploadedImageInfo, 100)
+	uploadedCh := make(chan uploadedImageInfo, 1000)
 	// Collect all images that need uploading
 	var imagesToUpload []*Image
 
@@ -198,84 +198,76 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 	go func() {
 		// Process images in parallel
 		const maxWorkers = 8
+		sem := semaphore.NewWeighted(int64(maxWorkers))
+		var wg sync.WaitGroup
 
-		imageCh := make(chan *Image, len(imagesToUpload))
+		for _, image := range imagesToUpload {
+			// Try to acquire semaphore
+			if err := sem.Acquire(ctx, 1); err != nil {
+				// Context cancelled, set upload error on remaining images
+				image.SetUploadResult("", "", err)
+				continue
+			}
 
-		// Start worker goroutines
-		g, uploadCtx := errgroup.WithContext(ctx)
-		numWorkers := min(maxWorkers, len(imagesToUpload))
+			wg.Add(1)
+			go func(image *Image) {
+				defer func() {
+					sem.Release(1)
+					wg.Done()
+				}()
 
-		for range numWorkers {
-			g.Go(func() error {
-				for image := range imageCh {
-					// Upload image to Google Drive
-					df := &drive.File{
-						Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
-						MimeType: string(image.mimeType),
-					}
-					uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
-					if err != nil {
-						image.SetUploadResult("", "", fmt.Errorf("failed to upload image: %w", err))
-						continue
-					}
-
-					// Set permission
-					if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
-						Type: "anyone",
-						Role: "reader",
-					}).Do(); err != nil {
-						// Clean up uploaded file on permission error
-						d.driveSrv.Files.Delete(uploaded.Id).Do()
-						image.SetUploadResult("", "", fmt.Errorf("failed to set permission for image: %w", err))
-						continue
-					}
-
-					// Get webContentLink
-					f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
-					if err != nil {
-						// Clean up uploaded file on error
-						d.driveSrv.Files.Delete(uploaded.Id).Do()
-						image.SetUploadResult("", "", fmt.Errorf("failed to get webContentLink for image: %w", err))
-						continue
-					}
-
-					if f.WebContentLink == "" {
-						// Clean up uploaded file on error
-						d.driveSrv.Files.Delete(uploaded.Id).Do()
-						image.SetUploadResult("", "", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
-						continue
-					}
-
-					// Set successful upload result
-					image.SetUploadResult(f.WebContentLink, uploaded.Id, nil)
-
-					// Send uploaded info to cleanup channel
-					select {
-					case uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}:
-					case <-uploadCtx.Done():
-						return uploadCtx.Err()
-					}
+				// Upload image to Google Drive
+				df := &drive.File{
+					Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
+					MimeType: string(image.mimeType),
 				}
-				return nil
-			})
-		}
-
-		// Send work to workers
-		go func() {
-			defer close(imageCh)
-			for _, image := range imagesToUpload {
-				select {
-				case imageCh <- image:
-				case <-uploadCtx.Done():
+				uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
+				if err != nil {
+					image.SetUploadResult("", "", fmt.Errorf("failed to upload image: %w", err))
 					return
 				}
-			}
-		}()
+
+				// Set permission
+				if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
+					Type: "anyone",
+					Role: "reader",
+				}).Do(); err != nil {
+					// Clean up uploaded file on permission error
+					d.driveSrv.Files.Delete(uploaded.Id).Do()
+					image.SetUploadResult("", "", fmt.Errorf("failed to set permission for image: %w", err))
+					return
+				}
+
+				// Get webContentLink
+				f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
+				if err != nil {
+					// Clean up uploaded file on error
+					d.driveSrv.Files.Delete(uploaded.Id).Do()
+					image.SetUploadResult("", "", fmt.Errorf("failed to get webContentLink for image: %w", err))
+					return
+				}
+
+				if f.WebContentLink == "" {
+					// Clean up uploaded file on error
+					d.driveSrv.Files.Delete(uploaded.Id).Do()
+					image.SetUploadResult("", "", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
+					return
+				}
+
+				// Set successful upload result
+				image.SetUploadResult(f.WebContentLink, uploaded.Id, nil)
+
+				// Send uploaded info to cleanup channel
+				select {
+				case uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}:
+				case <-ctx.Done():
+					return
+				}
+			}(image)
+		}
 
 		// Wait for all workers to complete
-		if err := g.Wait(); err != nil {
-			d.logger.Error("failed to upload some images", slog.Any("error", err))
-		}
+		wg.Wait()
 
 		// Close the channel when all uploads are done
 		close(uploadedCh)
