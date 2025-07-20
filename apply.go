@@ -377,7 +377,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 
 		// Wait for image upload to complete
-		webContentLink, err := image.WaitForUpload()
+		webContentLink, err := image.UploadInfo()
 		if err != nil {
 			return fmt.Errorf("failed to upload image: %w", err)
 		}

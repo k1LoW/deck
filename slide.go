@@ -377,8 +377,8 @@ func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 	}
 }
 
-// WaitForUpload waits for the upload to complete and returns the webContentLink.
-func (i *Image) WaitForUpload() (string, error) {
+// UploadInfo waits for the upload to complete and returns the webContentLink.
+func (i *Image) UploadInfo() (string, error) {
 	for {
 		i.uploadMutex.RLock()
 		state := i.uploadState
