@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/corona10/goimagehash"
@@ -94,7 +95,23 @@ type Image struct {
 	checksum     uint32                 // Checksum for the image data
 	pHash        *goimagehash.ImageHash // Perceptual hash for JPEG images
 	modTime      time.Time              // Modification time of the image file, if applicable
+
+	// Upload state management
+	uploadMutex    sync.RWMutex
+	uploadState    uploadState
+	webContentLink string
+	uploadedID     string
+	uploadError    error
 }
+
+type uploadState int
+
+const (
+	uploadStateNotStarted uploadState = iota
+	uploadStateInProgress
+	uploadStateCompleted
+	uploadStateFailed
+)
 
 func NewImage(pathOrURL string) (_ *Image, err error) {
 	defer func() {
@@ -336,4 +353,58 @@ func (i *Image) UnmarshalJSON(data []byte) (err error) {
 	}
 	i.b = decoded
 	return nil
+}
+
+// StartUpload marks the image as upload in progress
+func (i *Image) StartUpload() {
+	i.uploadMutex.Lock()
+	defer i.uploadMutex.Unlock()
+	i.uploadState = uploadStateInProgress
+}
+
+// SetUploadResult sets the upload result (success or failure)
+func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
+	i.uploadMutex.Lock()
+	defer i.uploadMutex.Unlock()
+	if err != nil {
+		i.uploadState = uploadStateFailed
+		i.uploadError = err
+	} else {
+		i.uploadState = uploadStateCompleted
+		i.webContentLink = webContentLink
+		i.uploadedID = uploadedID
+		i.uploadError = nil
+	}
+}
+
+// WaitForUpload waits for the upload to complete and returns the result
+func (i *Image) WaitForUpload() (webContentLink, uploadedID string, err error) {
+	for {
+		i.uploadMutex.RLock()
+		state := i.uploadState
+		link := i.webContentLink
+		id := i.uploadedID
+		uploadErr := i.uploadError
+		i.uploadMutex.RUnlock()
+
+		switch state {
+		case uploadStateNotStarted:
+			// Image upload not started, return empty values
+			return "", "", nil
+		case uploadStateCompleted:
+			return link, id, nil
+		case uploadStateFailed:
+			return "", "", uploadErr
+		case uploadStateInProgress:
+			// Continue waiting
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+}
+
+// IsUploadNeeded returns true if the image needs to be uploaded
+func (i *Image) IsUploadNeeded() bool {
+	i.uploadMutex.RLock()
+	defer i.uploadMutex.RUnlock()
+	return i.uploadState == uploadStateNotStarted
 }
