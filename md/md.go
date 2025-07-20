@@ -49,8 +49,9 @@ type Frontmatter struct {
 	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
 	// Whether to display line breaks in the document as line breaks
-	Breaks   bool               `yaml:"breaks,omitempty" json:"breaks,omitempty"`
-	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"` // default layout conditions
+	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
+	// Conditions for default
+	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
 }
 
 type DefaultCondition struct {
@@ -213,8 +214,18 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	return content, nil
 }
 
-// ToSlides converts the contents to a slice of deck.Slide structures.
-func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
+func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
+	// TODO: handle default conditions
+
+	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
+}
+
+// toSlides converts the contents to a slice of deck.Slide structures.
+func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()

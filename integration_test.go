@@ -70,11 +70,11 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			markdownData, err := md.Parse("testdata", b)
+			m, err := md.Parse("testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
-			fromMd, err := markdownData.Contents.ToSlides(ctx, testCodeBlockToImageCmd)
+			fromMd, err := m.ToSlides(ctx, testCodeBlockToImageCmd)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -197,11 +197,11 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			markdownData, err := md.Parse("testdata", b)
+			m, err := md.Parse("testdata", b)
 			if err != nil {
 				t.Fatal(err)
 			}
-			base, err := markdownData.Contents.ToSlides(ctx, "")
+			base, err := m.ToSlides(ctx, "")
 			if err != nil {
 				t.Fatal(err)
 			}
