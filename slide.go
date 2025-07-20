@@ -355,14 +355,14 @@ func (i *Image) UnmarshalJSON(data []byte) (err error) {
 	return nil
 }
 
-// StartUpload marks the image as upload in progress
+// StartUpload marks the image as upload in progress.
 func (i *Image) StartUpload() {
 	i.uploadMutex.Lock()
 	defer i.uploadMutex.Unlock()
 	i.uploadState = uploadStateInProgress
 }
 
-// SetUploadResult sets the upload result (success or failure)
+// SetUploadResult sets the upload result (success or failure).
 func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 	i.uploadMutex.Lock()
 	defer i.uploadMutex.Unlock()
@@ -377,7 +377,7 @@ func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 	}
 }
 
-// WaitForUpload waits for the upload to complete and returns the webContentLink
+// WaitForUpload waits for the upload to complete and returns the webContentLink.
 func (i *Image) WaitForUpload() (string, error) {
 	for {
 		i.uploadMutex.RLock()
@@ -401,7 +401,7 @@ func (i *Image) WaitForUpload() (string, error) {
 	}
 }
 
-// IsUploadNeeded returns true if the image needs to be uploaded
+// IsUploadNeeded returns true if the image needs to be uploaded.
 func (i *Image) IsUploadNeeded() bool {
 	i.uploadMutex.RLock()
 	defer i.uploadMutex.RUnlock()

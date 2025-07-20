@@ -14,13 +14,13 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
-// currentImageData holds the result of parallel image fetching
+// currentImageData holds the result of parallel image fetching.
 type currentImageData struct {
 	currentImages           []*Image
 	currentImageObjectIDMap map[*Image]string
 }
 
-// imageToPreload holds image information with slide context
+// imageToPreload holds image information with slide context.
 type imageToPreload struct {
 	slideIndex     int
 	imageIndex     int    // index within the slide
@@ -29,7 +29,7 @@ type imageToPreload struct {
 	isFromMarkdown bool   // whether this image is from markdown
 }
 
-// imageResult holds the result of image processing
+// imageResult holds the result of image processing.
 type imageResult struct {
 	slideIndex int
 	imageIndex int
@@ -37,7 +37,7 @@ type imageResult struct {
 	objectID   string
 }
 
-// preloadCurrentImages pre-fetches current images for all slides that will be processed
+// preloadCurrentImages pre-fetches current images for all slides that will be processed.
 func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map[int]*currentImageData, error) {
 	result := make(map[int]*currentImageData)
 
@@ -114,7 +114,9 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 
 	// Close result channel when all workers are done
 	go func() {
-		g.Wait()
+		if err := g.Wait(); err != nil {
+			d.logger.Error("failed to preload some images", slog.Any("error", err))
+		}
 		close(resultCh)
 	}()
 
@@ -150,13 +152,13 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 	return result, nil
 }
 
-// uploadedImageInfo holds information about uploaded images for cleanup
+// uploadedImageInfo holds information about uploaded images for cleanup.
 type uploadedImageInfo struct {
 	uploadedID string
 	image      *Image
 }
 
-// startUploadingImages starts uploading new images asynchronously and returns a channel for cleanup
+// startUploadingImages starts uploading new images asynchronously and returns a channel for cleanup.
 func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, currentImages map[int]*currentImageData) <-chan uploadedImageInfo {
 	// Create channel for uploaded image IDs
 	uploadedCh := make(chan uploadedImageInfo, 1000)
@@ -204,7 +206,7 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 		for _, image := range imagesToUpload {
 			// Try to acquire semaphore
 			if err := sem.Acquire(ctx, 1); err != nil {
-				// Context cancelled, set upload error on remaining images
+				// Context canceled, set upload error on remaining images
 				image.SetUploadResult("", "", err)
 				continue
 			}
@@ -233,7 +235,11 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 					Role: "reader",
 				}).Do(); err != nil {
 					// Clean up uploaded file on permission error
-					d.driveSrv.Files.Delete(uploaded.Id).Do()
+					if deleteErr := d.driveSrv.Files.Delete(uploaded.Id).Do(); deleteErr != nil {
+						d.logger.Error("failed to delete uploaded file after permission error",
+							slog.String("id", uploaded.Id),
+							slog.Any("error", deleteErr))
+					}
 					image.SetUploadResult("", "", fmt.Errorf("failed to set permission for image: %w", err))
 					return
 				}
@@ -242,14 +248,22 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 				f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
 				if err != nil {
 					// Clean up uploaded file on error
-					d.driveSrv.Files.Delete(uploaded.Id).Do()
+					if deleteErr := d.driveSrv.Files.Delete(uploaded.Id).Do(); deleteErr != nil {
+						d.logger.Error("failed to delete uploaded file after webContentLink fetch error",
+							slog.String("id", uploaded.Id),
+							slog.Any("error", deleteErr))
+					}
 					image.SetUploadResult("", "", fmt.Errorf("failed to get webContentLink for image: %w", err))
 					return
 				}
 
 				if f.WebContentLink == "" {
 					// Clean up uploaded file on error
-					d.driveSrv.Files.Delete(uploaded.Id).Do()
+					if deleteErr := d.driveSrv.Files.Delete(uploaded.Id).Do(); deleteErr != nil {
+						d.logger.Error("failed to delete uploaded file after empty webContentLink",
+							slog.String("id", uploaded.Id),
+							slog.Any("error", deleteErr))
+					}
 					image.SetUploadResult("", "", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
 					return
 				}
@@ -276,7 +290,7 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 	return uploadedCh
 }
 
-// cleanupUploadedImages deletes uploaded images in parallel
+// cleanupUploadedImages deletes uploaded images in parallel.
 func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uploadedImageInfo) error {
 	const maxWorkers = 8
 	sem := semaphore.NewWeighted(int64(maxWorkers))
