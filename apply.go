@@ -136,7 +136,17 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	}
 
 	// Start uploading new images in parallel (don't wait for completion)
-	d.startUploadingImages(ctx, actions, currentImages)
+	uploadedCh := d.startUploadingImages(ctx, actions, currentImages)
+	defer func() {
+		// Clean up uploaded images in parallel
+		if cleanupErr := d.cleanupUploadedImages(ctx, uploadedCh); cleanupErr != nil {
+			if err == nil {
+				err = fmt.Errorf("failed to cleanup uploaded images: %w", cleanupErr)
+			} else {
+				d.logger.Error("failed to cleanup uploaded images", slog.Any("error", cleanupErr))
+			}
+		}
+	}()
 
 	for _, action := range actions {
 		switch action.actionType {
@@ -367,19 +377,14 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 
 		// Wait for image upload to complete
-		webContentLink, uploadedID, err := image.WaitForUpload()
+		webContentLink, err := image.WaitForUpload()
 		if err != nil {
 			return fmt.Errorf("failed to upload image: %w", err)
 		}
 		if webContentLink == "" {
 			return fmt.Errorf("image not uploaded or webContentLink is empty")
 		}
-		defer func(id string) {
-			// Clean up the uploaded image after use
-			if err := d.driveSrv.Files.Delete(id).Do(); err != nil {
-				d.logger.Error("failed to delete uploaded image", slog.String("id", id), slog.Any("error", err))
-			}
-		}(uploadedID)
+		// Cleanup will be done in batch at the end of ApplyPages
 		var imageObjectID string
 		if len(imagePlaceholders) > i {
 			imageObjectID = imagePlaceholders[i].objectID

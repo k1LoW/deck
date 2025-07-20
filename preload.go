@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"sync"
 	"time"
 
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/drive/v3"
 )
 
@@ -156,8 +158,16 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 	return result, nil
 }
 
-// startUploadingImages starts uploading new images asynchronously
-func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, currentImages map[int]*currentImageData) {
+// uploadedImageInfo holds information about uploaded images for cleanup
+type uploadedImageInfo struct {
+	uploadedID string
+	image      *Image
+}
+
+// startUploadingImages starts uploading new images asynchronously and returns a channel for cleanup
+func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, currentImages map[int]*currentImageData) <-chan uploadedImageInfo {
+	// Create channel for uploaded image IDs
+	uploadedCh := make(chan uploadedImageInfo, 100)
 	// Collect all images that need uploading
 	var imagesToUpload []*Image
 
@@ -183,7 +193,8 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 	}
 
 	if len(imagesToUpload) == 0 {
-		return
+		close(uploadedCh)
+		return uploadedCh
 	}
 
 	// Mark all images as upload in progress
@@ -245,6 +256,13 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 
 					// Set successful upload result
 					image.SetUploadResult(f.WebContentLink, uploaded.Id, nil)
+
+					// Send uploaded info to cleanup channel
+					select {
+					case uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}:
+					case <-uploadCtx.Done():
+						return uploadCtx.Err()
+					}
 				}
 				return nil
 			})
@@ -266,5 +284,53 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 		if err := g.Wait(); err != nil {
 			d.logger.Error("failed to upload some images", slog.Any("error", err))
 		}
+
+		// Close the channel when all uploads are done
+		close(uploadedCh)
 	}()
+
+	return uploadedCh
+}
+
+// cleanupUploadedImages deletes uploaded images in parallel
+func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uploadedImageInfo) error {
+	const maxWorkers = 8
+	sem := semaphore.NewWeighted(int64(maxWorkers))
+	var wg sync.WaitGroup
+
+	for {
+		select {
+		case info, ok := <-uploadedCh:
+			if !ok {
+				// Channel closed, wait for all deletions to complete
+				wg.Wait()
+				return nil
+			}
+			// Try to acquire semaphore
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return fmt.Errorf("failed to acquire semaphore: %w", err)
+			}
+
+			wg.Add(1)
+			go func(info uploadedImageInfo) {
+				defer func() {
+					sem.Release(1)
+					wg.Done()
+				}()
+
+				// Delete uploaded image from Google Drive
+				// Note: We only log errors here instead of returning them to ensure
+				// all images are attempted to be deleted. A single deletion failure
+				// should not prevent cleanup of other successfully uploaded images.
+				if err := d.driveSrv.Files.Delete(info.uploadedID).Do(); err != nil {
+					d.logger.Error("failed to delete uploaded image",
+						slog.String("id", info.uploadedID),
+						slog.Any("error", err))
+				}
+			}(info)
+
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }

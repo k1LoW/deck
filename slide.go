@@ -377,24 +377,23 @@ func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 	}
 }
 
-// WaitForUpload waits for the upload to complete and returns the result
-func (i *Image) WaitForUpload() (webContentLink, uploadedID string, err error) {
+// WaitForUpload waits for the upload to complete and returns the webContentLink
+func (i *Image) WaitForUpload() (string, error) {
 	for {
 		i.uploadMutex.RLock()
 		state := i.uploadState
 		link := i.webContentLink
-		id := i.uploadedID
 		uploadErr := i.uploadError
 		i.uploadMutex.RUnlock()
 
 		switch state {
 		case uploadStateNotStarted:
-			// Image upload not started, return empty values
-			return "", "", nil
+			// Image upload not started, return empty value
+			return "", nil
 		case uploadStateCompleted:
-			return link, id, nil
+			return link, nil
 		case uploadStateFailed:
-			return "", "", uploadErr
+			return "", uploadErr
 		case uploadStateInProgress:
 			// Continue waiting
 			time.Sleep(10 * time.Millisecond)
