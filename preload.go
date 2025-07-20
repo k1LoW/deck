@@ -71,54 +71,46 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 		return result, nil
 	}
 
-	// Process images in parallel
+	// Process images in parallel using semaphore + errgroup
 	const maxWorkers = 8
-
-	imageCh := make(chan imageToPreload, len(imagesToPreload))
+	sem := semaphore.NewWeighted(int64(maxWorkers))
+	g, ctx := errgroup.WithContext(ctx)
 	resultCh := make(chan imageResult, len(imagesToPreload))
 
-	// Start worker goroutines
-	g, ctx := errgroup.WithContext(ctx)
-	numWorkers := min(maxWorkers, len(imagesToPreload))
-
-	for range numWorkers {
+	for _, imgToPreload := range imagesToPreload {
 		g.Go(func() error {
-			for imgToPreload := range imageCh {
-				var image *Image
-				var err error
+			// Try to acquire semaphore
+			if err := sem.Acquire(ctx, 1); err != nil {
+				return err
+			}
+			defer sem.Release(1)
 
-				// Create Image from existing URL
-				if imgToPreload.isFromMarkdown {
-					image, err = NewImageFromMarkdown(imgToPreload.existingURL)
-				} else {
-					image, err = NewImage(imgToPreload.existingURL)
-				}
-				if err != nil {
-					return fmt.Errorf("failed to preload image from URL %s: %w", imgToPreload.existingURL, err)
-				}
+			var image *Image
+			var err error
 
-				select {
-				case resultCh <- imageResult{
-					slideIndex: imgToPreload.slideIndex,
-					imageIndex: imgToPreload.imageIndex,
-					image:      image,
-					objectID:   imgToPreload.objectID,
-				}:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
+			// Create Image from existing URL
+			if imgToPreload.isFromMarkdown {
+				image, err = NewImageFromMarkdown(imgToPreload.existingURL)
+			} else {
+				image, err = NewImage(imgToPreload.existingURL)
+			}
+			if err != nil {
+				return fmt.Errorf("failed to preload image from URL %s: %w", imgToPreload.existingURL, err)
+			}
+
+			select {
+			case resultCh <- imageResult{
+				slideIndex: imgToPreload.slideIndex,
+				imageIndex: imgToPreload.imageIndex,
+				image:      image,
+				objectID:   imgToPreload.objectID,
+			}:
+			case <-ctx.Done():
+				return ctx.Err()
 			}
 			return nil
 		})
 	}
-
-	// Send work to workers
-	go func() {
-		defer close(imageCh)
-		for _, imgToPreload := range imagesToPreload {
-			imageCh <- imgToPreload
-		}
-	}()
 
 	// Close result channel when all workers are done
 	go func() {
