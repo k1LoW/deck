@@ -149,10 +149,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 		if err != nil {
 			return nil, err
 		}
-		// Skip ignored contents
-		if c.Ignore == nil || !*c.Ignore {
-			contents = append(contents, c)
-		}
+		contents = append(contents, c)
 	}
 
 	return &MD{
@@ -262,6 +259,11 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 			for _, blockQuote := range content.BlockQuotes {
 				blockQuotes = append(blockQuotes, blockQuote.String())
 			}
+			for j := 1; j < sentinelLevel; j++ {
+				if _, ok := content.Headings[j]; !ok {
+					content.Headings[j] = []string{}
+				}
+			}
 			var topHeadingLevel int
 			for j := 1; j < sentinelLevel; j++ {
 				if len(content.Headings[j]) > 0 {
@@ -312,8 +314,12 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 		err = errors.WithStack(err)
 	}()
 
-	slides := make([]*deck.Slide, len(contents))
-	for i, content := range contents {
+	var slides []*deck.Slide
+	for _, content := range contents {
+		if content.Ignore != nil && *content.Ignore {
+			// Skip ignored contents
+			continue
+		}
 		var images []*deck.Image
 		images = append(images, content.Images...)
 		if codeBlockToImageCmd != "" && len(content.CodeBlocks) > 0 {
@@ -356,7 +362,7 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 		if content.Skip != nil {
 			slide.Skip = *content.Skip
 		}
-		slides[i] = slide
+		slides = append(slides, slide)
 	}
 	return slides, nil
 }
