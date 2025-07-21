@@ -1,9 +1,11 @@
 package deck
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sort"
 
 	"github.com/k1LoW/errors"
 )
@@ -411,7 +413,9 @@ func adjustShorterAfter(before, after Slides) (_ Slides, _ Slides, err error) {
 	}
 
 	// Sort by score (ascending - lowest similarity first)
-	sortSlideScores(scores)
+	slices.SortStableFunc(scores, func(a, b slideScore) int {
+		return cmp.Compare(a.score, b.score)
+	})
 
 	// Add the slides with lowest similarity scores to after
 	for i := range needed {
@@ -443,7 +447,9 @@ func adjustShorterBefore(before, after Slides) (_ Slides, _ Slides, err error) {
 	}
 
 	// Sort by score (ascending - lowest similarity first)
-	sortSlideScores(scores)
+	slices.SortStableFunc(scores, func(a, b slideScore) int {
+		return cmp.Compare(a.score, b.score)
+	})
 
 	// Add the slides with lowest similarity scores to before
 	// But preserve the original order by adding them in index order
@@ -453,13 +459,7 @@ func adjustShorterBefore(before, after Slides) (_ Slides, _ Slides, err error) {
 	}
 
 	// Sort indices to maintain order
-	for i := range len(indicesToAdd) - 1 {
-		for j := i + 1; j < len(indicesToAdd); j++ {
-			if indicesToAdd[i] > indicesToAdd[j] {
-				indicesToAdd[i], indicesToAdd[j] = indicesToAdd[j], indicesToAdd[i]
-			}
-		}
-	}
+	sort.IntSlice(indicesToAdd).Sort()
 
 	// Add slides in order
 	for _, idx := range indicesToAdd {
@@ -554,17 +554,6 @@ func copySlides(slides Slides) (_ Slides, err error) {
 	}
 
 	return copied, nil
-}
-
-// sortSlideScores sorts slide scores in ascending order (lowest score first).
-func sortSlideScores(scores []slideScore) {
-	for i := range len(scores) - 1 {
-		for j := i + 1; j < len(scores); j++ {
-			if scores[i].score > scores[j].score {
-				scores[i], scores[j] = scores[j], scores[i]
-			}
-		}
-	}
 }
 
 func getSimilarity(beforeSlide, afterSlide *Slide) int {
