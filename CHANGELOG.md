@@ -1,5 +1,20 @@
 # Changelog
 
+## [v1.0.0](https://github.com/k1LoW/deck/compare/v0.44.0...v1.0.0) - 2025-07-21
+### New Features 🎉
+- feat(md): add support for default conditions for layout in Frontmatter by @k1LoW in https://github.com/k1LoW/deck/pull/264
+- perf: Efficiency and speed improvement of image upload to slides by @Songmu in https://github.com/k1LoW/deck/pull/290
+- feat: support `skip` `ignore` `freeze` for `defaults:` by @k1LoW in https://github.com/k1LoW/deck/pull/293
+### Fix bug 🐛
+- fix: apply by @Songmu in https://github.com/k1LoW/deck/pull/285
+- fix(md): handle nil Frontmatter in ToSlides method by @k1LoW in https://github.com/k1LoW/deck/pull/291
+- fix: page count by @k1LoW in https://github.com/k1LoW/deck/pull/292
+### Other Changes
+- chore: separate source files by @Songmu in https://github.com/k1LoW/deck/pull/281
+- fix: add empty string check before copying image by @Songmu in https://github.com/k1LoW/deck/pull/287
+- chore(deps): bump google.golang.org/api from 0.241.0 to 0.242.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/289
+- chore: use slices and cmp package to sort by @Songmu in https://github.com/k1LoW/deck/pull/288
+
 ## [v0.44.0](https://github.com/k1LoW/deck/compare/v0.43.1...v0.44.0) - 2025-07-19
 ### New Features 🎉
 - chore: Execute integration tests in parallel in groups of three by @Songmu in https://github.com/k1LoW/deck/pull/279
