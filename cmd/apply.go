@@ -80,18 +80,18 @@ var applyCmd = &cobra.Command{
 			f = args[1]
 		}
 
-		markdownData, err := md.ParseFile(f)
+		m, err := md.ParseFile(f)
 		if err != nil {
 			return err
 		}
 
 		if len(args) == 1 {
-			if markdownData.Frontmatter != nil {
-				if presentationID == "" && markdownData.Frontmatter.PresentationID != "" {
-					presentationID = markdownData.Frontmatter.PresentationID
+			if m.Frontmatter != nil {
+				if presentationID == "" && m.Frontmatter.PresentationID != "" {
+					presentationID = m.Frontmatter.PresentationID
 				}
-				if title == "" && markdownData.Frontmatter.Title != "" {
-					title = markdownData.Frontmatter.Title
+				if title == "" && m.Frontmatter.Title != "" {
+					title = m.Frontmatter.Title
 				}
 			}
 		}
@@ -100,7 +100,7 @@ var applyCmd = &cobra.Command{
 			return fmt.Errorf("presentation ID is required, please specify it with --presentation-id or in the frontmatter of the markdown file")
 		}
 
-		contents := markdownData.Contents
+		contents := m.Contents
 		tailHandler := slog.NewJSONHandler(tb, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})
@@ -137,7 +137,7 @@ var applyCmd = &cobra.Command{
 			}
 		}
 		if watch {
-			slides, err := contents.ToSlides(ctx, codeBlockToImageCmd)
+			slides, err := m.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
 			}
@@ -152,7 +152,7 @@ var applyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			slides, err := contents.ToSlides(ctx, codeBlockToImageCmd)
+			slides, err := m.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
 			}
@@ -319,7 +319,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
-			slides, err := newMD.Contents.ToSlides(ctx, codeBlockToImageCmd)
+			slides, err := newMD.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))
 				continue

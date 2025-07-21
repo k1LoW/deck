@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/goccy/go-yaml"
+	"github.com/google/cel-go/cel"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/errors"
 	"github.com/k1LoW/exec"
@@ -23,6 +24,8 @@ import (
 	"github.com/yuin/goldmark/text"
 	"golang.org/x/sync/errgroup"
 )
+
+const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 
 var allowedInlineHTMLElements = []string{
 	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd",
@@ -50,6 +53,13 @@ type Frontmatter struct {
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
 	// Whether to display line breaks in the document as line breaks
 	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
+	// Conditions for default
+	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
+}
+
+type DefaultCondition struct {
+	If     string `json:"if"`     // condition to check
+	Layout string `json:"layout"` // layout name to apply if condition is true
 }
 
 // Contents represents a collection of slide contents.
@@ -160,7 +170,6 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 
-	const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 	// First walk: determine title level
 	titleLevel := sentinelLevel
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
@@ -188,7 +197,7 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	content := &Content{
 		Headings: make(map[int][]string),
 	}
-	if err := walkBodies(doc, baseDir, b, content, titleLevel, breaks); err != nil {
+	if err := walkContents(doc, baseDir, b, content, titleLevel, breaks); err != nil {
 		return nil, fmt.Errorf("failed to walk body: %w", err)
 	}
 
@@ -207,8 +216,84 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	return content, nil
 }
 
-// ToSlides converts the contents to a slice of deck.Slide structures.
-func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
+func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	env, err := cel.NewEnv(
+		cel.Variable("page", cel.IntType),
+		cel.Variable("pageTotal", cel.IntType),
+		cel.Variable("titles", cel.ListType(cel.StringType)),
+		cel.Variable("subtitles", cel.ListType(cel.StringType)),
+		cel.Variable("bodies", cel.ListType(cel.StringType)),
+		cel.Variable("blockQuotes", cel.ListType(cel.StringType)),
+		cel.Variable("codeBlocks", cel.ListType(cel.ObjectType("deck.CodeBlock"))),
+		cel.Variable("images", cel.ListType(cel.ObjectType("deck.Image"))),
+		cel.Variable("comments", cel.ListType(cel.StringType)),
+		cel.Variable("headings", cel.MapType(cel.IntType, cel.ListType(cel.StringType))),
+		cel.Variable("speakerNote", cel.StringType),
+		cel.Variable("topHeadingLevel", cel.IntType),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create environment: %w", err)
+	}
+	pageTotal := len(md.Contents)
+	for _, content := range md.Contents {
+		if content.Layout != "" {
+			continue
+		}
+		for i, cond := range md.Frontmatter.Defaults {
+			ast, issues := env.Compile(fmt.Sprintf("!!(%s)", cond.If))
+			if issues != nil && issues.Err() != nil {
+				return nil, fmt.Errorf("failed to compile expression: %w", issues.Err())
+			}
+			prg, err := env.Program(ast)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create program: %w", err)
+			}
+			var bodies []string
+			for _, body := range content.Bodies {
+				bodies = append(bodies, body.String())
+			}
+			var blockQuotes []string
+			for _, blockQuote := range content.BlockQuotes {
+				blockQuotes = append(blockQuotes, blockQuote.String())
+			}
+			var topHeadingLevel int
+			for i := 1; i < sentinelLevel; i++ {
+				if len(content.Headings[i]) > 0 {
+					topHeadingLevel = i
+					break
+				}
+			}
+			out, _, err := prg.Eval(map[string]any{
+				"page":            i + 1,
+				"pageTotal":       pageTotal,
+				"titles":          content.Titles,
+				"subtitles":       content.Subtitles,
+				"bodies":          bodies,
+				"blockQuotes":     blockQuotes,
+				"codeBlocks":      content.CodeBlocks,
+				"images":          content.Images,
+				"comments":        content.Comments,
+				"headings":        content.Headings,
+				"speakerNote":     strings.Join(content.Comments, "\n\n"),
+				"topHeadingLevel": topHeadingLevel,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate values: %w", err)
+			}
+			if tf, ok := out.Value().(bool); ok && tf {
+				content.Layout = cond.Layout
+				break // Use the first matching condition
+			}
+		}
+	}
+	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
+}
+
+// toSlides converts the contents to a slice of deck.Slide structures.
+func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -257,7 +342,7 @@ func (contents Contents) ToSlides(ctx context.Context, codeBlockToImageCmd strin
 	return slides, nil
 }
 
-func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int, breaks bool) error {
+func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int, breaks bool) error {
 	currentBody := &deck.Body{}
 	content.Bodies = append(content.Bodies, currentBody)
 	currentListMarker := deck.BulletNone
@@ -408,7 +493,7 @@ func walkBodies(doc ast.Node, baseDir string, b []byte, content *Content, titleL
 			case *ast.Blockquote:
 				blockQuoteContent := &Content{}
 				for v := n.FirstChild(); v != nil; v = v.NextSibling() {
-					if err := walkBodies(v, baseDir, b, blockQuoteContent, 1, breaks); err != nil {
+					if err := walkContents(v, baseDir, b, blockQuoteContent, 1, breaks); err != nil {
 						return ast.WalkStop, err
 					}
 				}
