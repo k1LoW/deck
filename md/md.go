@@ -58,8 +58,11 @@ type Frontmatter struct {
 }
 
 type DefaultCondition struct {
-	If     string `json:"if"`     // condition to check
-	Layout string `json:"layout"` // layout name to apply if condition is true
+	If     string `json:"if"`               // condition to check
+	Layout string `json:"layout,omitempty"` // layout name to apply if condition is true
+	Freeze *bool  `json:"freeze,omitempty"` // freeze the page
+	Ignore *bool  `json:"ignore,omitempty"` // whether to ignore the page if condition is true
+	Skip   *bool  `json:"skip,omitempty"`   // whether to skip the page if condition is true
 }
 
 // Contents represents a collection of slide contents.
@@ -68,9 +71,9 @@ type Contents []*Content
 // Config represents the configuration for a slide.
 type Config struct {
 	Layout string `json:"layout,omitempty"` // layout name
-	Freeze bool   `json:"freeze,omitempty"` // freeze the page
-	Ignore bool   `json:"ignore,omitempty"` // ignore the page (skip slide generation)
-	Skip   bool   `json:"skip,omitempty"`   // skip the page (do not show in the presentation)
+	Freeze *bool  `json:"freeze,omitempty"` // freeze the page
+	Ignore *bool  `json:"ignore,omitempty"` // ignore the page (skip slide generation)
+	Skip   *bool  `json:"skip,omitempty"`   // skip the page (do not show in the presentation)
 }
 
 type CodeBlock struct {
@@ -81,9 +84,9 @@ type CodeBlock struct {
 // Content represents a single slide content.
 type Content struct {
 	Layout         string             `json:"layout"`
-	Freeze         bool               `json:"freeze,omitempty"`
-	Ignore         bool               `json:"ignore,omitempty"`
-	Skip           bool               `json:"skip,omitempty"`
+	Freeze         *bool              `json:"freeze,omitempty"`
+	Ignore         *bool              `json:"ignore,omitempty"`
+	Skip           *bool              `json:"skip,omitempty"`
 	Titles         []string           `json:"titles,omitempty"`
 	TitleBodies    []*deck.Body       `json:"-"`
 	Subtitles      []string           `json:"subtitles,omitempty"`
@@ -147,7 +150,7 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 			return nil, err
 		}
 		// Skip ignored contents
-		if !c.Ignore {
+		if c.Ignore == nil || !*c.Ignore {
 			contents = append(contents, c)
 		}
 	}
@@ -242,9 +245,6 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 	}
 	pageTotal := len(md.Contents)
 	for i, content := range md.Contents {
-		if content.Layout != "" {
-			continue
-		}
 		for _, cond := range md.Frontmatter.Defaults {
 			ast, issues := env.Compile(fmt.Sprintf("!!(%s)", cond.If))
 			if issues != nil && issues.Err() != nil {
@@ -287,7 +287,18 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 				return nil, fmt.Errorf("failed to evaluate values: %w", err)
 			}
 			if tf, ok := out.Value().(bool); ok && tf {
-				content.Layout = cond.Layout
+				if content.Layout == "" {
+					content.Layout = cond.Layout
+				}
+				if content.Freeze == nil && cond.Freeze != nil {
+					content.Freeze = cond.Freeze
+				}
+				if content.Ignore == nil && cond.Ignore != nil {
+					content.Ignore = cond.Ignore
+				}
+				if content.Skip == nil && cond.Skip != nil {
+					content.Skip = cond.Skip
+				}
 				break // Use the first matching condition
 			}
 		}
@@ -328,10 +339,8 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 				images = append(images, blockMap[i])
 			}
 		}
-		slides[i] = &deck.Slide{
+		slide := &deck.Slide{
 			Layout:         content.Layout,
-			Freeze:         content.Freeze,
-			Skip:           content.Skip,
 			Titles:         content.Titles,
 			TitleBodies:    content.TitleBodies,
 			Subtitles:      content.Subtitles,
@@ -341,6 +350,13 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 			BlockQuotes:    content.BlockQuotes,
 			SpeakerNote:    strings.Join(content.Comments, "\n\n"),
 		}
+		if content.Freeze != nil {
+			slide.Freeze = *content.Freeze
+		}
+		if content.Skip != nil {
+			slide.Skip = *content.Skip
+		}
+		slides[i] = slide
 	}
 	return slides, nil
 }
@@ -817,7 +833,7 @@ func DiffContents(oldContents, newContents Contents) []int {
 
 		// Compare the content of the pages
 		if !contentEqual(oldContents[i], newContents[i]) {
-			if newContents[i].Freeze {
+			if newContents[i].Freeze != nil && *newContents[i].Freeze {
 				// The frozen page is considered unchanged
 				continue
 			}

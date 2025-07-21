@@ -123,11 +123,20 @@ The frontmatter must be:
 - `presentationID` (string): Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title` (string): title of the presentation. When specified, you can use the simplified command syntax.
 - `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
-- `defaults` (array): Define conditional layout assignments using CEL (Common Expression Language) expressions. Layouts are automatically applied to pages based on page structure and content. Only applies to pages without explicit layout configuration.
+- `defaults` (array): Define conditional actions using CEL (Common Expression Language) expressions. Actions are automatically applied to pages based on page structure and content. Only applies to pages without explicit page configuration.
 
-#### Default layout conditions
+#### Default conditions and actions
 
-The `defaults` field allows you to define conditional layout assignments using CEL (Common Expression Language) expressions. This feature automatically sets layouts for pages based on their structure and content, eliminating the need for manual layout specification on each page.
+The `defaults` field allows you to define conditional actions using CEL (Common Expression Language) expressions. This feature automatically sets layouts and controls page behavior based on their structure and content, eliminating the need for manual configuration on each page.
+
+##### Available actions
+
+The following actions can be applied to pages through the `defaults` configuration:
+
+- **`layout`**: Set layout automatically
+- **`freeze`**: Freeze page from modifications
+- **`ignore`**: Exclude page from generation
+- **`skip`**: Skip page during presentation
 
 ```yaml
 ---
@@ -136,6 +145,8 @@ defaults:
     layout: title
   - if: titles.size() == 1 && headings[2].size() == 1
     layout: section-purple
+  - if: speakerNote.contains("TODO")
+    skip: true
   - if: true
     layout: title-and-body
 ---
@@ -164,12 +175,16 @@ defaults:
 - `titles.size() == 0` - Pages without titles
 - `codeBlocks.size() > 0` - Pages containing code blocks
 - `headings[3].size() >= 2` - Pages with 2 or more H3 headings
+- `bodies[0].contains("TODO")` - Pages with TODO in first body text
+- `page > pageTotal - 3` - Last 3 pages
+- `images.size() >= 2` - Pages with 2 or more images
 
 ##### Important notes
 
-- Conditions are evaluated in order, and the first matching condition's layout is applied
-- Default layouts only apply to pages without explicit layout configuration (via page config comments)
-- This feature enables automatic layout selection based on content patterns, reducing manual configuration overhead
+- **Evaluation order**: Conditions are evaluated in order, and the first matching condition's action is applied
+- **Priority**: Default actions only apply to pages without explicit page configuration (via JSON comments like `<!-- {"layout": "title"} -->`)
+- **Performance**: Using `ignore` for unnecessary content improves processing speed
+- **Workflow**: This feature enables automatic page management based on content patterns, reducing manual configuration overhead
 
 ### Insertion rule
 
