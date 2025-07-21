@@ -237,6 +237,9 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 	if err != nil {
 		return nil, fmt.Errorf("failed to create environment: %w", err)
 	}
+	if md.Frontmatter == nil {
+		return md.Contents.toSlides(ctx, codeBlockToImageCmd)
+	}
 	pageTotal := len(md.Contents)
 	for _, content := range md.Contents {
 		if content.Layout != "" {
