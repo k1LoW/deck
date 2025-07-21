@@ -268,6 +268,7 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 				"images":      content.Images,
 				"comments":    content.Comments,
 				"headings":    content.Headings,
+				"speakerNote": strings.Join(content.Comments, "\n\n"),
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to evaluate values: %w", err)

@@ -145,16 +145,17 @@ defaults:
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `page` | int | Current page number (1-based) |
-| `pageTotal` | int | Total number of pages |
-| `titles` | []string | List of titles in the page |
-| `subtitles` | []string | List of subtitles in the page |
-| `bodies` | []string | List of body texts in the page |
-| `blockQuotes` | []string | List of block quotes in the page |
-| `codeBlocks` | []CodeBlock | List of code blocks in the page |
-| `images` | []Image | List of images in the page |
-| `comments` | []string | List of comments in the page |
-| `headings` | map[int][]string | Headings grouped by level |
+| `page` | `int` | Current page number (1-based) |
+| `pageTotal` | `int` | Total number of pages |
+| `titles` | `[]string` | List of titles in the page |
+| `subtitles` | `[]string` | List of subtitles in the page |
+| `bodies` | `[]string` | List of body texts in the page |
+| `blockQuotes` | `[]string` | List of block quotes in the page |
+| `codeBlocks` | `[]CodeBlock` | List of code blocks in the page |
+| `images` | `[]Image` | List of images in the page |
+| `comments` | `[]string` | List of comments in the page |
+| `headings` | `map[int][]string` | Headings grouped by level |
+| `speakerNote` | `string` | Speaker note |
 
 ##### CEL condition examples
 
