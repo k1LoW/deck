@@ -65,7 +65,6 @@ func TestApplyMarkdown(t *testing.T) {
 
 			// Acquire a presentation from the pool
 			presentationID := deck.AcquirePresentation(t)
-			defer deck.ReleasePresentation(presentationID)
 
 			b, err := os.ReadFile(tt.in)
 			if err != nil {
@@ -192,7 +191,6 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 
 			// Acquire a presentation from the pool
 			presentationID := deck.AcquirePresentation(t)
-			defer deck.ReleasePresentation(presentationID)
 
 			b, err := os.ReadFile(tt.in)
 			if err != nil {

@@ -164,7 +164,6 @@ func TestAction(t *testing.T) {
 
 			// Acquire a presentation from the pool
 			presentationID := AcquirePresentation(t)
-			defer ReleasePresentation(presentationID)
 
 			d, err := New(ctx, WithPresentationID(presentationID))
 			if err != nil {

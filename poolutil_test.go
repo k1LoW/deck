@@ -99,10 +99,9 @@ func TestMain(m *testing.M) {
 func AcquirePresentation(t *testing.T) string {
 	t.Helper()
 
-	return <-presentationPool
-}
-
-// ReleasePresentation returns a presentation ID to the pool.
-func ReleasePresentation(id string) {
-	presentationPool <- id
+	id := <-presentationPool
+	t.Cleanup(func() {
+		presentationPool <- id
+	})
+	return id
 }
