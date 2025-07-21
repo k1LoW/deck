@@ -138,6 +138,33 @@ func (p *Paragraph) String() string {
 	return result.String()
 }
 
+func (b *BlockQuote) String() string {
+	if b == nil {
+		return ""
+	}
+	quotes := strings.Repeat("> ", b.Nesting+1)
+	var result strings.Builder
+	for i, paragraph := range b.Paragraphs {
+		result.WriteString(quotes)
+		if i > 0 && b.Paragraphs[i-1].Bullet != BulletNone && paragraph.Bullet == BulletNone {
+			result.WriteString("\n")
+			result.WriteString(quotes)
+		}
+		result.WriteString(paragraph.String())
+		switch {
+		case paragraph.Bullet != BulletNone:
+			result.WriteString("\n")
+		case i == len(b.Paragraphs)-1:
+			result.WriteString("\n")
+		default:
+			result.WriteString("\n")
+			result.WriteString(quotes)
+			result.WriteString("\n")
+		}
+	}
+	return result.String()
+}
+
 func NewImage(pathOrURL string) (_ *Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)

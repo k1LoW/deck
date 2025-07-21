@@ -56,6 +56,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/images.md"},
 		{"testdata/blockquote.md"},
 		{"testdata/codeblock.md"},
+		{"testdata/defaults.md"},
 	}
 
 	for _, tt := range tests {
