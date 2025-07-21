@@ -150,8 +150,6 @@ type uploadedImageInfo struct {
 func (d *Deck) startUploadingImages(
 	ctx context.Context, actions []*action, currentImages map[int]*currentImageData) <-chan uploadedImageInfo {
 
-	// Create channel for uploaded image IDs
-	uploadedCh := make(chan uploadedImageInfo, 1000)
 	// Collect all images that need uploading
 	var imagesToUpload []*Image
 
@@ -176,6 +174,8 @@ func (d *Deck) startUploadingImages(
 		}
 	}
 
+	// Create channel for uploaded image IDs
+	uploadedCh := make(chan uploadedImageInfo, len(imagesToUpload))
 	if len(imagesToUpload) == 0 {
 		close(uploadedCh)
 		return uploadedCh
@@ -191,22 +191,16 @@ func (d *Deck) startUploadingImages(
 		// Process images in parallel
 		const maxWorkers = 8
 		sem := semaphore.NewWeighted(int64(maxWorkers))
-		var wg sync.WaitGroup
+		eg, ctx := errgroup.WithContext(ctx)
 
 		for _, image := range imagesToUpload {
-			// Try to acquire semaphore
-			if err := sem.Acquire(ctx, 1); err != nil {
-				// Context canceled, set upload error on remaining images
-				image.SetUploadResult("", "", err)
-				continue
-			}
-
-			wg.Add(1)
-			go func(image *Image) {
-				defer func() {
-					sem.Release(1)
-					wg.Done()
-				}()
+			eg.Go(func() error {
+				if err := sem.Acquire(ctx, 1); err != nil {
+					// Context canceled, set upload error on remaining images
+					image.SetUploadResult("", "", err)
+					return nil
+				}
+				defer sem.Release(1)
 
 				// Upload image to Google Drive
 				df := &drive.File{
@@ -216,7 +210,7 @@ func (d *Deck) startUploadingImages(
 				uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
 				if err != nil {
 					image.SetUploadResult("", "", fmt.Errorf("failed to upload image: %w", err))
-					return
+					return nil
 				}
 
 				// Set permission
@@ -231,7 +225,7 @@ func (d *Deck) startUploadingImages(
 							slog.Any("error", deleteErr))
 					}
 					image.SetUploadResult("", "", fmt.Errorf("failed to set permission for image: %w", err))
-					return
+					return nil
 				}
 
 				// Get webContentLink
@@ -244,7 +238,7 @@ func (d *Deck) startUploadingImages(
 							slog.Any("error", deleteErr))
 					}
 					image.SetUploadResult("", "", fmt.Errorf("failed to get webContentLink for image: %w", err))
-					return
+					return nil
 				}
 
 				if f.WebContentLink == "" {
@@ -255,19 +249,21 @@ func (d *Deck) startUploadingImages(
 							slog.Any("error", deleteErr))
 					}
 					image.SetUploadResult("", "", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
-					return
+					return nil
 				}
 
 				// Set successful upload result
 				image.SetUploadResult(f.WebContentLink, uploaded.Id, nil)
 
 				uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}
-			}(image)
+				return nil
+			})
 		}
 
 		// Wait for all workers to complete
-		wg.Wait()
-
+		if err := eg.Wait(); err != nil {
+			d.logger.Error("failed to upload images", slog.Any("error", err))
+		}
 		// Close the channel when all uploads are done
 		close(uploadedCh)
 	}()
