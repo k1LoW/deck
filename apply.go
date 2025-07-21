@@ -1,18 +1,15 @@
 package deck
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"slices"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/k1LoW/errors"
-	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/slides/v1"
 )
 
@@ -130,8 +127,28 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			})
 		}
 	}
-	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
 
+	// Pre-fetch current images in parallel for only the slides that will be updated
+	currentImages, err := d.preloadCurrentImages(ctx, actions)
+	if err != nil {
+		return fmt.Errorf("failed to preload current images: %w", err)
+	}
+
+	// Start uploading new images in parallel (don't wait for completion)
+	uploadedCh := d.startUploadingImages(ctx, actions, currentImages)
+	defer func() {
+		// Clean up uploaded images in parallel
+		if cleanupErr := d.cleanupUploadedImages(ctx, uploadedCh); cleanupErr != nil {
+			if err == nil {
+				err = fmt.Errorf("failed to cleanup uploaded images: %w", cleanupErr)
+			} else {
+				d.logger.Error("failed to cleanup uploaded images", slog.Any("error", cleanupErr))
+			}
+		}
+		ClearAllUploadStateFromCache()
+	}()
+
+	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
@@ -144,7 +161,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			}
 		case actionTypeUpdate:
 			d.logger.Info("appling page", slog.Int("index", action.index))
-			if err := d.applyPage(ctx, action.index, action.slide); err != nil {
+			if err := d.applyPage(ctx, action.index, action.slide, currentImages[action.index]); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
 			}
 			d.logger.Info("applied page", slog.Int("index", action.index))
@@ -162,7 +179,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	return nil
 }
 
-func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err error) {
+func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded *currentImageData) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -198,6 +215,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
 		req                       = &slides.BatchUpdatePresentationRequest{}
 	)
+
+	// Use preloaded image data if available, otherwise fetch on demand
+	if preloaded != nil {
+		currentImages = preloaded.currentImages
+		currentImageObjectIDMap = preloaded.currentImageObjectIDMap
+	}
+
 	currentSlide = d.presentation.Slides[index]
 	for _, element := range currentSlide.PageElements {
 		switch {
@@ -231,7 +255,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				x:        element.Transform.TranslateX,
 				y:        element.Transform.TranslateY,
 			})
-		case element.Image != nil:
+		case element.Image != nil && preloaded == nil:
+			// Only fetch images on demand if preloaded data is not available
 			var (
 				image *Image
 				err   error
@@ -352,33 +377,13 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 			continue
 		}
 
-		// upload image to Google Drive
-		df := &drive.File{
-			Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
-			MimeType: string(image.mimeType),
-		}
-		uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).Do()
+		// Wait for image upload to complete
+		webContentLink, err := image.UploadInfo(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to upload image: %w", err)
 		}
-		if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
-			Type: "anyone",
-			Role: "reader",
-		}).Do(); err != nil {
-			return fmt.Errorf("failed to set permission for image: %w", err)
-		}
-		f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
-		if err != nil {
-			return fmt.Errorf("failed to get webContentLink for image: %w", err)
-		}
-		defer func() {
-			// Clean up the uploaded image after use
-			if err := d.driveSrv.Files.Delete(uploaded.Id).Do(); err != nil {
-				d.logger.Error("failed to delete uploaded image", slog.String("id", uploaded.Id), slog.Any("error", err))
-			}
-		}()
-		if f.WebContentLink == "" {
-			return fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
+		if webContentLink == "" {
+			return fmt.Errorf("image not uploaded or webContentLink is empty")
 		}
 		var imageObjectID string
 		if len(imagePlaceholders) > i {
@@ -387,7 +392,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 				ReplaceImage: &slides.ReplaceImageRequest{
 					ImageObjectId:      imagePlaceholders[i].objectID,
 					ImageReplaceMethod: "CENTER_CROP",
-					Url:                f.WebContentLink,
+					Url:                webContentLink,
 				},
 			})
 		} else {
@@ -404,7 +409,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide) (err erro
 						Unit:       "EMU",
 					},
 				},
-				Url: f.WebContentLink,
+				Url: webContentLink,
 			}
 			req.Requests = append(req.Requests, &slides.Request{
 				CreateImage: imageReq,

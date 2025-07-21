@@ -2,6 +2,7 @@ package deck
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"hash/crc32"
@@ -14,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/corona10/goimagehash"
@@ -94,7 +96,22 @@ type Image struct {
 	checksum     uint32                 // Checksum for the image data
 	pHash        *goimagehash.ImageHash // Perceptual hash for JPEG images
 	modTime      time.Time              // Modification time of the image file, if applicable
+
+	// Upload state management
+	uploadMutex    sync.RWMutex
+	uploadState    uploadState
+	webContentLink string
+	uploadError    error
 }
+
+type uploadState int
+
+const (
+	uploadStateNotStarted uploadState = iota
+	uploadStateInProgress
+	uploadStateCompleted
+	uploadStateFailed
+)
 
 func (b *Body) String() string {
 	var result strings.Builder
@@ -405,4 +422,68 @@ func (i *Image) UnmarshalJSON(data []byte) (err error) {
 	}
 	i.b = decoded
 	return nil
+}
+
+// StartUpload marks the image as upload in progress.
+func (i *Image) StartUpload() {
+	i.uploadMutex.Lock()
+	defer i.uploadMutex.Unlock()
+	i.uploadState = uploadStateInProgress
+}
+
+// SetUploadResult sets the upload result (success or failure).
+func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
+	i.uploadMutex.Lock()
+	defer i.uploadMutex.Unlock()
+	if err != nil {
+		i.uploadState = uploadStateFailed
+		i.uploadError = err
+	} else {
+		i.uploadState = uploadStateCompleted
+		i.webContentLink = webContentLink
+		i.uploadError = nil
+	}
+}
+
+// UploadInfo waits for the upload to complete and returns the webContentLink.
+func (i *Image) UploadInfo(ctx context.Context) (string, error) {
+	for {
+		i.uploadMutex.RLock()
+		state := i.uploadState
+		link := i.webContentLink
+		uploadErr := i.uploadError
+		i.uploadMutex.RUnlock()
+
+		switch state {
+		case uploadStateNotStarted:
+			// Image upload not started, return empty value
+			return "", nil
+		case uploadStateCompleted:
+			return link, nil
+		case uploadStateFailed:
+			return "", uploadErr
+		case uploadStateInProgress:
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(10 * time.Millisecond):
+				// Continue waiting
+			}
+		}
+	}
+}
+
+// IsUploadNeeded returns true if the image needs to be uploaded.
+func (i *Image) IsUploadNeeded() bool {
+	i.uploadMutex.RLock()
+	defer i.uploadMutex.RUnlock()
+	return i.uploadState == uploadStateNotStarted
+}
+
+func (i *Image) ClearUploadState() {
+	i.uploadMutex.Lock()
+	defer i.uploadMutex.Unlock()
+	i.uploadState = uploadStateNotStarted
+	i.webContentLink = ""
+	i.uploadError = nil
 }

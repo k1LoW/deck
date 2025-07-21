@@ -268,7 +268,7 @@ func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
+	if err := d.applyPage(ctx, index, slide, nil); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
 	}
 	if err := d.refresh(ctx); err != nil {
@@ -309,7 +309,7 @@ func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err err
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
-	if err := d.applyPage(ctx, index, slide); err != nil {
+	if err := d.applyPage(ctx, index, slide, nil); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
 	}
 	if err := d.refresh(ctx); err != nil {

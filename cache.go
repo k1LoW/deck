@@ -41,3 +41,11 @@ func StoreImageCache(key string, i *Image) {
 	}
 	globalCache.m[key] = i
 }
+
+func ClearAllUploadStateFromCache() {
+	globalCache.mu.Lock()
+	defer globalCache.mu.Unlock()
+	for _, v := range globalCache.m {
+		v.ClearUploadState()
+	}
+}
