@@ -96,6 +96,48 @@ type Image struct {
 	modTime      time.Time              // Modification time of the image file, if applicable
 }
 
+func (b *Body) String() string {
+	var result strings.Builder
+	for i, paragraph := range b.Paragraphs {
+		if i > 0 && b.Paragraphs[i-1].Bullet != BulletNone && paragraph.Bullet == BulletNone {
+			result.WriteString("\n")
+		}
+		result.WriteString(paragraph.String())
+		switch {
+		case paragraph.Bullet != BulletNone:
+			result.WriteString("\n")
+		case i == len(b.Paragraphs)-1:
+			result.WriteString("\n")
+		default:
+			result.WriteString("\n\n")
+		}
+	}
+	return result.String()
+}
+
+func (p *Paragraph) String() string {
+	if p == nil {
+		return ""
+	}
+	var result strings.Builder
+	result.WriteString(strings.Repeat("  ", p.Nesting))
+	switch p.Bullet {
+	case BulletDash:
+		result.WriteString("- ")
+	case BulletNumber:
+		result.WriteString("1. ")
+	case BulletAlpha:
+		result.WriteString("a. ")
+	}
+	for _, fragment := range p.Fragments {
+		if fragment == nil {
+			continue
+		}
+		result.WriteString(fragment.Value)
+	}
+	return result.String()
+}
+
 func NewImage(pathOrURL string) (_ *Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
