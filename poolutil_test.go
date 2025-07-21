@@ -68,7 +68,8 @@ func initPresentationPool(ctx context.Context) ([]string, error) {
 // TestMain runs setup and cleanup for integration tests.
 func TestMain(m *testing.M) {
 	if os.Getenv("TEST_INTEGRATION") == "" {
-		os.Exit(m.Run())
+		m.Run()
+		return
 	}
 
 	// Setup presentation pool
