@@ -25,6 +25,31 @@
   },
   {
     "layout": "",
+    "ignore": true,
+    "titles": [
+      "Second Slide - Ignored"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This slide will be ignored and not included in the presentation."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "1": [
+        "Second Slide - Ignored"
+      ]
+    }
+  },
+  {
+    "layout": "",
     "titles": [
       "Third Slide"
     ],
@@ -44,6 +69,38 @@
     "headings": {
       "1": [
         "Third Slide"
+      ]
+    }
+  },
+  {
+    "layout": "",
+    "ignore": true,
+    "titles": [
+      "Fourth Slide - Also Ignored"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Another slide that should be ignored."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Some more content here."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "1": [
+        "Fourth Slide - Also Ignored"
       ]
     }
   },

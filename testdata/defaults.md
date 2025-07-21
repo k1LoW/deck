@@ -4,6 +4,8 @@ defaults:
     layout: title
   - if: titles.size() == 1 && headings[2].size() == 1
     layout: section-purple
+  - if: speakerNote.contains("TODO")
+    ignore: true
   - if: true
     layout: title-and-body
 ---
@@ -14,3 +16,14 @@ defaults:
 
 ## Section
 
+---
+
+# Title
+
+Hello World
+
+<!--
+
+TODO: more contents
+
+-->
