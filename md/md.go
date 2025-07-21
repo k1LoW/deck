@@ -94,7 +94,6 @@ type Content struct {
 	BlockQuotes    []*deck.BlockQuote `json:"block_quotes,omitempty"`
 	Comments       []string           `json:"comments,omitempty"`
 	Headings       map[int][]string   `json:"headings,omitempty"`
-	rowBodies      []string           `json:"-"`
 }
 
 // ParseFile parses a markdown file into contents.
@@ -270,6 +269,9 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 				"comments":    content.Comments,
 				"headings":    content.Headings,
 			})
+			if err != nil {
+				return nil, fmt.Errorf("failed to evaluate values: %w", err)
+			}
 			if tf, ok := out.Value().(bool); ok && tf {
 				content.Layout = cond.Layout
 				break // Use the first matching condition
