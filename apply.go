@@ -152,7 +152,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
-			if err := d.AppendPage(ctx, action.slide, nil); err != nil {
+			if err := d.AppendPage(ctx, action.slide); err != nil {
 				return fmt.Errorf("failed to append slide: %w", err)
 			}
 		case actionTypeInsert:
