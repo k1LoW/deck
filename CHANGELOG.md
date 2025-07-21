@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.1.0](https://github.com/k1LoW/deck/compare/v1.0.0...v1.1.0) - 2025-07-21
+### New Features 🎉
+- feat(md): replace with CEL-based template expansion by @k1LoW in https://github.com/k1LoW/deck/pull/295
+
 ## [v1.0.0](https://github.com/k1LoW/deck/compare/v0.44.0...v1.0.0) - 2025-07-21
 ### New Features 🎉
 - feat(md): add support for default conditions for layout in Frontmatter by @k1LoW in https://github.com/k1LoW/deck/pull/264
