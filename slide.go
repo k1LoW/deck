@@ -2,6 +2,7 @@ package deck
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"hash/crc32"
@@ -376,7 +377,7 @@ func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 }
 
 // UploadInfo waits for the upload to complete and returns the webContentLink.
-func (i *Image) UploadInfo() (string, error) {
+func (i *Image) UploadInfo(ctx context.Context) (string, error) {
 	for {
 		i.uploadMutex.RLock()
 		state := i.uploadState
@@ -393,8 +394,12 @@ func (i *Image) UploadInfo() (string, error) {
 		case uploadStateFailed:
 			return "", uploadErr
 		case uploadStateInProgress:
-			// Continue waiting
-			time.Sleep(10 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				return "", ctx.Err()
+			case <-time.After(10 * time.Millisecond):
+				// Continue waiting
+			}
 		}
 	}
 }
