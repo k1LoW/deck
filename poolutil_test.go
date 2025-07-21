@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	code := m.Run()
+	m.Run()
 
 	// Cleanup presentations after all tests
 	var wg sync.WaitGroup
@@ -93,8 +93,6 @@ func TestMain(m *testing.M) {
 		}(id)
 	}
 	wg.Wait()
-
-	os.Exit(code)
 }
 
 // AcquirePresentation gets a presentation ID from the pool.
