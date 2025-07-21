@@ -14,7 +14,7 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
-const maxPreloadWorkersNum = 8
+const maxPreloadWorkersNum = 4
 
 // currentImageData holds the result of parallel image fetching.
 type currentImageData struct {
