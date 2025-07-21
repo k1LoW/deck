@@ -14,6 +14,8 @@ import (
 	"google.golang.org/api/drive/v3"
 )
 
+const maxPreloadWorkersNum = 8
+
 // currentImageData holds the result of parallel image fetching.
 type currentImageData struct {
 	currentImages           []*Image
@@ -72,8 +74,7 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 	}
 
 	// Process images in parallel
-	const maxWorkers = 8
-	sem := semaphore.NewWeighted(int64(maxWorkers))
+	sem := semaphore.NewWeighted(maxPreloadWorkersNum)
 	eg, ctx := errgroup.WithContext(ctx)
 	resultCh := make(chan imageResult, len(imagesToPreload))
 
@@ -189,8 +190,7 @@ func (d *Deck) startUploadingImages(
 	// Start uploading images asynchronously
 	go func() {
 		// Process images in parallel
-		const maxWorkers = 8
-		sem := semaphore.NewWeighted(int64(maxWorkers))
+		sem := semaphore.NewWeighted(maxPreloadWorkersNum)
 		eg, ctx := errgroup.WithContext(ctx)
 
 		for _, image := range imagesToUpload {
@@ -273,8 +273,7 @@ func (d *Deck) startUploadingImages(
 
 // cleanupUploadedImages deletes uploaded images in parallel.
 func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uploadedImageInfo) error {
-	const maxWorkers = 8
-	sem := semaphore.NewWeighted(int64(maxWorkers))
+	sem := semaphore.NewWeighted(maxPreloadWorkersNum)
 	var wg sync.WaitGroup
 
 	for {
