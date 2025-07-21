@@ -156,6 +156,7 @@ defaults:
 | `comments` | `[]string` | List of comments in the page |
 | `headings` | `map[int][]string` | Headings grouped by level |
 | `speakerNote` | `string` | Speaker note |
+| `topHeadingLevel` | `int` | The highest heading level in the content |
 
 ##### CEL condition examples
 

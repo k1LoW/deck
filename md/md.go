@@ -231,6 +231,8 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 		cel.Variable("images", cel.ListType(cel.ObjectType("deck.Image"))),
 		cel.Variable("comments", cel.ListType(cel.StringType)),
 		cel.Variable("headings", cel.MapType(cel.IntType, cel.ListType(cel.StringType))),
+		cel.Variable("speakerNote", cel.StringType),
+		cel.Variable("topHeadingLevel", cel.IntType),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create environment: %w", err)
@@ -257,18 +259,26 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 			for _, blockQuote := range content.BlockQuotes {
 				blockQuotes = append(blockQuotes, blockQuote.String())
 			}
+			var topHeadingLevel int
+			for i := 1; i < sentinelLevel; i++ {
+				if len(content.Headings[i]) > 0 {
+					topHeadingLevel = i
+					break
+				}
+			}
 			out, _, err := prg.Eval(map[string]any{
-				"page":        i + 1,
-				"pageTotal":   pageTotal,
-				"titles":      content.Titles,
-				"subtitles":   content.Subtitles,
-				"bodies":      bodies,
-				"blockQuotes": blockQuotes,
-				"codeBlocks":  content.CodeBlocks,
-				"images":      content.Images,
-				"comments":    content.Comments,
-				"headings":    content.Headings,
-				"speakerNote": strings.Join(content.Comments, "\n\n"),
+				"page":            i + 1,
+				"pageTotal":       pageTotal,
+				"titles":          content.Titles,
+				"subtitles":       content.Subtitles,
+				"bodies":          bodies,
+				"blockQuotes":     blockQuotes,
+				"codeBlocks":      content.CodeBlocks,
+				"images":          content.Images,
+				"comments":        content.Comments,
+				"headings":        content.Headings,
+				"speakerNote":     strings.Join(content.Comments, "\n\n"),
+				"topHeadingLevel": topHeadingLevel,
 			})
 			if err != nil {
 				return nil, fmt.Errorf("failed to evaluate values: %w", err)
