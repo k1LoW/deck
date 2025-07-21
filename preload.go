@@ -74,11 +74,11 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 	// Process images in parallel
 	const maxWorkers = 8
 	sem := semaphore.NewWeighted(int64(maxWorkers))
-	g, ctx := errgroup.WithContext(ctx)
+	eg, ctx := errgroup.WithContext(ctx)
 	resultCh := make(chan imageResult, len(imagesToPreload))
 
 	for _, imgToPreload := range imagesToPreload {
-		g.Go(func() error {
+		eg.Go(func() error {
 			// Try to acquire semaphore
 			if err := sem.Acquire(ctx, 1); err != nil {
 				return err
@@ -98,21 +98,17 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 				return fmt.Errorf("failed to preload image from URL %s: %w", imgToPreload.existingURL, err)
 			}
 
-			select {
-			case resultCh <- imageResult{
+			resultCh <- imageResult{
 				slideIndex: imgToPreload.slideIndex,
 				imageIndex: imgToPreload.imageIndex,
 				image:      image,
 				objectID:   imgToPreload.objectID,
-			}:
-			case <-ctx.Done():
-				return ctx.Err()
 			}
 			return nil
 		})
 	}
 
-	if err := g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		return nil, fmt.Errorf("failed to preload images: %w", err)
 	}
 	close(resultCh)
@@ -151,7 +147,9 @@ type uploadedImageInfo struct {
 }
 
 // startUploadingImages starts uploading new images asynchronously and returns a channel for cleanup.
-func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, currentImages map[int]*currentImageData) <-chan uploadedImageInfo {
+func (d *Deck) startUploadingImages(
+	ctx context.Context, actions []*action, currentImages map[int]*currentImageData) <-chan uploadedImageInfo {
+
 	// Create channel for uploaded image IDs
 	uploadedCh := make(chan uploadedImageInfo, 1000)
 	// Collect all images that need uploading
@@ -263,12 +261,7 @@ func (d *Deck) startUploadingImages(ctx context.Context, actions []*action, curr
 				// Set successful upload result
 				image.SetUploadResult(f.WebContentLink, uploaded.Id, nil)
 
-				// Send uploaded info to cleanup channel
-				select {
-				case uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}:
-				case <-ctx.Done():
-					return
-				}
+				uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}
 			}(image)
 		}
 
