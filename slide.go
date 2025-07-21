@@ -405,3 +405,11 @@ func (i *Image) IsUploadNeeded() bool {
 	defer i.uploadMutex.RUnlock()
 	return i.uploadState == uploadStateNotStarted
 }
+
+func (i *Image) ClearUploadState() {
+	i.uploadMutex.Lock()
+	defer i.uploadMutex.Unlock()
+	i.uploadState = uploadStateNotStarted
+	i.webContentLink = ""
+	i.uploadError = nil
+}

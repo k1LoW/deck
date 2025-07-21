@@ -146,6 +146,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 				d.logger.Error("failed to cleanup uploaded images", slog.Any("error", cleanupErr))
 			}
 		}
+		ClearAllUploadStateFromCache()
 	}()
 
 	for _, action := range actions {
@@ -384,7 +385,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		if webContentLink == "" {
 			return fmt.Errorf("image not uploaded or webContentLink is empty")
 		}
-		// Cleanup will be done in batch at the end of ApplyPages
 		var imageObjectID string
 		if len(imagePlaceholders) > i {
 			imageObjectID = imagePlaceholders[i].objectID
