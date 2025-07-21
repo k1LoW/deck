@@ -320,11 +320,17 @@ There are three ways to receive code block information within the command:
    - `CODEBLOCK_CONTENT`: Content of the code block
    - `CODEBLOCK_OUTPUT`: Path to a temporary output file
 
-3. **Receive with template syntax ( with [expr-lang](https://expr-lang.org/) )**
+3. **Receive with CEL template syntax**
    - `{{lang}}`: Optional language identifier of the code block
    - `{{content}}`: Content of the code block
    - `{{output}}`: Path to a temporary output file
    - `{{env.XXX}}`: Value of environment variable XXX
+
+   The template expansion uses CEL (Common Expression Language) for evaluating expressions within `{{ }}` delimiters. This supports:
+   - Ternary operators: `{{ lang == "" ? "md" : lang }}`
+   - String concatenation: `{{ "prefix_" + lang }}`
+   - Boolean logic: `{{ lang != "" && content.contains("main") }}`
+   - Arithmetic operations: `{{ count + 1 }}`
 
 These methods can be used in combination, and you can choose the appropriate method according to the command requirements.
 
