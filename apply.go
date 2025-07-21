@@ -129,7 +129,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	}
 	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
 
-	// Pre-fetch current images in parallel for all slides that will be processed
+	// Pre-fetch current images in parallel for only the slides that will be updated
 	currentImages, err := d.preloadCurrentImages(ctx, actions)
 	if err != nil {
 		return fmt.Errorf("failed to preload current images: %w", err)
