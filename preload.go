@@ -72,6 +72,7 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 	if len(imagesToPreload) == 0 {
 		return result, nil
 	}
+	d.logger.Info("preloading current images", slog.Int("count", len(imagesToPreload)))
 
 	// Process images in parallel
 	sem := semaphore.NewWeighted(maxPreloadWorkersNum)
@@ -138,6 +139,7 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 		}
 	}
 
+	d.logger.Info("preloaded current images")
 	return result, nil
 }
 
@@ -181,6 +183,7 @@ func (d *Deck) startUploadingImages(
 		close(uploadedCh)
 		return uploadedCh
 	}
+	d.logger.Info("starting image upload", slog.Int("count", len(imagesToUpload)))
 
 	// Mark all images as upload in progress
 	for _, image := range imagesToUpload {

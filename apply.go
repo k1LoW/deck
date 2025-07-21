@@ -127,7 +127,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			})
 		}
 	}
-	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
 
 	// Pre-fetch current images in parallel for only the slides that will be updated
 	currentImages, err := d.preloadCurrentImages(ctx, actions)
@@ -149,6 +148,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		ClearAllUploadStateFromCache()
 	}()
 
+	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
