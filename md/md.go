@@ -241,11 +241,11 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 		return md.Contents.toSlides(ctx, codeBlockToImageCmd)
 	}
 	pageTotal := len(md.Contents)
-	for _, content := range md.Contents {
+	for i, content := range md.Contents {
 		if content.Layout != "" {
 			continue
 		}
-		for i, cond := range md.Frontmatter.Defaults {
+		for _, cond := range md.Frontmatter.Defaults {
 			ast, issues := env.Compile(fmt.Sprintf("!!(%s)", cond.If))
 			if issues != nil && issues.Err() != nil {
 				return nil, fmt.Errorf("failed to compile expression: %w", issues.Err())
@@ -263,9 +263,9 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 				blockQuotes = append(blockQuotes, blockQuote.String())
 			}
 			var topHeadingLevel int
-			for i := 1; i < sentinelLevel; i++ {
-				if len(content.Headings[i]) > 0 {
-					topHeadingLevel = i
+			for j := 1; j < sentinelLevel; j++ {
+				if len(content.Headings[j]) > 0 {
+					topHeadingLevel = j
 					break
 				}
 			}
