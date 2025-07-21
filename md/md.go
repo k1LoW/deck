@@ -1053,7 +1053,7 @@ func expandTemplate(template string, store map[string]any) (string, error) {
 	return result, nil
 }
 
-// createCELEnv creates a CEL environment with all variables from the store
+// createCELEnv creates a CEL environment with all variables from the store.
 func createCELEnv(store map[string]any) (*cel.Env, error) {
 	var options []cel.EnvOption
 
@@ -1066,7 +1066,7 @@ func createCELEnv(store map[string]any) (*cel.Env, error) {
 	return cel.NewEnv(options...)
 }
 
-// inferCELType infers the CEL type from a Go value
+// inferCELType infers the CEL type from a Go value.
 func inferCELType(value any) *cel.Type {
 	switch value.(type) {
 	case string:
