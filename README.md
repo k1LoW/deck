@@ -123,6 +123,53 @@ The frontmatter must be:
 - `presentationID` (string): Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title` (string): title of the presentation. When specified, you can use the simplified command syntax.
 - `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
+- `defaults` (array): Define conditional layout assignments using CEL (Common Expression Language) expressions. Layouts are automatically applied to pages based on page structure and content. Only applies to pages without explicit layout configuration.
+
+#### Default layout conditions
+
+The `defaults` field allows you to define conditional layout assignments using CEL (Common Expression Language) expressions. This feature automatically sets layouts for pages based on their structure and content, eliminating the need for manual layout specification on each page.
+
+```yaml
+---
+defaults:
+  - if: page == 1
+    layout: title
+  - if: titles.size() == 1 && headings[2].size() == 1
+    layout: section-purple
+  - if: true
+    layout: title-and-body
+---
+```
+
+##### Available CEL variables
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `page` | `int` | Current page number (1-based) |
+| `pageTotal` | `int` | Total number of pages |
+| `titles` | `[]string` | List of titles in the page |
+| `subtitles` | `[]string` | List of subtitles in the page |
+| `bodies` | `[]string` | List of body texts in the page |
+| `blockQuotes` | `[]string` | List of block quotes in the page |
+| `codeBlocks` | `[]CodeBlock` | List of code blocks in the page |
+| `images` | `[]Image` | List of images in the page |
+| `comments` | `[]string` | List of comments in the page |
+| `headings` | `map[int][]string` | Headings grouped by level |
+| `speakerNote` | `string` | Speaker note |
+| `topHeadingLevel` | `int` | The highest heading level in the content |
+
+##### CEL condition examples
+
+- `page == 1` - First page only
+- `titles.size() == 0` - Pages without titles
+- `codeBlocks.size() > 0` - Pages containing code blocks
+- `headings[3].size() >= 2` - Pages with 2 or more H3 headings
+
+##### Important notes
+
+- Conditions are evaluated in order, and the first matching condition's layout is applied
+- Default layouts only apply to pages without explicit layout configuration (via page config comments)
+- This feature enables automatic layout selection based on content patterns, reducing manual configuration overhead
 
 ### Insertion rule
 
