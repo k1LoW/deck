@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.2.0](https://github.com/k1LoW/deck/compare/v1.1.0...v1.2.0) - 2025-07-22
+### New Features 🎉
+- feat: add support for user profiles in deck operations by @k1LoW in https://github.com/k1LoW/deck/pull/297
+
 ## [v1.1.0](https://github.com/k1LoW/deck/compare/v1.0.0...v1.1.0) - 2025-07-21
 ### New Features 🎉
 - feat(md): replace with CEL-based template expansion by @k1LoW in https://github.com/k1LoW/deck/pull/295
