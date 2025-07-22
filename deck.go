@@ -51,7 +51,7 @@ func WithLogger(logger *slog.Logger) Option {
 func WithProfile(profile string) Option {
 	return func(d *Deck) error {
 		// allow only alphanumeric characters, underscores, and hyphens
-		if profile == "" || !strings.ContainsAny(profile, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-") {
+		if profile != "" && !strings.ContainsAny(profile, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-") {
 			return fmt.Errorf("invalid profile name: %s, only alphanumeric characters, underscores, and hyphens are allowed", profile)
 		}
 		d.profile = profile
