@@ -35,6 +35,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var profile string
+
 var rootCmd = &cobra.Command{
 	Use:          "deck",
 	Short:        "deck is a tool for creating deck using Markdown and Google Slides",
@@ -85,4 +87,8 @@ func Execute() {
 		}
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVarP(&profile, "profile", "", "", "profile name")
 }

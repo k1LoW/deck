@@ -33,7 +33,10 @@ var lsCmd = &cobra.Command{
 	Short: "list Google Slides presentations",
 	Long:  `list Google Slides presentations.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		slides, err := deck.List(cmd.Context())
+		opts := []deck.Option{
+			deck.WithProfile(profile),
+		}
+		slides, err := deck.List(cmd.Context(), opts...)
 		if err != nil {
 			return err
 		}

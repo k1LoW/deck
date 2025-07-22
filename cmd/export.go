@@ -56,8 +56,11 @@ var exportCmd = &cobra.Command{
 		if presentationID == "" {
 			return fmt.Errorf("presentation ID is required. Use --presentation-id or set it in the frontmatter of the markdown file")
 		}
-
-		d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
+		opts := []deck.Option{
+			deck.WithProfile(profile),
+			deck.WithPresentationID(presentationID),
+		}
+		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			return err
 		}

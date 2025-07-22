@@ -41,17 +41,20 @@ If the file doesn't exist, it will be created.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+		opts := []deck.Option{
+			deck.WithProfile(profile),
+		}
 		var (
 			d   *deck.Deck
 			err error
 		)
 		if from != "" {
-			d, err = deck.CreateFrom(ctx, from)
+			d, err = deck.CreateFrom(ctx, from, opts...)
 			if err != nil {
 				return err
 			}
 		} else {
-			d, err = deck.Create(ctx)
+			d, err = deck.Create(ctx, opts...)
 			if err != nil {
 				return err
 			}
