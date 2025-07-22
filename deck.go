@@ -21,6 +21,7 @@ const layoutNameForStyle = "style"
 
 type Deck struct {
 	id                 string
+	profile            string
 	srv                *slides.Service
 	driveSrv           *drive.Service
 	presentation       *slides.Presentation
@@ -43,6 +44,17 @@ func WithPresentationID(id string) Option {
 func WithLogger(logger *slog.Logger) Option {
 	return func(d *Deck) error {
 		d.logger = logger
+		return nil
+	}
+}
+
+func WithProfile(profile string) Option {
+	return func(d *Deck) error {
+		// allow only alphanumeric characters, underscores, and hyphens
+		if profile == "" || !strings.ContainsAny(profile, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-") {
+			return fmt.Errorf("invalid profile name: %s, only alphanumeric characters, underscores, and hyphens are allowed", profile)
+		}
+		d.profile = profile
 		return nil
 	}
 }
@@ -101,13 +113,18 @@ func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 }
 
 // Create Google Slides presentation.
-func Create(ctx context.Context) (_ *Deck, err error) {
+func Create(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 		shapes: map[string]*slides.ShapeProperties{},
+	}
+	for _, opt := range opts {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -129,13 +146,18 @@ func Create(ctx context.Context) (_ *Deck, err error) {
 }
 
 // CreateFrom creates a new Deck from the presentation ID.
-func CreateFrom(ctx context.Context, id string) (_ *Deck, err error) {
+func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 		shapes: map[string]*slides.ShapeProperties{},
+	}
+	for _, opt := range opts {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err
@@ -167,12 +189,17 @@ func CreateFrom(ctx context.Context, id string) (_ *Deck, err error) {
 }
 
 // Delete deletes a Google Slides presentation by ID.
-func Delete(ctx context.Context, id string) (err error) {
+func Delete(ctx context.Context, id string, opts ...Option) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
+	}
+	for _, opt := range opts {
+		if err := opt(d); err != nil {
+			return err
+		}
 	}
 	if err := d.initialize(ctx); err != nil {
 		return err
@@ -372,8 +399,13 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
 		return err
 	}
-
 	creds := filepath.Join(config.DataHomePath(), "credentials.json")
+	if d.profile != "" {
+		p := filepath.Join(config.DataHomePath(), fmt.Sprintf("credentials-%s.json", d.profile))
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			creds = p
+		}
+	}
 	b, err := os.ReadFile(creds)
 	if err != nil {
 		return err

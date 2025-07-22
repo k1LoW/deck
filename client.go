@@ -32,6 +32,9 @@ func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.C
 		err = errors.WithStack(err)
 	}()
 	tokenPath := filepath.Join(config.StateHomePath(), "token.json")
+	if d.profile != "" {
+		tokenPath = filepath.Join(config.StateHomePath(), fmt.Sprintf("token-%s.json", d.profile))
+	}
 	token, err := d.tokenFromFile(tokenPath)
 	if err != nil {
 		token, err = d.getTokenFromWeb(ctx, cfg)

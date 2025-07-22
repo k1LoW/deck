@@ -9,13 +9,18 @@ import (
 )
 
 // List Google Slides presentations.
-func List(ctx context.Context) (_ []*Presentation, err error) {
+func List(ctx context.Context, opts ...Option) (_ []*Presentation, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},
 		shapes: map[string]*slides.ShapeProperties{},
+	}
+	for _, opt := range opts {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
 	}
 	if err := d.initialize(ctx); err != nil {
 		return nil, err

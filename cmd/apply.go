@@ -124,6 +124,7 @@ var applyCmd = &cobra.Command{
 			)
 		}
 		opts := []deck.Option{
+			deck.WithProfile(profile),
 			deck.WithPresentationID(presentationID),
 			deck.WithLogger(logger),
 		}
