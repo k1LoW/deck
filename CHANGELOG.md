@@ -1,5 +1,7 @@
 # Changelog
 
+## [v1.2.1](https://github.com/k1LoW/deck/compare/v1.2.0...v1.2.1) - 2025-07-22
+
 ## [v1.2.0](https://github.com/k1LoW/deck/compare/v1.1.0...v1.2.0) - 2025-07-22
 ### New Features 🎉
 - feat: add support for user profiles in deck operations by @k1LoW in https://github.com/k1LoW/deck/pull/297
