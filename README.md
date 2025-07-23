@@ -95,6 +95,14 @@ This is useful during the content creation process as it allows you to see your 
 > [!NOTE]
 > The `--watch` flag cannot be used together with the `--page` flag.
 
+### Open presentation in browser
+
+You can quickly open your Google Slides presentation in your default web browser:
+
+```console
+$ deck open deck.md
+```
+
 ## Support markdown rules
 
 ### YAML Frontmatter

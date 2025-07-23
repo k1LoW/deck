@@ -62,8 +62,14 @@ func (d *Deck) ListLayouts() []string {
 // ListSlideURLs lists URLs of the slides in the Google Slides presentation.
 func (d *Deck) ListSlideURLs() []string {
 	var slideURLs []string
+	baseURL := PresentationIDtoURL(d.id)
 	for _, s := range d.presentation.Slides {
-		slideURLs = append(slideURLs, fmt.Sprintf("https://docs.google.com/presentation/d/%s/present?slide=id.%s", d.id, s.ObjectId))
+		slideURLs = append(slideURLs, baseURL+"present?slide=id."+s.ObjectId)
 	}
 	return slideURLs
+}
+
+// PresentationIDtoURL converts a presentation ID to a Google Slides URL.
+func PresentationIDtoURL(presentationID string) string {
+	return fmt.Sprintf("https://docs.google.com/presentation/d/%s/", presentationID)
 }
