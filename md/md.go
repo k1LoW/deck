@@ -961,7 +961,6 @@ func toBullet(m byte) deck.Bullet {
 }
 
 func isPageDelimiter(line []byte) bool {
-	// Check if the line is exactly "---"
 	return len(line) >= 3 && !slices.ContainsFunc(line, func(b byte) bool {
 		return b != '-'
 	})
