@@ -427,6 +427,11 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 						Nesting:   0,
 					})
 				}
+			case *ast.ThematicBreak:
+				if len(currentBody.Paragraphs) > 0 {
+					currentBody = &deck.Body{}
+					content.Bodies = append(content.Bodies, currentBody)
+				}
 			case *ast.List:
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
