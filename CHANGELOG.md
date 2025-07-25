@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.4.0](https://github.com/k1LoW/deck/compare/v1.3.1...v1.4.0) - 2025-07-25
+### New Features 🎉
+- Enhance page separator rules and support HR elements as body separators by @Songmu in https://github.com/k1LoW/deck/pull/305
+
 ## [v1.3.1](https://github.com/k1LoW/deck/compare/v1.3.0...v1.3.1) - 2025-07-25
 ### New Features 🎉
 - fix: improve markdown page splitting to respect various markdown syntax by @Songmu in https://github.com/k1LoW/deck/pull/303
