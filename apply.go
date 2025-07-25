@@ -149,7 +149,16 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	}()
 
 	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
+	var deletingIndices []int
 	for _, action := range actions {
+		if action.actionType != actionTypeDelete && len(deletingIndices) > 0 {
+			// The indexes of consecutive delete actions are sorted in descending order,
+			// so no position adjustment is necessary.
+			if err := d.DeletePages(ctx, deletingIndices); err != nil {
+				return fmt.Errorf("failed to delete pages: %w", err)
+			}
+			deletingIndices = nil
+		}
 		switch action.actionType {
 		case actionTypeAppend:
 			if err := d.AppendPage(ctx, action.slide); err != nil {
@@ -170,12 +179,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 				return fmt.Errorf("failed to move page: %w", err)
 			}
 		case actionTypeDelete:
-			if err := d.DeletePage(ctx, action.index); err != nil {
-				return fmt.Errorf("failed to delete page: %w", err)
-			}
+			deletingIndices = append(deletingIndices, action.index)
 		}
 	}
-
+	if len(deletingIndices) > 0 {
+		return d.DeletePages(ctx, deletingIndices)
+	}
 	return nil
 }
 

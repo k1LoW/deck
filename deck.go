@@ -256,6 +256,39 @@ func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
 	return nil
 }
 
+func (d *Deck) DeletePages(ctx context.Context, indices []int) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+
+	reqs := make([]*slides.Request, 0, len(indices))
+	for _, idx := range indices {
+		if len(d.presentation.Slides) <= idx {
+			continue
+		}
+		currentSlide := d.presentation.Slides[idx]
+		reqs = append(reqs, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: currentSlide.ObjectId,
+			},
+		})
+	}
+	if len(reqs) > 0 {
+		d.logger.Info("deleting pages", slog.Any("indices", indices))
+		req := &slides.BatchUpdatePresentationRequest{
+			Requests: reqs,
+		}
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to delete pages: %w", err)
+		}
+		if err := d.refresh(ctx); err != nil {
+			return fmt.Errorf("failed to refresh presentation after delete pages: %w", err)
+		}
+		d.logger.Info("deleted pages", slog.Any("indices", indices))
+	}
+	return nil
+}
+
 func (d *Deck) DeletePageAfter(ctx context.Context, index int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
