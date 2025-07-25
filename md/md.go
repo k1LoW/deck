@@ -122,21 +122,24 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+	sep := []byte("---\n")
 
 	// Extract YAML frontmatter if present
 	var frontmatter *Frontmatter
-	mayHaveFrontmatter := bytes.HasPrefix(b, []byte("---\n"))
-	bpages := splitPages(bytes.TrimPrefix(b, []byte("---\n")))
+	mayHaveFrontmatter := bytes.HasPrefix(b, sep)
 
-	if mayHaveFrontmatter && len(bpages) > 0 {
-		maybeYAMLContent := bpages[0]
-		frontmatter = &Frontmatter{}
-		if err := yaml.Unmarshal(maybeYAMLContent, frontmatter); err == nil {
-			bpages = bpages[1:] // Remove the first page if it contains frontmatter
-		} else {
-			frontmatter = nil
+	if mayHaveFrontmatter {
+		stuff := bytes.SplitN(bytes.TrimPrefix(b, sep), sep, 2)
+		if len(stuff) == 2 {
+			frontmatter = &Frontmatter{}
+			if err := yaml.Unmarshal(stuff[0], frontmatter); err == nil {
+				b = stuff[1]
+			} else {
+				frontmatter = nil
+			}
 		}
 	}
+	bpages := splitPages(bytes.TrimPrefix(b, sep))
 	var breaks bool
 	if frontmatter != nil {
 		breaks = frontmatter.Breaks
@@ -515,7 +518,9 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 					Content:  string(c),
 				})
 			case *ast.Blockquote:
-				blockQuoteContent := &Content{}
+				blockQuoteContent := &Content{
+					Headings: make(map[int][]string),
+				}
 				for v := n.FirstChild(); v != nil; v = v.NextSibling() {
 					if err := walkContents(v, baseDir, b, blockQuoteContent, 1, breaks); err != nil {
 						return ast.WalkStop, err
@@ -950,49 +955,73 @@ func toBullet(m byte) deck.Bullet {
 	}
 }
 
+var pageDelimiter = []byte("---")
+
 // splitPages splits markdown content by "---" delimiters
-// while respecting code blocks (``` fenced blocks) to avoid splitting inside them.
+// while respecting fenced code blocks and setext headings to avoid splitting inside them.
 func splitPages(b []byte) [][]byte {
-	var (
-		codeBlockMarker  = []byte("```")
-		contentSeparator = []byte("---")
-		newline          = []byte("\n")
-	)
+	md := goldmark.New()
+	reader := text.NewReader(b)
+	doc := md.Parser().Parse(reader)
 
-	lines := bytes.Split(b, newline)
-
-	var pages [][]byte
-	var currentPage [][]byte
-	inCodeBlock := false
-
-	for _, line := range lines {
-		// Check if this line starts or ends a code block
-		if bytes.HasPrefix(bytes.TrimSpace(line), codeBlockMarker) {
-			inCodeBlock = !inCodeBlock
-			currentPage = append(currentPage, line)
-			continue
-		}
-
-		// Check if this is a page separator (only if not in code block)
-		if !inCodeBlock && bytes.Equal(bytes.TrimSpace(line), contentSeparator) {
-			// End current page and start a new one
-			if len(currentPage) > 0 {
-				pages = append(pages, bytes.Join(currentPage, newline))
-				currentPage = nil
+	// Count original thematic breaks
+	originalBreakCount := 0
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering {
+			if _, ok := n.(*ast.ThematicBreak); ok {
+				originalBreakCount++
 			}
-			continue
 		}
+		return ast.WalkContinue, nil
+	})
 
-		// Add line to current page
-		currentPage = append(currentPage, line)
+	lines := bytes.Split(b, []byte("\n"))
+	var separatorLines = []int{-1} // Start with -1 to handle the first page correctly
+	// For each potential "---" line, check if removing it would reduce the thematic break count
+	for lineNum, line := range lines {
+		if bytes.Equal(line, pageDelimiter) {
+			// Create content with this line replaced by a space
+			modifiedLines := make([][]byte, len(lines))
+			copy(modifiedLines, lines)
+			modifiedLines[lineNum] = []byte(" ") // Replace with space to maintain structure
+			modifiedContent := bytes.Join(modifiedLines, []byte("\n"))
+
+			// Parse the modified content
+			modifiedDoc := md.Parser().Parse(text.NewReader(modifiedContent))
+
+			// Count thematic breaks in modified content
+			modifiedBreakCount := 0
+			_ = ast.Walk(modifiedDoc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+				if entering {
+					if _, ok := n.(*ast.ThematicBreak); ok {
+						modifiedBreakCount++
+					}
+				}
+				return ast.WalkContinue, nil
+			})
+
+			// If removing this line reduces the thematic break count, it's a real separator
+			if modifiedBreakCount == originalBreakCount-1 {
+				separatorLines = append(separatorLines, lineNum)
+			}
+		}
 	}
 
-	// Add the last page if it has content
-	if len(currentPage) > 0 {
-		pages = append(pages, bytes.Join(currentPage, newline))
+	// Split content based on separator line positions
+	var bpages [][]byte
+	for i, sepLine := range separatorLines {
+		from := sepLine + 1
+		to := len(lines)
+		if i < len(separatorLines)-1 {
+			to = separatorLines[i+1]
+		}
+		pageLines := lines[from:to]
+		pageContent := bytes.TrimSpace(bytes.Join(pageLines, []byte("\n")))
+		if len(pageContent) > 0 {
+			bpages = append(bpages, pageContent)
+		}
 	}
-
-	return pages
+	return bpages
 }
 
 func environToMap() map[string]string {

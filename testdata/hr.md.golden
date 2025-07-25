@@ -1,0 +1,183 @@
+[
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 1 - inside code block"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "code_blocks": [
+      {
+        "content": "---\ncode content\n"
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 2 - normal page"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 3 - inside tilde code block"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "code_blocks": [
+      {
+        "content": "---\ncode content\n"
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 4 - inside 4 character fenced code block"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "code_blocks": [
+      {
+        "content": "---\n"
+      },
+      {
+        "content": "---\n"
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 5 - not a horizontal rule but a list item"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "item 1"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "item 3"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 6 - horizontal rule but not a page delmiter"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 7 - various horizontal rules which should not be page delimiters"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "layout": "",
+    "titles": [
+      "H2 heading"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 8 - Setext heading"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This should not be split because the above --- is a setext heading"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "2": [
+        "H2 heading"
+      ]
+    }
+  }
+]
