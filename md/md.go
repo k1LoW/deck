@@ -1044,6 +1044,9 @@ func environToMap() map[string]string {
 	return envMap
 }
 
+// Regular expression to match {{expression}} patterns.
+var celExprReg = regexp.MustCompile(`\{\{([^}]+)\}\}`)
+
 // expandTemplate expands template expressions in the format {{CEL expression}} with values from the store.
 // It supports CEL (Common Expression Language) expressions within the template.
 func expandTemplate(template string, store map[string]any) (string, error) {
@@ -1053,11 +1056,8 @@ func expandTemplate(template string, store map[string]any) (string, error) {
 		return "", fmt.Errorf("failed to create CEL environment: %w", err)
 	}
 
-	// Regular expression to match {{expression}} patterns
-	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
-
 	var expandErr error
-	result := re.ReplaceAllStringFunc(template, func(match string) string {
+	result := celExprReg.ReplaceAllStringFunc(template, func(match string) string {
 		// Extract CEL expression without {{ }}
 		expr := strings.TrimSpace(match[2 : len(match)-2])
 
