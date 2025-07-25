@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.3.1](https://github.com/k1LoW/deck/compare/v1.3.0...v1.3.1) - 2025-07-25
+### New Features 🎉
+- fix: improve markdown page splitting to respect various markdown syntax by @Songmu in https://github.com/k1LoW/deck/pull/303
+
 ## [v1.3.0](https://github.com/k1LoW/deck/compare/v1.2.1...v1.3.0) - 2025-07-23
 ### New Features 🎉
 - feat: add 'open' subcommand to open Google Slides in browser by @Songmu in https://github.com/k1LoW/deck/pull/300
