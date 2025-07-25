@@ -957,12 +957,12 @@ func toBullet(m byte) deck.Bullet {
 
 func isPageDelimiter(line []byte) bool {
 	// Check if the line is exactly "---"
-	return len(line) == 3 && !slices.ContainsFunc(line, func(b byte) bool {
+	return len(line) >= 3 && !slices.ContainsFunc(line, func(b byte) bool {
 		return b != '-'
 	})
 }
 
-// splitPages splits markdown content by "---" delimiters
+// splitPages splits markdown content by delimiters
 // while respecting fenced code blocks and setext headings to avoid splitting inside them.
 func splitPages(b []byte) [][]byte {
 	md := goldmark.New()
@@ -982,7 +982,7 @@ func splitPages(b []byte) [][]byte {
 
 	lines := bytes.Split(b, []byte("\n"))
 	var separatorLines = []int{-1} // Start with -1 to handle the first page correctly
-	// For each potential "---" line, check if removing it would reduce the thematic break count
+	// For each potential delimiter line, check if removing it would reduce the thematic break count
 	for lineNum, line := range lines {
 		if isPageDelimiter(line) {
 			// Create content with this line replaced by a space
