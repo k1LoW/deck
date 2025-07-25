@@ -427,6 +427,11 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 						Nesting:   0,
 					})
 				}
+			case *ast.ThematicBreak:
+				if len(currentBody.Paragraphs) > 0 {
+					currentBody = &deck.Body{}
+					content.Bodies = append(content.Bodies, currentBody)
+				}
 			case *ast.List:
 				currentListMarker = toBullet(v.Marker)
 			case *ast.ListItem:
@@ -955,9 +960,13 @@ func toBullet(m byte) deck.Bullet {
 	}
 }
 
-var pageDelimiter = []byte("---")
+func isPageDelimiter(line []byte) bool {
+	return len(line) >= 3 && !slices.ContainsFunc(line, func(b byte) bool {
+		return b != '-'
+	})
+}
 
-// splitPages splits markdown content by "---" delimiters
+// splitPages splits markdown content by delimiters
 // while respecting fenced code blocks and setext headings to avoid splitting inside them.
 func splitPages(b []byte) [][]byte {
 	md := goldmark.New()
@@ -977,9 +986,9 @@ func splitPages(b []byte) [][]byte {
 
 	lines := bytes.Split(b, []byte("\n"))
 	var separatorLines = []int{-1} // Start with -1 to handle the first page correctly
-	// For each potential "---" line, check if removing it would reduce the thematic break count
+	// For each potential delimiter line, check if removing it would reduce the thematic break count
 	for lineNum, line := range lines {
-		if bytes.Equal(line, pageDelimiter) {
+		if isPageDelimiter(line) {
 			// Create content with this line replaced by a space
 			modifiedLines := make([][]byte, len(lines))
 			copy(modifiedLines, lines)
@@ -1035,6 +1044,9 @@ func environToMap() map[string]string {
 	return envMap
 }
 
+// Regular expression to match {{expression}} patterns.
+var celExprReg = regexp.MustCompile(`\{\{([^}]+)\}\}`)
+
 // expandTemplate expands template expressions in the format {{CEL expression}} with values from the store.
 // It supports CEL (Common Expression Language) expressions within the template.
 func expandTemplate(template string, store map[string]any) (string, error) {
@@ -1044,11 +1056,8 @@ func expandTemplate(template string, store map[string]any) (string, error) {
 		return "", fmt.Errorf("failed to create CEL environment: %w", err)
 	}
 
-	// Regular expression to match {{expression}} patterns
-	re := regexp.MustCompile(`\{\{([^}]+)\}\}`)
-
 	var expandErr error
-	result := re.ReplaceAllStringFunc(template, func(match string) string {
+	result := celExprReg.ReplaceAllStringFunc(template, func(match string) string {
 		// Extract CEL expression without {{ }}
 		expr := strings.TrimSpace(match[2 : len(match)-2])
 

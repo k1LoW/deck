@@ -100,7 +100,11 @@
               }
             ],
             "bullet": "-"
-          },
+          }
+        ]
+      },
+      {
+        "paragraphs": [
           {
             "fragments": [
               {
@@ -137,12 +141,29 @@
           {
             "fragments": [
               {
-                "value": "Page 7 - various horizontal rules which should not be page delimiters"
+                "value": "Page 7 - 5 dashes hr as a page delimiter"
               }
             ]
           }
         ]
       }
+    ]
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 8 - various horizontal rules which should not be page delimiters"
+              }
+            ]
+          }
+        ]
+      },
+      {}
     ]
   },
   {
@@ -156,7 +177,7 @@
           {
             "fragments": [
               {
-                "value": "Page 8 - Setext heading"
+                "value": "Page 9 - Setext heading"
               }
             ]
           }

@@ -44,17 +44,19 @@ Page 6 - horizontal rule but not a page delmiter
 
 -----
 
+Page 7 - 5 dashes hr as a page delimiter
+
 ---
 
-Page 7 - various horizontal rules which should not be page delimiters
+Page 8 - various horizontal rules which should not be page delimiters
 
------
+- - - - -
 *****
 ___
 
 ---
 
-Page 8 - Setext heading
+Page 9 - Setext heading
 
 H2 heading
 ---
