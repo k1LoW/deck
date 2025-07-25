@@ -59,10 +59,12 @@ This will create (or update) the specified markdown file with frontmatter contai
 
 ### Write deck in markdown
 
-The slide pages are represented by dividing them with horizontal lines `---`.
+The slide pages are separated by a line containing only three or more consecutive hyphens (`---`, `----`, etc.) from the beginning to the end of the line.
 
 > [!NOTE]
 > The `---` at the beginning of the markdown is ignored.
+> 
+> Other horizontal rule elements (like `- - -`, `***`, `___`) are not treated as page separators but remain in the content as visual separators for multiple body placeholders.
 
 ### Apply deck written in markdown to Google Slides presentation
 
@@ -464,7 +466,8 @@ For example, it is a good idea to provide the following rules for creating deck 
     Unless otherwise specified, please follow the rules below.
 
     ## Basic Structure
-    - Use `---` (three hyphens) to indicate page breaks between slides.
+    - Use a line containing only three or more consecutive hyphens (`---`, `----`, etc.) from the beginning to the end of the line to indicate page breaks between slides.
+    - Other horizontal rule elements (like `- - -`, `***`, `___`) remain in the content as visual separators and can be used to separate multiple body placeholders.
     - Within each slide, the minimum heading level will be treated as the title, and the next level as the subtitle. Higher level headings will be treated as body content. It is recommended to use only one title heading per slide.
 
     ## YAML Frontmatter
