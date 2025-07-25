@@ -920,10 +920,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 	req := &slides.BatchUpdatePresentationRequest{
 		Requests: []*slides.Request{},
 	}
-	insertReq := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{},
-	}
 	var (
+		insertReqs []*slides.Request
 		styleReqs  []*slides.Request
 		bulletReqs []*slides.Request
 	)
@@ -1032,7 +1030,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 				},
 			})
 
-			insertReq.Requests = append(insertReq.Requests, &slides.Request{
+			insertReqs = append(insertReqs, &slides.Request{
 				InsertText: &slides.InsertTextRequest{
 					ObjectId: shapeObjectID,
 					Text:     strings.TrimSuffix(text, "\n"),
@@ -1090,22 +1088,17 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 
 			if len(styleReqs) > 0 || len(bulletReqs) > 0 {
 				// Apply styles first, then bullets (important for correct rendering)
-				insertReq.Requests = append(insertReq.Requests, styleReqs...)
-				insertReq.Requests = append(insertReq.Requests, bulletReqs...)
+				insertReqs = append(insertReqs, styleReqs...)
+				insertReqs = append(insertReqs, bulletReqs...)
 				styleReqs = nil  // reset after adding to requests
 				bulletReqs = nil // reset after adding to requests
 			}
 		}
 	}
-
+	req.Requests = append(req.Requests, insertReqs...)
 	if len(req.Requests) > 0 {
 		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-			return fmt.Errorf("failed to copy images: %w", err)
-		}
-	}
-	if len(insertReq.Requests) > 0 {
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, insertReq).Context(ctx).Do(); err != nil {
-			return fmt.Errorf("failed to insert text: %w", err)
+			return fmt.Errorf("failed to copy images or insert text: %w", err)
 		}
 	}
 
