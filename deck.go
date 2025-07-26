@@ -244,15 +244,36 @@ func (d *Deck) Export(ctx context.Context, w io.Writer) (err error) {
 	return nil
 }
 
-func (d *Deck) DeletePage(ctx context.Context, index int) (err error) {
+func (d *Deck) DeletePages(ctx context.Context, indices []int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d.logger.Info("deleting page", slog.Int("index", index))
-	if err := d.deletePage(ctx, index); err != nil {
-		return err
+
+	reqs := make([]*slides.Request, 0, len(indices))
+	for _, idx := range indices {
+		if len(d.presentation.Slides) <= idx {
+			continue
+		}
+		currentSlide := d.presentation.Slides[idx]
+		reqs = append(reqs, &slides.Request{
+			DeleteObject: &slides.DeleteObjectRequest{
+				ObjectId: currentSlide.ObjectId,
+			},
+		})
 	}
-	d.logger.Info("deleted page", slog.Int("index", index))
+	if len(reqs) > 0 {
+		d.logger.Info("deleting pages", slog.Any("indices", indices))
+		req := &slides.BatchUpdatePresentationRequest{
+			Requests: reqs,
+		}
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to delete pages: %w", err)
+		}
+		if err := d.refresh(ctx); err != nil {
+			return fmt.Errorf("failed to refresh presentation after delete pages: %w", err)
+		}
+		d.logger.Info("deleted pages", slog.Int("count", len(reqs)), slog.Any("indices", indices))
+	}
 	return nil
 }
 
@@ -468,32 +489,6 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err err
 		return err
 	}
 
-	return nil
-}
-
-func (d *Deck) deletePage(ctx context.Context, index int) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if len(d.presentation.Slides) <= index {
-		return nil
-	}
-	currentSlide := d.presentation.Slides[index]
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{
-			{
-				DeleteObject: &slides.DeleteObjectRequest{
-					ObjectId: currentSlide.ObjectId,
-				},
-			},
-		},
-	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-		return err
-	}
-	if err := d.refresh(ctx); err != nil {
-		return err
-	}
 	return nil
 }
 

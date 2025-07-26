@@ -74,11 +74,17 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 		}
 		return nil
 	}
-	if r.Message == "deleted page" {
-		if err := h.write([]byte(gray("-"))); err != nil {
-			return err
-		}
-		return nil
+	if r.Message == "deleted pages" {
+		var count int
+		r.Attrs(func(attr slog.Attr) bool {
+			if attr.Key == "count" {
+				count = int(attr.Value.Int64())
+				return false
+			}
+			return true
+		})
+		msg := strings.Repeat("-", count)
+		return h.write([]byte(gray(msg)))
 	}
 	if r.Message == "appended page" {
 		if err := h.write([]byte(yellow("+"))); err != nil {
