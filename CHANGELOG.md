@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.4.1](https://github.com/k1LoW/deck/compare/v1.4.0...v1.4.1) - 2025-07-26
+### New Features 🎉
+- perf: Batch delete pages by @Songmu in https://github.com/k1LoW/deck/pull/307
+
 ## [v1.4.0](https://github.com/k1LoW/deck/compare/v1.3.1...v1.4.0) - 2025-07-25
 ### New Features 🎉
 - Enhance page separator rules and support HR elements as body separators by @Songmu in https://github.com/k1LoW/deck/pull/305
