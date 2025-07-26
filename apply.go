@@ -142,7 +142,35 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	}()
 
 	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
-	var deletingIndices []int
+
+	var layoutsForAppendPages []string
+	for _, action := range actions {
+		if action.actionType == actionTypeAppend {
+			layoutsForAppendPages = append(layoutsForAppendPages, action.slide.Layout)
+		}
+	}
+
+	currentSlidesLen := len(d.presentation.Slides)
+	if len(layoutsForAppendPages) > 0 {
+		layoutMap := d.layoutMap()
+		var layoutObjectIDs = make([]string, len(layoutsForAppendPages))
+		for i, l := range layoutsForAppendPages {
+			layout, ok := layoutMap[l]
+			if !ok {
+				return fmt.Errorf("layout not found: %q", l)
+			}
+			layoutObjectIDs[i] = layout.ObjectId
+		}
+		// prepare pages for appending new slides in advance
+		if err := d.preparePages(ctx, currentSlidesLen, layoutObjectIDs); err != nil {
+			return fmt.Errorf("failed to create pages: %w", err)
+		}
+	}
+
+	var (
+		nextAppendingIndex = currentSlidesLen
+		deletingIndices    []int
+	)
 	for _, action := range actions {
 		if action.actionType != actionTypeDelete && len(deletingIndices) > 0 {
 			// The indexes of consecutive delete actions are sorted in descending order,
@@ -154,9 +182,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		}
 		switch action.actionType {
 		case actionTypeAppend:
-			if err := d.AppendPage(ctx, action.slide); err != nil {
-				return fmt.Errorf("failed to append slide: %w", err)
+			d.logger.Info("appending new page")
+			if err := d.applyPage(ctx, nextAppendingIndex, action.slide, nil); err != nil {
+				return fmt.Errorf("failed to apply page: %w", err)
 			}
+			d.logger.Info("appended page")
+			nextAppendingIndex++
 		case actionTypeUpdate:
 			d.logger.Info("appling page", slog.Int("index", action.index))
 			if err := d.applyPage(ctx, action.index, action.slide, currentImages[action.index]); err != nil {

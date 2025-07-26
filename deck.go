@@ -492,6 +492,33 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err err
 	return nil
 }
 
+// preparePages prepares the pages by creating slides with the specified layout IDs.
+func (d *Deck) preparePages(ctx context.Context, startIdx int, layoutIDs []string) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	slideIdx := startIdx
+	reqs := make([]*slides.Request, len(layoutIDs))
+	for i, layoutID := range layoutIDs {
+		reqs[i] = &slides.Request{
+			CreateSlide: &slides.CreateSlideRequest{
+				InsertionIndex: int64(slideIdx),
+				SlideLayoutReference: &slides.LayoutReference{
+					LayoutId: layoutID,
+				},
+			},
+		}
+		slideIdx++
+	}
+	req := &slides.BatchUpdatePresentationRequest{
+		Requests: reqs,
+	}
+	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		return err
+	}
+	return d.refresh(ctx)
+}
+
 func (d *Deck) movePage(ctx context.Context, from_index, to_index int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
