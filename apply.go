@@ -211,6 +211,8 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		if err := d.updateLayout(ctx, index, slide); err != nil {
 			return err
 		}
+		// Reset preloaded data since layout has changed and internal page is changed.
+		preloaded = nil
 	}
 
 	var (
@@ -937,9 +939,14 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 
 	for _, element := range currentSlide.PageElements {
 		// copy images from the current slide to the new slide
-		if element.Image != nil && element.Description != descriptionImageFromMarkdown && element.Image.ContentUrl != "" {
+		if element.Image != nil && element.Image.ContentUrl != "" {
+			var imageObjectID string
+			if element.Description == descriptionImageFromMarkdown {
+				imageObjectID = fmt.Sprintf("image-%s", uuid.New().String())
+			}
 			req.Requests = append(req.Requests, &slides.Request{
 				CreateImage: &slides.CreateImageRequest{
+					ObjectId: imageObjectID,
 					ElementProperties: &slides.PageElementProperties{
 						Size:         element.Size,
 						Transform:    element.Transform,
@@ -948,6 +955,14 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 					Url: element.Image.ContentUrl,
 				},
 			})
+			if imageObjectID != "" {
+				req.Requests = append(req.Requests, &slides.Request{
+					UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
+						ObjectId:    imageObjectID,
+						Description: descriptionImageFromMarkdown,
+					},
+				})
+			}
 		}
 		// copy shapes from the current slide to the new slide
 		if element.Shape != nil && element.Shape.Placeholder == nil && element.Description != descriptionTextboxFromMarkdown {
