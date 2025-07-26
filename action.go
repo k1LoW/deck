@@ -14,7 +14,6 @@ type actionType int
 
 const (
 	actionTypeAppend actionType = iota // Append slide to the end
-	actionTypeInsert                   // Insert slide at a specific index
 	actionTypeUpdate                   // Update existing slide at a specific index
 	actionTypeMove                     // Move existing slide to a new index
 	actionTypeDelete                   // Delete slide at a specific index (not used in this diff)
@@ -24,8 +23,6 @@ func (at actionType) String() string { //nostyle:recvtype
 	switch at {
 	case actionTypeAppend:
 		return "append"
-	case actionTypeInsert:
-		return "insert"
 	case actionTypeUpdate:
 		return "update"
 	case actionTypeMove:

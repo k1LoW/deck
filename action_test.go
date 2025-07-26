@@ -3048,13 +3048,6 @@ func FuzzGenerateActions(f *testing.F) {
 				if action.slide == nil {
 					t.Errorf("action %d (move) has nil slide", i)
 				}
-			case actionTypeInsert:
-				if action.slide == nil {
-					t.Errorf("action %d (insert) has nil slide", i)
-				}
-				if action.index < 0 {
-					t.Errorf("action %d (insert) has negative index: %d", i, action.index)
-				}
 			default:
 				t.Errorf("action %d has unknown type: %v", i, action.actionType)
 			}

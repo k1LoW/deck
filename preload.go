@@ -158,7 +158,7 @@ func (d *Deck) startUploadingImages(
 
 	for _, action := range actions {
 		switch action.actionType {
-		case actionTypeUpdate, actionTypeAppend, actionTypeInsert:
+		case actionTypeUpdate, actionTypeAppend:
 			if action.slide == nil {
 				continue
 			}

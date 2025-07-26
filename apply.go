@@ -104,13 +104,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 				Index:       nil,
 				MoveToIndex: nil,
 			})
-		case actionTypeInsert:
-			actionDetails = append(actionDetails, actionDetail{
-				ActionType:  actionTypeInsert,
-				Titles:      action.slide.Titles,
-				Index:       &action.index,
-				MoveToIndex: nil,
-			})
 		case actionTypeUpdate:
 			actionDetails = append(actionDetails, actionDetail{
 				ActionType:  actionTypeUpdate,
@@ -163,10 +156,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		case actionTypeAppend:
 			if err := d.AppendPage(ctx, action.slide); err != nil {
 				return fmt.Errorf("failed to append slide: %w", err)
-			}
-		case actionTypeInsert:
-			if err := d.InsertPage(ctx, action.index, action.slide); err != nil {
-				return fmt.Errorf("failed to apply page: %w", err)
 			}
 		case actionTypeUpdate:
 			d.logger.Info("appling page", slog.Int("index", action.index))
