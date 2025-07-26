@@ -1111,7 +1111,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 		}
 	}
 
-	if err := d.DeletePage(ctx, index); err != nil {
+	if err := d.DeletePages(ctx, []int{index}); err != nil {
 		return err
 	}
 	return nil

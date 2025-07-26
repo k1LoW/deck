@@ -172,7 +172,7 @@ func TestAction(t *testing.T) {
 			if err := d.DeletePageAfter(ctx, 0); err != nil {
 				t.Fatal(err)
 			}
-			if err := d.DeletePage(ctx, 0); err != nil {
+			if err := d.DeletePages(ctx, []int{0}); err != nil {
 				t.Fatal(err)
 			}
 			if err := d.Apply(ctx, tt.before); err != nil {
