@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	styleBlockQuote                = "blockquote"
 	descriptionImageFromMarkdown   = "Image generated from markdown"
 	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
 )

@@ -9,12 +9,49 @@ import (
 )
 
 const (
-	styleCode             = "code"
-	styleBold             = "bold"
-	styleItalic           = "italic"
-	styleLink             = "link"
-	styleBlockQuote       = "blockquote"
+	styleCode   = "code"
+	styleBold   = "bold"
+	styleItalic = "italic"
+	styleLink   = "link"
+	// Define styles by referring to the default styles for most browsers described on the MDN.
+	// ref. https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements
+	styleStrong           = "strong" // <strong> tag
+	styleEm               = "em"     // <em> tag
+	styleS                = "s"      // <s> strikethrough tag
+	styleU                = "u"      // <u> unarticulated annotation (underline) tag
+	styleSup              = "sup"    // <sup> superscript tag
+	styleSub              = "sub"    // <sub> subscript tag
+	styleVar              = "var"    // <var> variable tag
+	styleKbd              = "kbd"    // <kbd> keyboard input tag
+	styleSamp             = "samp"   // <samp> sample output tag
 	defaultCodeFontFamily = "Noto Sans Mono"
+)
+
+var (
+	italicStyleFunc = func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				Italic: true,
+			},
+			Fields: "italic",
+		}
+	}
+	boldStyleFunc = func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				Bold: true,
+			},
+			Fields: "bold",
+		}
+	}
+	monospaceStyleFunc = func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				FontFamily: defaultCodeFontFamily,
+			},
+			Fields: "fontFamily",
+		}
+	}
 )
 
 var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
@@ -44,22 +81,45 @@ var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
 			Fields: "foregroundColor,fontFamily,backgroundColor",
 		}
 	},
-	styleBold: func() *slides.UpdateTextStyleRequest {
+	styleBold:   boldStyleFunc,
+	styleItalic: italicStyleFunc,
+	styleStrong: boldStyleFunc,
+	styleEm:     italicStyleFunc,
+	styleS: func() *slides.UpdateTextStyleRequest {
 		return &slides.UpdateTextStyleRequest{
 			Style: &slides.TextStyle{
-				Bold: true,
+				Strikethrough: true,
 			},
-			Fields: "bold",
+			Fields: "strikethrough",
 		}
 	},
-	styleItalic: func() *slides.UpdateTextStyleRequest {
+	styleU: func() *slides.UpdateTextStyleRequest {
 		return &slides.UpdateTextStyleRequest{
 			Style: &slides.TextStyle{
-				Italic: true,
+				Underline: true,
 			},
-			Fields: "italic",
+			Fields: "underline",
 		}
 	},
+	styleSup: func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				BaselineOffset: "SUPERSCRIPT",
+			},
+			Fields: "baselineOffset",
+		}
+	},
+	styleSub: func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				BaselineOffset: "SUBSCRIPT",
+			},
+			Fields: "baselineOffset",
+		}
+	},
+	styleVar:  italicStyleFunc,
+	styleKbd:  monospaceStyleFunc,
+	styleSamp: monospaceStyleFunc,
 }
 
 func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.UpdateTextStyleRequest) {
@@ -115,6 +175,11 @@ func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.Update
 		s, ok := d.styles[fragment.StyleName]
 		if ok {
 			reqs = append(reqs, buildCustomStyleRequest(s))
+		} else {
+			s, ok := defaultStyles[fragment.StyleName]
+			if ok {
+				reqs = append(reqs, s())
+			}
 		}
 	}
 
@@ -130,8 +195,10 @@ func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest
 			ForegroundColor: s.ForegroundColor,
 			FontFamily:      s.FontFamily,
 			BackgroundColor: s.BackgroundColor,
+			BaselineOffset:  s.BaselineOffset,
+			Strikethrough:   s.Strikethrough,
 		},
-		Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor",
+		Fields: "bold,italic,underline,foregroundColor,fontFamily,backgroundColor,baselineOffset,strikethrough",
 	}
 }
 
@@ -168,6 +235,12 @@ func mergeStyles(a, b *slides.TextStyle, fStr string) *slides.TextStyle {
 	}
 	if slices.Contains(fields, "backgroundColor") {
 		a.BackgroundColor = b.BackgroundColor
+	}
+	if slices.Contains(fields, "baselineOffset") {
+		a.BaselineOffset = b.BaselineOffset
+	}
+	if slices.Contains(fields, "strikethrough") {
+		a.Strikethrough = b.Strikethrough
 	}
 	return a
 }
