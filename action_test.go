@@ -1667,7 +1667,7 @@ func TestGenerateActionsWithImages(t *testing.T) {
 			for i, slide := range got {
 				for _, image := range slide.Images {
 					found := slices.ContainsFunc(tt.after[i].Images, func(afterImage *Image) bool {
-						return image.Compare(afterImage)
+						return image.Equivalent(afterImage)
 					})
 					if !found {
 						t.Errorf("image not found in slide %d", i+1)

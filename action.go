@@ -508,7 +508,7 @@ func copySlide(slide *Slide) *Slide {
 			continue
 		}
 		for _, copiedImage := range copied.Images {
-			if image.Compare(copiedImage) {
+			if image.Equivalent(copiedImage) {
 				copiedImage.fromMarkdown = image.fromMarkdown
 				copiedImage.codeBlock = image.codeBlock
 				copiedImage.modTime = image.modTime
@@ -543,7 +543,7 @@ func copySlides(slides Slides) (_ Slides, err error) {
 	for i, slide := range slides {
 		for _, image := range slide.Images {
 			for _, copiedImage := range copied[i].Images {
-				if image.Compare(copiedImage) {
+				if image.Equivalent(copiedImage) {
 					copiedImage.fromMarkdown = image.fromMarkdown
 					copiedImage.codeBlock = image.codeBlock
 					copiedImage.modTime = image.modTime
@@ -560,7 +560,7 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		return 0
 	}
 
-	if slidesEqual(beforeSlide, afterSlide) {
+	if beforeSlide.Equal(afterSlide) {
 		return 500
 	}
 
@@ -570,11 +570,11 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 	if beforeSlide.Layout == afterSlide.Layout && beforeSlide.Layout != "" {
 		score += 50 // Increased layout base score from 10 to 50
 
-		if len(beforeSlide.Titles) > 0 && len(afterSlide.Titles) > 0 && titlesEqual(beforeSlide.Titles, afterSlide.Titles) {
+		if len(beforeSlide.Titles) > 0 && slices.Equal(beforeSlide.Titles, afterSlide.Titles) {
 			score += 80
 		}
 
-		if len(beforeSlide.Subtitles) > 0 && len(afterSlide.Subtitles) > 0 && subtitlesEqual(beforeSlide.Subtitles, afterSlide.Subtitles) {
+		if len(beforeSlide.Subtitles) > 0 && slices.Equal(beforeSlide.Subtitles, afterSlide.Subtitles) {
 			score += 20
 		}
 

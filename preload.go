@@ -167,7 +167,7 @@ func (d *Deck) startUploadingImages(
 				var found bool
 				if currentImagesForSlide, exists := currentImages[action.index]; exists {
 					found = slices.ContainsFunc(currentImagesForSlide.currentImages, func(currentImage *Image) bool {
-						return currentImage.Compare(image)
+						return currentImage.Equivalent(image)
 					})
 				}
 				if !found && image.IsUploadNeeded() {

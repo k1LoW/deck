@@ -222,7 +222,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !base.Compare(applied) {
+			if !base.Equal(applied) {
 				diff := cmp.Diff(base, applied, cmpopts...)
 				t.Errorf("slides after apply do not match base: %s", diff)
 			}
@@ -233,7 +233,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !applied.Compare(applied2) {
+			if !applied.Equal(applied2) {
 				diff := cmp.Diff(applied, applied2, cmpopts...)
 				t.Errorf("slides after apply do not match base: %s", diff)
 			}

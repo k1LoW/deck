@@ -298,7 +298,7 @@ func newImageFromBuffer(r io.Reader) (_ *Image, err error) {
 	}, nil
 }
 
-func (i *Image) Compare(ii *Image) bool {
+func (i *Image) Equivalent(ii *Image) bool {
 	if i == nil || ii == nil {
 		return false
 	}
