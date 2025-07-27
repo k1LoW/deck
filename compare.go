@@ -17,69 +17,22 @@ func (s *Slide) Equal(other *Slide) bool {
 	if s == nil || other == nil {
 		return s == other
 	}
-	if s.Layout != other.Layout {
-		return false
-	}
-	if !titlesEqual(s.Titles, other.Titles) {
-		return false
-	}
-	if !subtitlesEqual(s.Subtitles, other.Subtitles) {
-		return false
-	}
-	if !bodiesEqual(s.Bodies, other.Bodies) {
-		return false
-	}
-	if !imagesEqual(s.Images, other.Images) {
-		return false
-	}
-	if !blockQuotesEqual(s.BlockQuotes, other.BlockQuotes) {
-		return false
-	}
-	if s.SpeakerNote != other.SpeakerNote {
-		return false
-	}
-	return true
-}
-
-func titlesEqual(titles1, titles2 []string) bool {
-	if len(titles1) != len(titles2) {
-		return false
-	}
-	for i := range titles1 {
-		if titles1[i] != titles2[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func subtitlesEqual(subtitles1, subtitles2 []string) bool {
-	if len(subtitles1) != len(subtitles2) {
-		return false
-	}
-	for i := range subtitles1 {
-		if subtitles1[i] != subtitles2[i] {
-			return false
-		}
-	}
-	return true
+	return s.Layout == other.Layout &&
+		slices.Equal(s.Titles, other.Titles) &&
+		slices.Equal(s.Subtitles, other.Subtitles) &&
+		bodiesEqual(s.Bodies, other.Bodies) &&
+		imagesEqual(s.Images, other.Images) &&
+		blockQuotesEqual(s.BlockQuotes, other.BlockQuotes) &&
+		s.SpeakerNote == other.SpeakerNote
 }
 
 func bodiesEqual(bodies1, bodies2 []*Body) bool {
-	if len(bodies1) != len(bodies2) {
-		return false
-	}
-	for i := range bodies1 {
-		if bodies1[i] == nil || bodies2[i] == nil {
-			if bodies1[i] != bodies2[i] {
-				return false
-			}
+	return slices.EqualFunc(bodies1, bodies2, func(a, b *Body) bool {
+		if a == nil || b == nil {
+			return a == b
 		}
-		if !paragraphsEqual(bodies1[i].Paragraphs, bodies2[i].Paragraphs) {
-			return false
-		}
-	}
-	return true
+		return slices.EqualFunc(a.Paragraphs, b.Paragraphs, paragraphEqual)
+	})
 }
 
 func imagesEqual(images1, images2 []*Image) bool {
@@ -91,25 +44,22 @@ func imagesEqual(images1, images2 []*Image) bool {
 	sorted2 := make([]*Image, len(images2))
 	copy(sorted2, images2)
 
-	slices.SortFunc(sorted1, func(a *Image, b *Image) int {
+	f := func(a *Image, b *Image) int {
 		return int(a.Checksum()) - int(b.Checksum())
-	})
-	slices.SortFunc(sorted2, func(a *Image, b *Image) int {
-		return int(a.Checksum()) - int(b.Checksum())
-	})
-	for i, img := range sorted1 {
-		if !img.Equivalent(sorted2[i]) {
-			return false
-		}
 	}
-	return true
+	slices.SortFunc(sorted1, f)
+	slices.SortFunc(sorted2, f)
+
+	return slices.EqualFunc(sorted1, sorted2, func(a, b *Image) bool {
+		return a.Equivalent(b)
+	})
 }
 
 func blockQuotesEqual(bq1, bq2 []*BlockQuote) bool {
 	if len(bq1) != len(bq2) {
 		return false
 	}
-	slices.SortFunc(bq1, func(a *BlockQuote, b *BlockQuote) int {
+	f := func(a *BlockQuote, b *BlockQuote) int {
 		if a.Nesting != b.Nesting {
 			return a.Nesting - b.Nesting
 		}
@@ -125,39 +75,17 @@ func blockQuotesEqual(bq1, bq2 []*BlockQuote) bool {
 			return 1 // Error case, treat as unequal
 		}
 		return bytes.Compare(jsonA, jsonB)
-	})
-	slices.SortFunc(bq2, func(a *BlockQuote, b *BlockQuote) int {
-		if a.Nesting != b.Nesting {
-			return a.Nesting - b.Nesting
-		}
-		if len(a.Paragraphs) != len(b.Paragraphs) {
-			return len(a.Paragraphs) - len(b.Paragraphs)
-		}
-		jsonA, err := json.Marshal(a.Paragraphs)
-		if err != nil {
-			return -1 // Error case, treat as unequal
-		}
-		jsonB, err := json.Marshal(b.Paragraphs)
-		if err != nil {
-			return 1 // Error case, treat as unequal
-		}
-		return bytes.Compare(jsonA, jsonB)
-	})
-
-	for i := range bq1 {
-		if bq1[i] == nil || bq2[i] == nil {
-			if bq1[i] != bq2[i] {
-				return false
-			}
-		}
-		if bq1[i].Nesting != bq2[i].Nesting {
-			return false
-		}
-		if !paragraphsEqual(bq1[i].Paragraphs, bq2[i].Paragraphs) {
-			return false
-		}
 	}
-	return true
+	slices.SortFunc(bq1, f)
+	slices.SortFunc(bq2, f)
+
+	return slices.EqualFunc(bq1, bq2, func(a, b *BlockQuote) bool {
+		if a == nil || b == nil {
+			return a == b
+		}
+		return a.Nesting == b.Nesting &&
+			slices.EqualFunc(a.Paragraphs, b.Paragraphs, paragraphEqual)
+	})
 }
 
 func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
@@ -172,33 +100,14 @@ func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
 	}
 	merged1 := mergeFragments(paragraph1.Fragments)
 	merged2 := mergeFragments(paragraph2.Fragments)
-	if len(merged1) != len(merged2) {
-		return false
-	}
-	for i := range merged1 {
-		if strings.TrimRight(merged1[i].Value, "\n") != strings.TrimRight(merged2[i].Value, "\n") {
-			return false
-		}
-		if merged1[i].Bold != merged2[i].Bold ||
-			merged1[i].Italic != merged2[i].Italic ||
-			merged1[i].Link != merged2[i].Link ||
-			merged1[i].Code != merged2[i].Code {
-			return false
-		}
-	}
-	return true
-}
 
-func paragraphsEqual(paragraphs1, paragraphs2 []*Paragraph) bool {
-	if len(paragraphs1) != len(paragraphs2) {
-		return false
-	}
-	for i := range paragraphs1 {
-		if !paragraphEqual(paragraphs1[i], paragraphs2[i]) {
-			return false
-		}
-	}
-	return true
+	return slices.EqualFunc(merged1, merged2, func(a, b *Fragment) bool {
+		return strings.TrimRight(a.Value, "\n") == strings.TrimRight(b.Value, "\n") &&
+			a.Bold == b.Bold &&
+			a.Italic == b.Italic &&
+			a.Link == b.Link &&
+			a.Code == b.Code
+	})
 }
 
 func mergeFragments(in []*Fragment) []*Fragment {
@@ -228,6 +137,5 @@ func mergeFragments(in []*Fragment) []*Fragment {
 			StyleName: in[i].StyleName,
 		})
 	}
-
 	return merged
 }

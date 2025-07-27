@@ -514,7 +514,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 	// set text boxes
 	for i, bq := range slide.BlockQuotes {
 		found := slices.ContainsFunc(currentTextBoxes, func(currentTextBox *textBox) bool {
-			return paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs)
+			return slices.EqualFunc(currentTextBox.paragraphs, bq.Paragraphs, paragraphEqual)
 		})
 		if found {
 			continue
@@ -622,7 +622,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			continue
 		}
 		found := slices.ContainsFunc(slide.BlockQuotes, func(bq *BlockQuote) bool {
-			return paragraphsEqual(currentTextBox.paragraphs, bq.Paragraphs)
+			return slices.EqualFunc(currentTextBox.paragraphs, bq.Paragraphs, paragraphEqual)
 		})
 		if found {
 			continue
