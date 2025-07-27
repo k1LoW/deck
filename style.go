@@ -17,36 +17,58 @@ const (
 	defaultCodeFontFamily = "Noto Sans Mono"
 )
 
+var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
+	styleCode: func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				ForegroundColor: &slides.OptionalColor{
+					OpaqueColor: &slides.OpaqueColor{
+						RgbColor: &slides.RgbColor{
+							Red:   0.0,
+							Green: 0.0,
+							Blue:  0.0,
+						},
+					},
+				},
+				FontFamily: defaultCodeFontFamily,
+				BackgroundColor: &slides.OptionalColor{
+					OpaqueColor: &slides.OpaqueColor{
+						RgbColor: &slides.RgbColor{
+							Red:   0.95,
+							Green: 0.95,
+							Blue:  0.95,
+						},
+					},
+				},
+			},
+			Fields: "foregroundColor,fontFamily,backgroundColor",
+		}
+	},
+	styleBold: func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				Bold: true,
+			},
+			Fields: "bold",
+		}
+	},
+	styleItalic: func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				Italic: true,
+			},
+			Fields: "italic",
+		}
+	},
+}
+
 func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.UpdateTextStyleRequest) {
 	if fragment.Code {
 		s, ok := d.styles[styleCode]
 		if ok {
 			reqs = append(reqs, buildCustomStyleRequest(s))
 		} else {
-			reqs = append(reqs, &slides.UpdateTextStyleRequest{
-				Style: &slides.TextStyle{
-					ForegroundColor: &slides.OptionalColor{
-						OpaqueColor: &slides.OpaqueColor{
-							RgbColor: &slides.RgbColor{
-								Red:   0.0,
-								Green: 0.0,
-								Blue:  0.0,
-							},
-						},
-					},
-					FontFamily: defaultCodeFontFamily,
-					BackgroundColor: &slides.OptionalColor{
-						OpaqueColor: &slides.OpaqueColor{
-							RgbColor: &slides.RgbColor{
-								Red:   0.95,
-								Green: 0.95,
-								Blue:  0.95,
-							},
-						},
-					},
-				},
-				Fields: "foregroundColor,fontFamily,backgroundColor",
-			})
+			reqs = append(reqs, defaultStyles[styleCode]())
 		}
 	}
 
@@ -55,12 +77,7 @@ func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.Update
 		if ok {
 			reqs = append(reqs, buildCustomStyleRequest(s))
 		} else {
-			reqs = append(reqs, &slides.UpdateTextStyleRequest{
-				Style: &slides.TextStyle{
-					Bold: true,
-				},
-				Fields: "bold",
-			})
+			reqs = append(reqs, defaultStyles[styleBold]())
 		}
 	}
 
@@ -69,12 +86,7 @@ func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.Update
 		if ok {
 			reqs = append(reqs, buildCustomStyleRequest(s))
 		} else {
-			reqs = append(reqs, &slides.UpdateTextStyleRequest{
-				Style: &slides.TextStyle{
-					Italic: true,
-				},
-				Fields: "italic",
-			})
+			reqs = append(reqs, defaultStyles[styleItalic]())
 		}
 	}
 
