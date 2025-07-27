@@ -510,6 +510,7 @@ func copySlide(slide *Slide) *Slide {
 		for _, copiedImage := range copied.Images {
 			if image.Compare(copiedImage) {
 				copiedImage.fromMarkdown = image.fromMarkdown
+				copiedImage.codeBlock = image.codeBlock
 				copiedImage.modTime = image.modTime
 			}
 		}
@@ -544,6 +545,7 @@ func copySlides(slides Slides) (_ Slides, err error) {
 			for _, copiedImage := range copied[i].Images {
 				if image.Compare(copiedImage) {
 					copiedImage.fromMarkdown = image.fromMarkdown
+					copiedImage.codeBlock = image.codeBlock
 					copiedImage.modTime = image.modTime
 				}
 			}

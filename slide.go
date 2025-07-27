@@ -96,6 +96,7 @@ type Image struct {
 	checksum     uint32                 // Checksum for the image data
 	pHash        *goimagehash.ImageHash // Perceptual hash for JPEG images
 	modTime      time.Time              // Modification time of the image file, if applicable
+	codeBlock    bool                   // Whether the image was created from a code block
 
 	// Upload state management
 	uploadMutex    sync.RWMutex
@@ -255,7 +256,7 @@ func NewImageFromMarkdown(pathOrURL string) (_ *Image, err error) {
 	return i, nil
 }
 
-func NewImageFromMarkdownBuffer(r io.Reader) (_ *Image, err error) {
+func NewImageFromCodeBlock(r io.Reader) (_ *Image, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -264,6 +265,7 @@ func NewImageFromMarkdownBuffer(r io.Reader) (_ *Image, err error) {
 		return nil, fmt.Errorf("failed to create image from code block: %w", err)
 	}
 	i.fromMarkdown = true
+	i.codeBlock = true
 	return i, nil
 }
 
@@ -445,8 +447,13 @@ func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
 	}
 }
 
+type uploadInfo struct {
+	url       string
+	codeBlock bool
+}
+
 // UploadInfo waits for the upload to complete and returns the webContentLink.
-func (i *Image) UploadInfo(ctx context.Context) (string, error) {
+func (i *Image) UploadInfo(ctx context.Context) (*uploadInfo, error) {
 	for {
 		i.uploadMutex.RLock()
 		state := i.uploadState
@@ -457,15 +464,18 @@ func (i *Image) UploadInfo(ctx context.Context) (string, error) {
 		switch state {
 		case uploadStateNotStarted:
 			// Image upload not started, return empty value
-			return "", nil
+			return nil, nil
 		case uploadStateCompleted:
-			return link, nil
+			return &uploadInfo{
+				url:       link,
+				codeBlock: i.codeBlock,
+			}, nil
 		case uploadStateFailed:
-			return "", uploadErr
+			return nil, uploadErr
 		case uploadStateInProgress:
 			select {
 			case <-ctx.Done():
-				return "", ctx.Err()
+				return nil, ctx.Err()
 			case <-time.After(10 * time.Millisecond):
 				// Continue waiting
 			}
