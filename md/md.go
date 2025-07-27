@@ -606,7 +606,7 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 	if err != nil {
 		b = stdout.Bytes() // use stdout if output file is not found
 	}
-	return deck.NewImageFromMarkdownBuffer(bytes.NewBuffer(b))
+	return deck.NewImageFromCodeBlock(bytes.NewBuffer(b))
 }
 
 type fragment struct {

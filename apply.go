@@ -464,21 +464,27 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 		}
 
 		// Wait for image upload to complete
-		webContentLink, err := image.UploadInfo(ctx)
+		info, err := image.uploadInfo(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload image: %w", err)
 		}
-		if webContentLink == "" {
+		if info == nil {
 			return nil, fmt.Errorf("image not uploaded or webContentLink is empty")
 		}
 		var imageObjectID string
 		if len(imagePlaceholders) > i {
+			imageReplaceMethod := "CENTER_CROP"
+			if info.codeBlock {
+				// In the case of code blocks, it is important that the entire image can be seen
+				// without being cropped, so switch the replace method.
+				imageReplaceMethod = "CENTER_INSIDE"
+			}
 			imageObjectID = imagePlaceholders[i].objectID
 			requests = append(requests, &slides.Request{
 				ReplaceImage: &slides.ReplaceImageRequest{
 					ImageObjectId:      imagePlaceholders[i].objectID,
-					ImageReplaceMethod: "CENTER_CROP",
-					Url:                webContentLink,
+					ImageReplaceMethod: imageReplaceMethod,
+					Url:                info.url,
 				},
 			})
 		} else {
@@ -495,7 +501,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 						Unit:       "EMU",
 					},
 				},
-				Url: webContentLink,
+				Url: info.url,
 			}
 			requests = append(requests, &slides.Request{
 				CreateImage: imageReq,
