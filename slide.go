@@ -452,8 +452,8 @@ type uploadInfo struct {
 	codeBlock bool
 }
 
-// uploadInfo waits for the upload to complete and returns the webContentLink.
-func (i *Image) uploadInfo(ctx context.Context) (*uploadInfo, error) {
+// UploadInfo waits for the upload to complete and returns the webContentLink.
+func (i *Image) UploadInfo(ctx context.Context) (*uploadInfo, error) {
 	for {
 		i.uploadMutex.RLock()
 		state := i.uploadState

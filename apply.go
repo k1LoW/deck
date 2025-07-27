@@ -464,7 +464,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 		}
 
 		// Wait for image upload to complete
-		info, err := image.uploadInfo(ctx)
+		info, err := image.UploadInfo(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to upload image: %w", err)
 		}
