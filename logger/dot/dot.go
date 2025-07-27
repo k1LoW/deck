@@ -53,6 +53,18 @@ func (h *dotHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.handler.Enabled(ctx, level)
 }
 
+func buildRepeatedSymbols(r slog.Record, c rune) string {
+	var count int
+	r.Attrs(func(attr slog.Attr) bool {
+		if attr.Key == "count" {
+			count = int(attr.Value.Int64())
+			return false
+		}
+		return true
+	})
+	return strings.Repeat(string(c), count)
+}
+
 func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -68,29 +80,17 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 		h.spinner.Disable()
 		_, _ = h.stdout.Write(h.prefix)
 	}
-	if r.Message == "applied page" {
-		if err := h.write([]byte(yellow("."))); err != nil {
-			return err
-		}
-		return nil
+	if r.Message == "applied pages" {
+		msg := buildRepeatedSymbols(r, '.')
+		return h.write([]byte(yellow(msg)))
 	}
 	if r.Message == "deleted pages" {
-		var count int
-		r.Attrs(func(attr slog.Attr) bool {
-			if attr.Key == "count" {
-				count = int(attr.Value.Int64())
-				return false
-			}
-			return true
-		})
-		msg := strings.Repeat("-", count)
+		msg := buildRepeatedSymbols(r, '-')
 		return h.write([]byte(gray(msg)))
 	}
-	if r.Message == "appended page" {
-		if err := h.write([]byte(yellow("+"))); err != nil {
-			return err
-		}
-		return nil
+	if r.Message == "appended pages" {
+		msg := buildRepeatedSymbols(r, '+')
+		return h.write([]byte(yellow(msg)))
 	}
 	if r.Message == "moved page" {
 		var from, to int64

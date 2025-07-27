@@ -316,8 +316,15 @@ func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
-	if err := d.applyPage(ctx, index, slide, nil); err != nil {
+	if reqs, err := d.prepareToApplyPage(ctx, index, slide, nil); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
+	} else if len(reqs) > 0 {
+		req := &slides.BatchUpdatePresentationRequest{
+			Requests: reqs,
+		}
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return err
+		}
 	}
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
@@ -357,8 +364,15 @@ func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err err
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
-	if err := d.applyPage(ctx, index, slide, nil); err != nil {
+	if reqs, err := d.prepareToApplyPage(ctx, index, slide, nil); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
+	} else if len(reqs) > 0 {
+		req := &slides.BatchUpdatePresentationRequest{
+			Requests: reqs,
+		}
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return err
+		}
 	}
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)

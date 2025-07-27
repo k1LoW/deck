@@ -165,8 +165,27 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	var (
 		nextAppendingIndex = currentSlidesLen
 		deletingIndices    []int
+		applyRequests      []*slides.Request
+		appendingCount     = 0
+		applyingCount      = 0
 	)
 	for _, action := range actions {
+		if action.actionType != actionTypeAppend && action.actionType != actionTypeUpdate &&
+			len(applyRequests) > 0 {
+
+			if err := d.batchUpdate(ctx, applyRequests); err != nil {
+				return fmt.Errorf("failed to apply pages in batches: %w", err)
+			}
+			if appendingCount > 0 {
+				d.logger.Info("appended pages", slog.Int("count", appendingCount))
+				appendingCount = 0
+			}
+			if applyingCount > 0 {
+				d.logger.Info("applied pages", slog.Int("count", applyingCount))
+				applyingCount = 0
+			}
+			applyRequests = nil
+		}
 		if action.actionType != actionTypeDelete && len(deletingIndices) > 0 {
 			// The indexes of consecutive delete actions are sorted in descending order,
 			// so no position adjustment is necessary.
@@ -177,18 +196,22 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		}
 		switch action.actionType {
 		case actionTypeAppend:
-			d.logger.Info("appending new page")
-			if err := d.applyPage(ctx, nextAppendingIndex, action.slide, nil); err != nil {
+			d.logger.Info("preparing to append new page")
+			if reqs, err := d.prepareToApplyPage(ctx, nextAppendingIndex, action.slide, nil); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
+			} else if len(reqs) > 0 {
+				applyRequests = append(applyRequests, reqs...)
 			}
-			d.logger.Info("appended page")
+			appendingCount++
 			nextAppendingIndex++
 		case actionTypeUpdate:
-			d.logger.Info("appling page", slog.Int("index", action.index))
-			if err := d.applyPage(ctx, action.index, action.slide, currentImages[action.index]); err != nil {
+			d.logger.Info("preparing to apply page", slog.Int("index", action.index))
+			if reqs, err := d.prepareToApplyPage(ctx, action.index, action.slide, currentImages[action.index]); err != nil {
 				return fmt.Errorf("failed to apply page: %w", err)
+			} else if len(reqs) > 0 {
+				applyRequests = append(applyRequests, reqs...)
 			}
-			d.logger.Info("applied page", slog.Int("index", action.index))
+			applyingCount++
 		case actionTypeMove:
 			if err := d.MovePage(ctx, action.index, action.moveToIndex); err != nil {
 				return fmt.Errorf("failed to move page: %w", err)
@@ -197,13 +220,51 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			deletingIndices = append(deletingIndices, action.index)
 		}
 	}
+	if len(applyRequests) > 0 {
+		if err := d.batchUpdate(ctx, applyRequests); err != nil {
+			return fmt.Errorf("failed to apply pages in batches: %w", err)
+		}
+		if appendingCount > 0 {
+			d.logger.Info("appended pages", slog.Int("count", appendingCount))
+		}
+		if applyingCount > 0 {
+			d.logger.Info("applied pages", slog.Int("count", applyingCount))
+		}
+	}
 	if len(deletingIndices) > 0 {
 		return d.DeletePages(ctx, deletingIndices)
 	}
 	return d.refresh(ctx)
 }
 
-func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded *currentImageData) (err error) {
+func (d *Deck) batchUpdate(ctx context.Context, requests []*slides.Request) error {
+	d.logger.Info("batch updating presentation request", slog.Int("count", len(requests)))
+	// Although there is no explicit request limit specified in the Google Slides API specifications,
+	// we will set an upper limit as a precaution.
+	// After testing several times, it handles around 1,000 requests without any issues so that we will
+	// set the upper limit at that point for now.
+	// This limit corresponds to approximately 100 pages of presentation requests.
+	const reqCountLimit = 1000
+	reqLen := len(requests)
+	var groups [][]*slides.Request
+	for i := 0; i < reqLen; i += reqCountLimit {
+		end := min(i+reqCountLimit, reqLen)
+		groups = append(groups, requests[i:end])
+	}
+	for _, requests := range groups {
+		req := &slides.BatchUpdatePresentationRequest{
+			Requests: requests,
+		}
+		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			return fmt.Errorf("failed to batch update presentation: %w", err)
+		}
+	}
+	return nil
+}
+
+func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, preloaded *currentImageData) (
+	requests []*slides.Request, err error) {
+
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -211,20 +272,20 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 	layoutMap := d.layoutMap()
 	layout, ok := layoutMap[slide.Layout]
 	if !ok {
-		return fmt.Errorf("layout not found: %q", slide.Layout)
+		return nil, fmt.Errorf("layout not found: %q", slide.Layout)
 	}
 
 	if len(d.presentation.Slides) <= index {
-		return fmt.Errorf("index out of range: %d", index)
+		return nil, fmt.Errorf("index out of range: %d", index)
 	}
 	if slide.Freeze {
 		d.logger.Info("skip applying page. because freeze:true", slog.Int("index", index))
-		return nil
+		return nil, nil
 	}
 	currentSlide := d.presentation.Slides[index]
 	if currentSlide.SlideProperties.LayoutObjectId != layout.ObjectId {
 		if err := d.updateLayout(ctx, index, slide); err != nil {
-			return err
+			return nil, err
 		}
 		// Reset preloaded data since layout has changed and internal page is changed.
 		preloaded = nil
@@ -239,7 +300,6 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
 		currentTextBoxes          []*textBox
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
-		req                       = &slides.BatchUpdatePresentationRequest{}
 	)
 
 	// Use preloaded image data if available, otherwise fetch on demand
@@ -259,21 +319,21 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
+				requests = append(requests, d.clearPlaceholderRequests(element)...)
 			case "SUBTITLE":
 				subtitles = append(subtitles, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
+				requests = append(requests, d.clearPlaceholderRequests(element)...)
 			case "BODY":
 				bodies = append(bodies, placeholder{
 					objectID: element.ObjectId,
 					x:        element.Transform.TranslateX,
 					y:        element.Transform.TranslateY,
 				})
-				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
+				requests = append(requests, d.clearPlaceholderRequests(element)...)
 			}
 		case element.Image != nil && element.Image.Placeholder != nil:
 			imagePlaceholders = append(imagePlaceholders, placeholder{
@@ -290,12 +350,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 			if element.Description == descriptionImageFromMarkdown {
 				image, err = NewImageFromMarkdown(element.Image.ContentUrl)
 				if err != nil {
-					return fmt.Errorf("failed to create image from code block %s: %w", element.Image.ContentUrl, err)
+					return nil, fmt.Errorf("failed to create image from code block %s: %w", element.Image.ContentUrl, err)
 				}
 			} else {
 				image, err = NewImage(element.Image.ContentUrl)
 				if err != nil {
-					return fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
+					return nil, fmt.Errorf("failed to create image from %s: %w", element.Image.ContentUrl, err)
 				}
 			}
 			currentImages = append(currentImages, image)
@@ -315,12 +375,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		if element.Shape != nil && element.Shape.Placeholder != nil {
 			if element.Shape.Placeholder.Type == "BODY" {
 				speakerNotesID = element.ObjectId
-				req.Requests = append(req.Requests, d.clearPlaceholderRequests(element)...)
+				requests = append(requests, d.clearPlaceholderRequests(element)...)
 			}
 		}
 	}
 	if speakerNotesID == "" {
-		return fmt.Errorf("speaker notes not found")
+		return nil, fmt.Errorf("speaker notes not found")
 	}
 
 	// set titles
@@ -336,10 +396,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		reqs, styleReqs, err := d.applyParagraphsRequests(titles[i].objectID, b.Paragraphs)
 		if err != nil {
-			return fmt.Errorf("failed to apply paragraphs for title: %w", err)
+			return nil, fmt.Errorf("failed to apply paragraphs for title: %w", err)
 		}
-		req.Requests = append(req.Requests, reqs...)
-		req.Requests = append(req.Requests, styleReqs...)
+		requests = append(requests, reqs...)
+		requests = append(requests, styleReqs...)
 	}
 
 	// set subtitles
@@ -355,14 +415,14 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		reqs, styleReqs, err := d.applyParagraphsRequests(subtitles[i].objectID, b.Paragraphs)
 		if err != nil {
-			return fmt.Errorf("failed to apply paragraphs for subtitle: %w", err)
+			return nil, fmt.Errorf("failed to apply paragraphs for subtitle: %w", err)
 		}
-		req.Requests = append(req.Requests, reqs...)
-		req.Requests = append(req.Requests, styleReqs...)
+		requests = append(requests, reqs...)
+		requests = append(requests, styleReqs...)
 	}
 
 	// set speaker notes
-	req.Requests = append(req.Requests, &slides.Request{
+	requests = append(requests, &slides.Request{
 		InsertText: &slides.InsertTextRequest{
 			ObjectId: speakerNotesID,
 			Text:     slide.SpeakerNote,
@@ -382,10 +442,10 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		reqs, styleReqs, err := d.applyParagraphsRequests(bodies[i].objectID, body.Paragraphs)
 		if err != nil {
-			return fmt.Errorf("failed to apply paragraphs: %w", err)
+			return nil, fmt.Errorf("failed to apply paragraphs: %w", err)
 		}
-		req.Requests = append(req.Requests, reqs...)
-		req.Requests = append(req.Requests, styleReqs...)
+		requests = append(requests, reqs...)
+		requests = append(requests, styleReqs...)
 	}
 
 	// set images
@@ -406,15 +466,15 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		// Wait for image upload to complete
 		webContentLink, err := image.UploadInfo(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to upload image: %w", err)
+			return nil, fmt.Errorf("failed to upload image: %w", err)
 		}
 		if webContentLink == "" {
-			return fmt.Errorf("image not uploaded or webContentLink is empty")
+			return nil, fmt.Errorf("image not uploaded or webContentLink is empty")
 		}
 		var imageObjectID string
 		if len(imagePlaceholders) > i {
 			imageObjectID = imagePlaceholders[i].objectID
-			req.Requests = append(req.Requests, &slides.Request{
+			requests = append(requests, &slides.Request{
 				ReplaceImage: &slides.ReplaceImageRequest{
 					ImageObjectId:      imagePlaceholders[i].objectID,
 					ImageReplaceMethod: "CENTER_CROP",
@@ -437,12 +497,12 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 				},
 				Url: webContentLink,
 			}
-			req.Requests = append(req.Requests, &slides.Request{
+			requests = append(requests, &slides.Request{
 				CreateImage: imageReq,
 			})
 		}
 		if image.fromMarkdown {
-			req.Requests = append(req.Requests, &slides.Request{
+			requests = append(requests, &slides.Request{
 				UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
 					ObjectId:    imageObjectID,
 					Description: descriptionImageFromMarkdown,
@@ -461,7 +521,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		// create new text box
 		textBoxObjectID := fmt.Sprintf("textbox-%s", uuid.New().String())
-		req.Requests = append(req.Requests, &slides.Request{
+		requests = append(requests, &slides.Request{
 			CreateShape: &slides.CreateShapeRequest{
 				ObjectId: textBoxObjectID,
 				ElementProperties: &slides.PageElementProperties{
@@ -490,7 +550,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 
 		sp, ok := d.shapes[styleBlockQuote]
 		if ok {
-			req.Requests = append(req.Requests, &slides.Request{
+			requests = append(requests, &slides.Request{
 				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
 					ObjectId:        textBoxObjectID,
 					ShapeProperties: sp,
@@ -500,22 +560,22 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		reqs, styleReqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
 		if err != nil {
-			return fmt.Errorf("failed to apply paragraphs: %w", err)
+			return nil, fmt.Errorf("failed to apply paragraphs: %w", err)
 		}
-		req.Requests = append(req.Requests, reqs...)
+		requests = append(requests, reqs...)
 
 		s, ok := d.styles[styleBlockQuote]
 		if ok {
 			r := buildCustomStyleRequest(s)
 			r.ObjectId = textBoxObjectID
-			req.Requests = append(req.Requests, &slides.Request{
+			requests = append(requests, &slides.Request{
 				UpdateTextStyle: r,
 			})
 		}
 
-		req.Requests = append(req.Requests, styleReqs...)
+		requests = append(requests, styleReqs...)
 
-		req.Requests = append(req.Requests, &slides.Request{
+		requests = append(requests, &slides.Request{
 			UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
 				ObjectId:    textBoxObjectID,
 				Description: descriptionTextboxFromMarkdown,
@@ -524,7 +584,7 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 	}
 
 	// set skip flag to slide
-	req.Requests = append(req.Requests, &slides.Request{
+	requests = append(requests, &slides.Request{
 		UpdateSlideProperties: &slides.UpdateSlidePropertiesRequest{
 			ObjectId: currentSlide.ObjectId,
 			SlideProperties: &slides.SlideProperties{
@@ -547,9 +607,9 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		imageObjectID, ok := currentImageObjectIDMap[currentImage]
 		if !ok {
-			return fmt.Errorf("image object ID not found for image: %s", currentImage.url)
+			return nil, fmt.Errorf("image object ID not found for image: %s", currentImage.url)
 		}
-		req.Requests = append(req.Requests, &slides.Request{
+		requests = append(requests, &slides.Request{
 			DeleteObject: &slides.DeleteObjectRequest{
 				ObjectId: imageObjectID,
 			},
@@ -569,22 +629,16 @@ func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded
 		}
 		textBoxObjectID, ok := currentTextBoxObjectIDMap[currentTextBox]
 		if !ok {
-			return fmt.Errorf("text box object ID not found for text box: %v", currentTextBox.paragraphs)
+			return nil, fmt.Errorf("text box object ID not found for text box: %v", currentTextBox.paragraphs)
 		}
-		req.Requests = append(req.Requests, &slides.Request{
+		requests = append(requests, &slides.Request{
 			DeleteObject: &slides.DeleteObjectRequest{
 				ObjectId: textBoxObjectID,
 			},
 		})
 	}
 
-	if len(req.Requests) > 0 {
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return requests, nil
 }
 
 func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph) (reqs []*slides.Request, styleReqs []*slides.Request, err error) {
