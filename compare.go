@@ -7,19 +7,13 @@ import (
 	"strings"
 )
 
-func (s Slides) Compare(other Slides) bool { //nostyle:recvtype
-	if len(s) != len(other) {
-		return false
-	}
-	for i := range s {
-		if !slidesEqual(s[i], other[i]) {
-			return false
-		}
-	}
-	return true
+func (s Slides) Equal(other Slides) bool { //nostyle:recvtype
+	return slices.EqualFunc(s, other, func(a, b *Slide) bool {
+		return a.Equal(b)
+	})
 }
 
-func (s *Slide) Compare(other *Slide) bool {
+func (s *Slide) Equal(other *Slide) bool {
 	if s == nil || other == nil {
 		return s == other
 	}
@@ -45,10 +39,6 @@ func (s *Slide) Compare(other *Slide) bool {
 		return false
 	}
 	return true
-}
-
-func slidesEqual(slide1, slide2 *Slide) bool {
-	return slide1.Compare(slide2)
 }
 
 func titlesEqual(titles1, titles2 []string) bool {

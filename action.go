@@ -558,7 +558,7 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		return 0
 	}
 
-	if slidesEqual(beforeSlide, afterSlide) {
+	if beforeSlide.Equal(afterSlide) {
 		return 500
 	}
 

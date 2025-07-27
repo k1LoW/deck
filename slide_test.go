@@ -235,7 +235,7 @@ func TestImageBytes(t *testing.T) {
 	}
 }
 
-func TestCompare(t *testing.T) {
+func TestEquivalent(t *testing.T) {
 	tests := []struct {
 		name     string
 		imageA   string
@@ -282,7 +282,7 @@ func TestCompare(t *testing.T) {
 
 			result := imgA.Equivalent(imgB)
 			if result != tt.expected {
-				t.Errorf("Compare() = %v, expected %v", result, tt.expected)
+				t.Errorf("Equivalent() = %v, expected %v", result, tt.expected)
 			}
 		})
 	}
