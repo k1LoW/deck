@@ -101,5 +101,104 @@
         "Hello style"
       ]
     }
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Inline Style"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "strikethrough",
+                "style_name": "s"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "unarticulated annotation",
+                "style_name": "u"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "C"
+              },
+              {
+                "value": "8",
+                "style_name": "sub"
+              },
+              {
+                "value": "H"
+              },
+              {
+                "value": "10",
+                "style_name": "sub"
+              },
+              {
+                "value": "N"
+              },
+              {
+                "value": "4",
+                "style_name": "sub"
+              },
+              {
+                "value": "O"
+              },
+              {
+                "value": "2",
+                "style_name": "sub"
+              },
+              {
+                "value": ", also known as "
+              },
+              {
+                "value": "\"caffeine.\""
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "E",
+                "style_name": "var"
+              },
+              {
+                "value": "="
+              },
+              {
+                "value": "m",
+                "style_name": "var"
+              },
+              {
+                "value": "c",
+                "style_name": "var"
+              },
+              {
+                "value": "2",
+                "style_name": "sup"
+              },
+              {
+                "value": "."
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "2": [
+        "Inline Style"
+      ]
+    }
   }
 ]
