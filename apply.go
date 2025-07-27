@@ -200,7 +200,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	if len(deletingIndices) > 0 {
 		return d.DeletePages(ctx, deletingIndices)
 	}
-	return nil
+	return d.refresh(ctx)
 }
 
 func (d *Deck) applyPage(ctx context.Context, index int, slide *Slide, preloaded *currentImageData) (err error) {
