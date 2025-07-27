@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.6.0](https://github.com/k1LoW/deck/compare/v1.5.0...v1.6.0) - 2025-07-27
+### New Features 🎉
+- perf: Apply slides in bulk by @Songmu in https://github.com/k1LoW/deck/pull/316
+### Other Changes
+- chore: reduce flaky tests by @Songmu in https://github.com/k1LoW/deck/pull/313
+- chore: fix flaky again by @Songmu in https://github.com/k1LoW/deck/pull/315
+
 ## [v1.5.0](https://github.com/k1LoW/deck/compare/v1.4.1...v1.5.0) - 2025-07-27
 ### New Features 🎉
 - perf: Refine page append processing by @Songmu in https://github.com/k1LoW/deck/pull/310
