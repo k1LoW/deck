@@ -457,7 +457,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 	})
 	for i, image := range slide.Images {
 		found := slices.ContainsFunc(currentImages, func(currentImage *Image) bool {
-			return currentImage.Compare(image)
+			return currentImage.Equivalent(image)
 		})
 		if found {
 			continue
@@ -600,7 +600,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			continue
 		}
 		found := slices.ContainsFunc(slide.Images, func(image *Image) bool {
-			return currentImage.Compare(image)
+			return currentImage.Equivalent(image)
 		})
 		if found {
 			continue

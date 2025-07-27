@@ -280,7 +280,7 @@ func TestCompare(t *testing.T) {
 				t.Fatalf("failed to load image B: %v", err)
 			}
 
-			result := imgA.Compare(imgB)
+			result := imgA.Equivalent(imgB)
 			if result != tt.expected {
 				t.Errorf("Compare() = %v, expected %v", result, tt.expected)
 			}

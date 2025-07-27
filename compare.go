@@ -108,7 +108,7 @@ func imagesEqual(images1, images2 []*Image) bool {
 		return int(a.Checksum()) - int(b.Checksum())
 	})
 	for i, img := range sorted1 {
-		if !img.Compare(sorted2[i]) {
+		if !img.Equivalent(sorted2[i]) {
 			return false
 		}
 	}
