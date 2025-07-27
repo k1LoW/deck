@@ -33,6 +33,10 @@ func TestApply(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if err := d.DeletePageAfter(ctx, 0); err != nil {
+				t.Fatal(err)
+			}
+
 			if err := d.Apply(ctx, tt.before); err != nil {
 				t.Fatal(err)
 			}
