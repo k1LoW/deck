@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.7.0](https://github.com/k1LoW/deck/compare/v1.6.0...v1.7.0) - 2025-07-27
+### New Features 🎉
+- feat: adjust imageReplaceMethod for code blocks by @Songmu in https://github.com/k1LoW/deck/pull/317
+### Other Changes
+- chore: add FUNDING.yml by @Songmu in https://github.com/k1LoW/deck/pull/318
+- refactoring: compare.go by @Songmu in https://github.com/k1LoW/deck/pull/319
+
 ## [v1.6.0](https://github.com/k1LoW/deck/compare/v1.5.0...v1.6.0) - 2025-07-27
 ### New Features 🎉
 - perf: Apply slides in bulk by @Songmu in https://github.com/k1LoW/deck/pull/316
