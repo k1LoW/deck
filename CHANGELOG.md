@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.5.0](https://github.com/k1LoW/deck/compare/v1.4.1...v1.5.0) - 2025-07-27
+### New Features 🎉
+- perf: Refine page append processing by @Songmu in https://github.com/k1LoW/deck/pull/310
+- feat: Add default definitions for HTML inline styles by @Songmu in https://github.com/k1LoW/deck/pull/312
+### Fix bug 🐛
+- bugfix: Fixed an issue where images were not displayed correctly when changing layouts by @Songmu in https://github.com/k1LoW/deck/pull/309
+
 ## [v1.4.1](https://github.com/k1LoW/deck/compare/v1.4.0...v1.4.1) - 2025-07-26
 ### New Features 🎉
 - perf: Batch delete pages by @Songmu in https://github.com/k1LoW/deck/pull/307
