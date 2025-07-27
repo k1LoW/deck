@@ -82,6 +82,9 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if err := d.DeletePageAfter(ctx, 0); err != nil {
+				t.Fatal(err)
+			}
 			if err := d.Apply(ctx, fromMd); err != nil {
 				t.Fatal(err)
 			}
