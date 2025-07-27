@@ -21,8 +21,8 @@ var presentationPool chan string
 
 // initPresentationPool creates a pool of presentations for parallel tests.
 func initPresentationPool(ctx context.Context) ([]string, error) {
-	// After trying several times, we decided that 3 parallel is the best setting.
-	const parallelCount = 3
+	// After trying several times, we decided that 2 parallel is the best setting.
+	const parallelCount = 2
 
 	presentationPool = make(chan string, parallelCount)
 
