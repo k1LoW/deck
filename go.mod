@@ -1,6 +1,8 @@
 module github.com/k1LoW/deck
 
-go 1.24
+go 1.23
+
+toolchain go1.24.5
 
 require (
 	github.com/briandowns/spinner v1.23.2
