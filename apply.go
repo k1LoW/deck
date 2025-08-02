@@ -739,8 +739,8 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		return bulletRangeSlice[i].start > bulletRangeSlice[j].start
 	})
 	for _, r := range bulletRangeSlice {
-		startIndex := int64(r.start)
-		endIndex := int64(r.end - 1)
+		startIndex := r.start
+		endIndex := r.end - 1
 		if startIndex <= endIndex {
 			endIndex++
 		}
@@ -1001,8 +1001,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 								BulletPreset: convertBullet(br.bullet),
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(int64(br.start)),
-									EndIndex:   ptrInt64(int64(br.end)),
+									StartIndex: ptrInt64(br.start),
+									EndIndex:   ptrInt64(br.end),
 								},
 							},
 						})
@@ -1027,8 +1027,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 						BulletPreset: convertBullet(br.bullet),
 						TextRange: &slides.Range{
 							Type:       "FIXED_RANGE",
-							StartIndex: ptrInt64(int64(br.start)),
-							EndIndex:   ptrInt64(int64(br.end)),
+							StartIndex: ptrInt64(br.start),
+							EndIndex:   ptrInt64(br.end),
 						},
 					},
 				})
