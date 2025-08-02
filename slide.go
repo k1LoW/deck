@@ -434,7 +434,7 @@ func (i *Image) StartUpload() {
 }
 
 // SetUploadResult sets the upload result (success or failure).
-func (i *Image) SetUploadResult(webContentLink, uploadedID string, err error) {
+func (i *Image) SetUploadResult(webContentLink string, err error) {
 	i.uploadMutex.Lock()
 	defer i.uploadMutex.Unlock()
 	if err != nil {
