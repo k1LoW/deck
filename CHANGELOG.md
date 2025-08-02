@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.7.1](https://github.com/k1LoW/deck/compare/v1.7.0...v1.7.1) - 2025-08-02
+### Other Changes
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/321
+- Remove redundant type cast by @exoego in https://github.com/k1LoW/deck/pull/323
+- Remove unused uploadedID in image.SetUploadResult by @exoego in https://github.com/k1LoW/deck/pull/324
+
 ## [v1.7.0](https://github.com/k1LoW/deck/compare/v1.6.0...v1.7.0) - 2025-07-27
 ### New Features 🎉
 - feat: adjust imageReplaceMethod for code blocks by @Songmu in https://github.com/k1LoW/deck/pull/317
