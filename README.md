@@ -546,10 +546,10 @@ For example, it is a good idea to provide the following rules for creating deck 
 
 ## Install
 
-**homebrew tap:**
+**Homebrew:**
 
 ```console
-$ brew install k1LoW/tap/deck
+$ brew install deck
 ```
 
 **go install:**
