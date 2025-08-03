@@ -35,6 +35,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/fsnotify/fsnotify"
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/deck/logger/dot"
 	"github.com/k1LoW/deck/md"
 	"github.com/k1LoW/tail"
@@ -79,12 +80,15 @@ var applyCmd = &cobra.Command{
 			presentationID = args[0]
 			f = args[1]
 		}
-
 		m, err := md.ParseFile(f)
 		if err != nil {
 			return err
 		}
-
+		cfg, err := config.Load(profile)
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+		m.ApplyConfig(cfg)
 		if len(args) == 1 {
 			if m.Frontmatter != nil {
 				if presentationID == "" && m.Frontmatter.PresentationID != "" {
@@ -147,7 +151,7 @@ var applyCmd = &cobra.Command{
 			}
 			logger.Info("initial apply completed", slog.String("presentation_id", presentationID))
 
-			return watchFile(cmd.Context(), f, contents, d)
+			return watchFile(cmd.Context(), cfg, f, contents, d)
 		} else {
 			pages, err := pageToPages(page, len(contents))
 			if err != nil {
@@ -255,7 +259,7 @@ func pageToPages(page string, total int) ([]int, error) {
 }
 
 // watchFile watches for changes in the file and applies them to the presentation.
-func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d *deck.Deck) error {
+func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldContents md.Contents, d *deck.Deck) error {
 	// Get the absolute path of the file
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
@@ -320,6 +324,7 @@ func watchFile(ctx context.Context, filePath string, oldContents md.Contents, d 
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
+			newMD.ApplyConfig(cfg)
 			slides, err := newMD.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))

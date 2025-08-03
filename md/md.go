@@ -16,6 +16,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/google/cel-go/cel"
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/errors"
 	"github.com/k1LoW/exec"
 	"github.com/yuin/goldmark"
@@ -51,7 +52,7 @@ type Frontmatter struct {
 	PresentationID string `yaml:"presentationID,omitempty" json:"presentationID,omitempty"` // ID of the Google Slides presentation
 	Title          string `yaml:"title,omitempty" json:"title,omitempty"`                   // title of the presentation
 	// Whether to display line breaks in the document as line breaks
-	Breaks bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
+	Breaks *bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 	// Conditions for default
 	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
 }
@@ -141,8 +142,8 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	}
 	bpages := splitPages(bytes.TrimPrefix(b, sep))
 	var breaks bool
-	if frontmatter != nil {
-		breaks = frontmatter.Breaks
+	if frontmatter != nil && frontmatter.Breaks != nil {
+		breaks = *frontmatter.Breaks
 	}
 
 	var contents Contents
@@ -216,6 +217,25 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	}
 
 	return content, nil
+}
+
+func (md *MD) ApplyConfig(cfg *config.Config) {
+	if md.Frontmatter == nil {
+		md.Frontmatter = &Frontmatter{}
+	}
+	if md.Frontmatter.Breaks == nil {
+		md.Frontmatter.Breaks = cfg.Breaks
+	}
+	// append default conditions from config
+	for _, cond := range cfg.Defaults {
+		md.Frontmatter.Defaults = append(md.Frontmatter.Defaults, DefaultCondition{
+			If:     cond.If,
+			Layout: cond.Layout,
+			Freeze: cond.Freeze,
+			Ignore: cond.Ignore,
+			Skip:   cond.Skip,
+		})
+	}
 }
 
 func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
