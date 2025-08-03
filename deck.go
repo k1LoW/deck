@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/k1LoW/deck/config"
@@ -18,6 +19,8 @@ import (
 )
 
 const layoutNameForStyle = "style"
+
+var profileRe = regexp.MustCompile(`^[a-zA-Z0-9_-]*$`)
 
 type Deck struct {
 	id                 string
@@ -50,8 +53,7 @@ func WithLogger(logger *slog.Logger) Option {
 
 func WithProfile(profile string) Option {
 	return func(d *Deck) error {
-		// allow only alphanumeric characters, underscores, and hyphens
-		if profile != "" && !strings.ContainsAny(profile, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-") {
+		if !profileRe.MatchString(profile) {
 			return fmt.Errorf("invalid profile name: %s, only alphanumeric characters, underscores, and hyphens are allowed", profile)
 		}
 		d.profile = profile
