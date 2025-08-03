@@ -132,8 +132,53 @@ The frontmatter must be:
 
 - `presentationID` (string): Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title` (string): title of the presentation. When specified, you can use the simplified command syntax.
-- `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides.
-- `defaults` (array): Define conditional actions using CEL (Common Expression Language) expressions. Actions are automatically applied to pages based on page structure and content. Only applies to pages without explicit page configuration.
+- `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides. Can also be configured globally in `config.yml`.
+- `defaults` (array): Define conditional actions using CEL (Common Expression Language) expressions. Actions are automatically applied to pages based on page structure and content. Only applies to pages without explicit page configuration. Can also be configured globally in `config.yml`.
+
+#### Configuration File
+
+`deck` supports global configuration files that provide default settings for all presentations. Configuration files are loaded in the following priority order:
+
+1. `$XDG_DATA_HOME/deck/config-{profile}.yml` (when using `--profile` option)
+2. `$XDG_DATA_HOME/deck/config.yml` (default config file)
+
+The configuration file uses YAML format and supports the same fields as frontmatter. Settings in frontmatter take precedence over configuration file settings, which in turn take precedence over built-in defaults.
+
+##### Configuration file example
+
+```yaml
+# Global configuration for deck
+breaks: true
+
+defaults:
+  # First page should always use title layout
+  - if: page == 1
+    layout: title
+  # Pages with only one title and one H2 heading use section layout
+  - if: titles.size() == 1 && headings[2].size() == 1
+    layout: section-purple
+  # Skip pages with TODO in speaker notes
+  - if: speakerNote.contains("TODO")
+    skip: true
+  # Default layout for all other pages
+  - if: true
+    layout: title-and-body
+```
+
+##### Available configuration fields
+
+- **`breaks`** (boolean): Global line break rendering behavior
+- **`defaults`** (array): Global default conditions and actions using CEL expressions
+
+##### Configuration precedence
+
+Settings are applied in the following order (highest to lowest priority):
+
+1. **Frontmatter settings** - Takes highest precedence
+2. **Configuration file settings** - Applied when frontmatter doesn't specify the setting
+3. **Built-in defaults** - Used when neither frontmatter nor config file specify the setting
+
+This allows you to set organization-wide or project-wide defaults while still maintaining the flexibility to override them on a per-file basis using frontmatter.
 
 #### Default conditions and actions
 
@@ -151,12 +196,16 @@ The following actions can be applied to pages through the `defaults` configurati
 ```yaml
 ---
 defaults:
+  # First page should always use title layout
   - if: page == 1
     layout: title
+  # Pages with only one title and one H2 heading use section layout
   - if: titles.size() == 1 && headings[2].size() == 1
     layout: section-purple
+  # Skip pages with TODO in speaker notes
   - if: speakerNote.contains("TODO")
     skip: true
+  # Default layout for all other pages
   - if: true
     layout: title-and-body
 ---
