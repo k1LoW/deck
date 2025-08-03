@@ -281,7 +281,7 @@ func TestGenCodeImage(t *testing.T) {
 	}
 }
 
-// boolPtr is a helper function that returns a pointer to a bool value
+// boolPtr is a helper function that returns a pointer to a bool value.
 func boolPtr(b bool) *bool {
 	return &b
 }
