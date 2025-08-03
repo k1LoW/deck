@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.8.0](https://github.com/k1LoW/deck/compare/v1.7.0...v1.8.0) - 2025-08-03
+### New Features 🎉
+- feat: support config.yml for global setting by @k1LoW in https://github.com/k1LoW/deck/pull/326
+### Fix bug 🐛
+- fix: correct profile name validation by @k1LoW in https://github.com/k1LoW/deck/pull/325
+### Other Changes
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/321
+- Remove redundant type cast by @exoego in https://github.com/k1LoW/deck/pull/323
+- Remove unused uploadedID in image.SetUploadResult by @exoego in https://github.com/k1LoW/deck/pull/324
+
 ## [v1.7.0](https://github.com/k1LoW/deck/compare/v1.6.0...v1.7.0) - 2025-07-27
 ### New Features 🎉
 - feat: adjust imageReplaceMethod for code blocks by @Songmu in https://github.com/k1LoW/deck/pull/317
