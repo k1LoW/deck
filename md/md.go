@@ -220,6 +220,9 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 }
 
 func (md *MD) ApplyConfig(cfg *config.Config) {
+	if cfg == nil {
+		return // No config to apply
+	}
 	if md.Frontmatter == nil {
 		md.Frontmatter = &Frontmatter{}
 	}
