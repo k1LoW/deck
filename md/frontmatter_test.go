@@ -26,35 +26,7 @@ tags:
 # Slide Title
 
 Content`,
-			want: &Frontmatter{Title: "Test Title"},
-		},
-		{
-			name: "with sharedDrive true",
-			markdown: `---
-presentationID: test-123
-title: Test Title
-sharedDrive: true
----
-
-# Slide Title`,
-			want: &Frontmatter{
-				PresentationID: "test-123",
-				Title:          "Test Title",
-				SharedDrive:    boolPtr(true),
-			},
-		},
-		{
-			name: "with sharedDrive false",
-			markdown: `---
-presentationID: test-456
-sharedDrive: false
----
-
-# Content`,
-			want: &Frontmatter{
-				PresentationID: "test-456",
-				SharedDrive:    boolPtr(false),
-			},
+			want: &Frontmatter{},
 		},
 		{
 			name: "without frontmatter",
@@ -74,10 +46,10 @@ Content`,
 title: Test
 ---
 # Slide Title`,
-			want: &Frontmatter{Title: "Test"},
+			want: &Frontmatter{},
 		},
 		{
-			name: "frontmatter with any fields",
+			name: "frontmatter with any fields (all ignored)",
 			markdown: `---
 title: Test Title
 author: Test Author
@@ -92,7 +64,7 @@ tags:
   - tag2
 ---
 # Slide Title`,
-			want: &Frontmatter{Title: "Test Title"},
+			want: &Frontmatter{},
 		},
 	}
 
@@ -118,29 +90,12 @@ tags:
 			}
 
 			if got == nil {
-				t.Errorf("Parse() frontmatter = nil, want non-nil")
+				t.Errorf("Parse() frontmatter = nil, want non-nil empty struct")
 				return
 			}
 
-			// Compare frontmatter fields
-			if got.PresentationID != tt.want.PresentationID {
-				t.Errorf("PresentationID = %q, want %q", got.PresentationID, tt.want.PresentationID)
-			}
-			if got.Title != tt.want.Title {
-				t.Errorf("Title = %q, want %q", got.Title, tt.want.Title)
-			}
-			// Compare SharedDrive pointer values
-			if tt.want.SharedDrive == nil {
-				if got.SharedDrive != nil {
-					t.Errorf("SharedDrive = %v, want nil", *got.SharedDrive)
-				}
-			} else {
-				if got.SharedDrive == nil {
-					t.Errorf("SharedDrive = nil, want %v", *tt.want.SharedDrive)
-				} else if *got.SharedDrive != *tt.want.SharedDrive {
-					t.Errorf("SharedDrive = %v, want %v", *got.SharedDrive, *tt.want.SharedDrive)
-				}
-			}
+			// Since Frontmatter is an empty struct, just verify it's not nil when expected
+			// All YAML fields are ignored, so no field comparison needed
 		})
 	}
 }

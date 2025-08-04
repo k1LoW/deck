@@ -100,24 +100,6 @@ var applyCmd = &cobra.Command{
 			}
 		}
 
-		// Handle sharedDrive setting from config, frontmatter, or command line
-		sharedDriveValue := true // default is true
-
-		// Config file takes lowest priority
-		if cfg != nil && cfg.SharedDrive != nil {
-			sharedDriveValue = *cfg.SharedDrive
-		}
-
-		// Frontmatter overrides config
-		if m.Frontmatter != nil && m.Frontmatter.SharedDrive != nil {
-			sharedDriveValue = *m.Frontmatter.SharedDrive
-		}
-
-		// Command line flag overrides everything if explicitly set
-		if cmd.Flags().Changed("support-all-drives") {
-			sharedDriveValue = supportAllDrives
-		}
-
 		if presentationID == "" {
 			return fmt.Errorf("presentation ID is required, please specify it with --presentation-id or in the frontmatter of the markdown file")
 		}
@@ -149,7 +131,6 @@ var applyCmd = &cobra.Command{
 			deck.WithProfile(profile),
 			deck.WithPresentationID(presentationID),
 			deck.WithLogger(logger),
-			deck.WithSupportAllDrives(sharedDriveValue),
 		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {

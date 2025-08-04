@@ -43,7 +43,6 @@ If the file doesn't exist, it will be created.`,
 		ctx := cmd.Context()
 		opts := []deck.Option{
 			deck.WithProfile(profile),
-			deck.WithSupportAllDrives(supportAllDrives),
 		}
 		var (
 			d   *deck.Deck
@@ -85,5 +84,4 @@ func init() {
 	rootCmd.AddCommand(newCmd)
 	newCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	newCmd.Flags().StringVarP(&from, "from", "f", "", "presentation id that uses the theme you want to use")
-	newCmd.Flags().BoolVar(&supportAllDrives, "support-all-drives", true, "Whether to support shared drives when using --from")
 }

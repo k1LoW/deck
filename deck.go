@@ -33,7 +33,6 @@ type Deck struct {
 	styles             map[string]*slides.TextStyle
 	shapes             map[string]*slides.ShapeProperties
 	logger             *slog.Logger
-	supportAllDrives   bool
 }
 
 type Option func(*Deck) error
@@ -58,13 +57,6 @@ func WithProfile(profile string) Option {
 			return fmt.Errorf("invalid profile name: %s, only alphanumeric characters, underscores, and hyphens are allowed", profile)
 		}
 		d.profile = profile
-		return nil
-	}
-}
-
-func WithSupportAllDrives(support bool) Option {
-	return func(d *Deck) error {
-		d.supportAllDrives = support
 		return nil
 	}
 }
@@ -105,9 +97,8 @@ func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
-		styles:           map[string]*slides.TextStyle{},
-		shapes:           map[string]*slides.ShapeProperties{},
-		supportAllDrives: true,
+		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -129,9 +120,8 @@ func Create(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
-		styles:           map[string]*slides.TextStyle{},
-		shapes:           map[string]*slides.ShapeProperties{},
-		supportAllDrives: true,
+		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -163,9 +153,8 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 		err = errors.WithStack(err)
 	}()
 	d := &Deck{
-		styles:           map[string]*slides.TextStyle{},
-		shapes:           map[string]*slides.ShapeProperties{},
-		supportAllDrives: true,
+		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -180,16 +169,9 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 		Name:     "Untitled",
 		MimeType: "application/vnd.google-apps.presentation",
 	}
-	copyCall := d.driveSrv.Files.Copy(id, file)
-	if d.supportAllDrives {
-		copyCall = copyCall.SupportsAllDrives(true)
-	}
-	f, err := copyCall.Do()
+	f, err := d.driveSrv.Files.Copy(id, file).SupportsAllDrives(true).Do()
 	if err != nil {
-		if d.supportAllDrives {
-			return nil, fmt.Errorf("failed to copy presentation: %w. If the source presentation is not in a shared drive, try using --support-all-drives=false", err)
-		}
-		return nil, fmt.Errorf("failed to copy presentation: %w", err)
+		return nil, err
 	}
 	d.id = f.Id
 	if err := d.refresh(ctx); err != nil {
@@ -243,15 +225,8 @@ func (d *Deck) UpdateTitle(ctx context.Context, title string) (err error) {
 	file := &drive.File{
 		Name: title,
 	}
-	updateCall := d.driveSrv.Files.Update(d.id, file).Context(ctx)
-	if d.supportAllDrives {
-		updateCall = updateCall.SupportsAllDrives(true)
-	}
-	if _, err := updateCall.Do(); err != nil {
-		if d.supportAllDrives {
-			return fmt.Errorf("failed to update title: %w. If the presentation is not in a shared drive, try using --support-all-drives=false", err)
-		}
-		return fmt.Errorf("failed to update title: %w", err)
+	if _, err := d.driveSrv.Files.Update(d.id, file).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
+		return err
 	}
 	return nil
 }

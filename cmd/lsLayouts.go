@@ -30,8 +30,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var supportAllDrivesLayouts bool
-
 var lsLayoutsCmd = &cobra.Command{
 	Use:   "ls-layouts [DECK_FILE]",
 	Short: "list layouts of Google Slides presentation",
@@ -58,7 +56,6 @@ var lsLayoutsCmd = &cobra.Command{
 		opts := []deck.Option{
 			deck.WithProfile(profile),
 			deck.WithPresentationID(presentationID),
-			deck.WithSupportAllDrives(supportAllDrivesLayouts),
 		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
@@ -75,5 +72,4 @@ var lsLayoutsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(lsLayoutsCmd)
 	lsLayoutsCmd.Flags().StringVarP(&presentationID, "presentation-id", "i", "", "Google Slides presentation ID")
-	lsLayoutsCmd.Flags().BoolVar(&supportAllDrivesLayouts, "support-all-drives", true, "Whether to support shared drives when accessing the presentation")
 }

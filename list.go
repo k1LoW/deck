@@ -35,18 +35,9 @@ func (d *Deck) List() (_ []*Presentation, err error) {
 	}()
 	var presentations []*Presentation
 
-	listCall := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)")
-
-	if d.supportAllDrives {
-		listCall = listCall.SupportsAllDrives(true).IncludeItemsFromAllDrives(true)
-	}
-
-	r, err := listCall.Do()
+	r, err := d.driveSrv.Files.List().SupportsAllDrives(true).IncludeItemsFromAllDrives(true).Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
 	if err != nil {
-		if d.supportAllDrives {
-			return nil, fmt.Errorf("failed to list presentations: %w. If you don't have access to shared drives, try using --support-all-drives=false", err)
-		}
-		return nil, fmt.Errorf("failed to list presentations: %w", err)
+		return nil, err
 	}
 
 	for _, f := range r.Files {
