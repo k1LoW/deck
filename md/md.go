@@ -55,6 +55,8 @@ type Frontmatter struct {
 	Breaks *bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 	// Conditions for default
 	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
+	// command to convert code blocks to images
+	CodeBlockToImageCommand string `yaml:"codeBlockToImageCommand,omitempty" json:"codeBlockToImageCommand,omitempty"`
 }
 
 type DefaultCondition struct {
@@ -229,6 +231,9 @@ func (md *MD) ApplyConfig(cfg *config.Config) {
 	if md.Frontmatter.Breaks == nil {
 		md.Frontmatter.Breaks = cfg.Breaks
 	}
+	if md.Frontmatter.CodeBlockToImageCommand == "" {
+		md.Frontmatter.CodeBlockToImageCommand = cfg.CodeBlockToImageCommand
+	}
 	// append default conditions from config
 	for _, cond := range cfg.Defaults {
 		md.Frontmatter.Defaults = append(md.Frontmatter.Defaults, DefaultCondition{
@@ -264,6 +269,9 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 	}
 	if md.Frontmatter == nil {
 		return md.Contents.toSlides(ctx, codeBlockToImageCmd)
+	}
+	if codeBlockToImageCmd == "" {
+		codeBlockToImageCmd = md.Frontmatter.CodeBlockToImageCommand
 	}
 	pageTotal := len(md.Contents)
 	for i, content := range md.Contents {

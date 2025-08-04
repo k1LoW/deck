@@ -18,6 +18,8 @@ type Config struct {
 	Breaks *bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 	// Conditions for default
 	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
+	// command to convert code blocks to images
+	CodeBlockToImageCommand string `yaml:"codeBlockToImageCommand,omitempty" json:"codeBlockToImageCommand,omitempty"`
 }
 
 type DefaultCondition struct {
