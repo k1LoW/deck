@@ -35,6 +35,7 @@ var lsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		opts := []deck.Option{
 			deck.WithProfile(profile),
+			deck.WithSupportAllDrives(supportAllDrives),
 		}
 		slides, err := deck.List(cmd.Context(), opts...)
 		if err != nil {
@@ -49,4 +50,5 @@ var lsCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(lsCmd)
+	lsCmd.Flags().BoolVar(&supportAllDrives, "support-all-drives", true, "Whether to include shared drives in the list")
 }

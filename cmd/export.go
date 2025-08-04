@@ -31,7 +31,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var out string
+var (
+	out              string
+	supportAllDrives bool
+)
 
 var exportCmd = &cobra.Command{
 	Use:   "export [DECK_FILE]",
@@ -59,6 +62,7 @@ var exportCmd = &cobra.Command{
 		opts := []deck.Option{
 			deck.WithProfile(profile),
 			deck.WithPresentationID(presentationID),
+			deck.WithSupportAllDrives(supportAllDrives),
 		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
@@ -80,4 +84,5 @@ func init() {
 	rootCmd.AddCommand(exportCmd)
 	exportCmd.Flags().StringVarP(&presentationID, "presentation-id", "i", "", "Google Slides presentation ID")
 	exportCmd.Flags().StringVarP(&out, "out", "o", "deck.pdf", "output file")
+	exportCmd.Flags().BoolVar(&supportAllDrives, "support-all-drives", true, "Whether to support shared drives when accessing the presentation")
 }

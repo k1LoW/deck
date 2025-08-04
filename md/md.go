@@ -55,6 +55,8 @@ type Frontmatter struct {
 	Breaks *bool `yaml:"breaks,omitempty" json:"breaks,omitempty"`
 	// Conditions for default
 	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
+	// Whether to support shared drives
+	SharedDrive *bool `yaml:"sharedDrive,omitempty" json:"sharedDrive,omitempty"`
 }
 
 type DefaultCondition struct {
@@ -228,6 +230,9 @@ func (md *MD) ApplyConfig(cfg *config.Config) {
 	}
 	if md.Frontmatter.Breaks == nil {
 		md.Frontmatter.Breaks = cfg.Breaks
+	}
+	if md.Frontmatter.SharedDrive == nil {
+		md.Frontmatter.SharedDrive = cfg.SharedDrive
 	}
 	// append default conditions from config
 	for _, cond := range cfg.Defaults {
