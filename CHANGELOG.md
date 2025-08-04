@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.9.0](https://github.com/k1LoW/deck/compare/v1.8.0...v1.9.0) - 2025-08-04
+### New Features 🎉
+- feat: support shared drive (always enable) by @takaidohigasi in https://github.com/k1LoW/deck/pull/330
+- feat: add support for code block to image conversion command in frontmatter or config by @k1LoW in https://github.com/k1LoW/deck/pull/331
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.243.0 to 0.244.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/327
+
 ## [v1.8.0](https://github.com/k1LoW/deck/compare/v1.7.0...v1.8.0) - 2025-08-03
 ### New Features 🎉
 - feat: support config.yml for global setting by @k1LoW in https://github.com/k1LoW/deck/pull/326
