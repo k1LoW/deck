@@ -2,4 +2,4 @@ package version
 
 const Name string = "deck"
 
-var Version = "1.8.0" //nostyle:repetition
+var Version = "1.9.0" //nostyle:repetition
