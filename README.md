@@ -142,6 +142,7 @@ The frontmatter must be:
 - `presentationID` (string): Google Slides presentation ID. When specified, you can use the simplified command syntax.
 - `title` (string): title of the presentation. When specified, you can use the simplified command syntax.
 - `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides. Can also be configured globally in `config.yml`.
+- `codeBlockToImageCommand` (string): Command to convert code blocks to images. When specified, code blocks in the presentation will be converted to images using this command. Can also be configured globally in `config.yml`.
 - `defaults` (array): Define conditional actions using CEL (Common Expression Language) expressions. Actions are automatically applied to pages based on page structure and content. Only applies to pages without explicit page configuration. Can also be configured globally in `config.yml`.
 
 #### Configuration File
@@ -158,6 +159,7 @@ The configuration file uses YAML format and supports the same fields as frontmat
 ```yaml
 # Global configuration for deck
 breaks: true
+codeBlockToImageCommand: "go run testdata/txt2img/main.go"
 
 defaults:
   # First page should always use title layout
@@ -177,6 +179,7 @@ defaults:
 ##### Available configuration fields
 
 - **`breaks`** (boolean): Global line break rendering behavior
+- **`codeBlockToImageCommand`** (string): Global command to convert code blocks to images
 - **`defaults`** (array): Global default conditions and actions using CEL expressions
 
 ##### Configuration precedence
@@ -360,6 +363,26 @@ By using the `--code-block-to-image-command (-c)` option, you can convert [Markd
 $ deck apply --code-block-to-image-command "some-command" -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
+Alternatively, you can set the command globally in your configuration file or per-presentation in the frontmatter:
+
+**Configuration file example:**
+```yaml
+# config.yml
+codeBlockToImageCommand: "some-command"
+```
+
+**Frontmatter example:**
+```yaml
+---
+codeBlockToImageCommand: "some-sommand"
+---
+```
+
+When both are specified, the priority order is:
+1. Command-line option (`--code-block-to-image-command`)
+2. Frontmatter setting (`codeBlockToImageCommand`)
+3. Configuration file setting (`codeBlockToImageCommand`)
+
 The command is executed with `bash -c`.
 The command must output image data (PNG, JPEG, GIF) to standard output.
 
@@ -413,13 +436,13 @@ $ deck apply -c 'mmdc -i - -o {{output}} --quiet' -i xxxxxXXXXxxxxxXXXXxxxxxxxxx
 ```
 
 ```console
-# Generate code images with syntax highlighting (e.g., silicon)
-$ deck apply -c 'silicon -l {{lang == "" ? "md" : lang}} -o {{output}}' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+# Generate code images using the built-in text-to-image tool
+$ deck apply -c 'go run testdata/txt2img/main.go' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ```console
 # Use different tools depending on the language
-$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --quiet; else silicon -l {{lang == "" ? "md" : lang}} --output {{output}}; fi' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --quiet; else go run testdata/txt2img/main.go; fi' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
 ### Comment

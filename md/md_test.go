@@ -185,6 +185,43 @@ func TestApplyConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Apply config codeBlockToImageCommand when frontmatter codeBlockToImageCommand is not set",
+			initialFrontmatter: &Frontmatter{
+				CodeBlockToImageCommand: "", // not set
+			},
+			config: &config.Config{
+				CodeBlockToImageCommand: "go run testdata/txt2img/main.go",
+			},
+			want: &Frontmatter{
+				CodeBlockToImageCommand: "go run testdata/txt2img/main.go",
+				Defaults:                nil,
+			},
+		},
+		{
+			name: "Keep existing codeBlockToImageCommand value when already set",
+			initialFrontmatter: &Frontmatter{
+				CodeBlockToImageCommand: "go run testdata/txt2img/main.go", // already set
+			},
+			config: &config.Config{
+				CodeBlockToImageCommand: "go run other/command",
+			},
+			want: &Frontmatter{
+				CodeBlockToImageCommand: "go run testdata/txt2img/main.go", // keep existing value
+				Defaults:                nil,
+			},
+		},
+		{
+			name:               "Apply codeBlockToImageCommand when frontmatter is nil",
+			initialFrontmatter: nil,
+			config: &config.Config{
+				CodeBlockToImageCommand: "go run testdata/txt2img/main.go",
+			},
+			want: &Frontmatter{
+				CodeBlockToImageCommand: "go run testdata/txt2img/main.go",
+				Defaults:                nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -276,6 +313,88 @@ func TestGenCodeImage(t *testing.T) {
 				if !reflect.DeepEqual(imgData[:len(pngHeader)], pngHeader) {
 					t.Error("genCodeImage() did not return valid PNG data")
 				}
+			}
+		})
+	}
+}
+
+func TestToSlidesCodeBlockToImageCommand(t *testing.T) {
+	ctx := context.Background()
+
+	// Get absolute path to txt2img command
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	txt2imgDir := filepath.Join(cwd, "..", "testdata", "txt2img")
+	txt2imgCmd := "cd " + txt2imgDir + " && go run main.go"
+
+	tests := []struct {
+		name                   string
+		frontmatter            *Frontmatter
+		codeBlockToImageCmdArg string
+		hasCodeBlocks          bool
+		expectError            bool
+	}{
+		{
+			name: "Use argument command when both argument and frontmatter are provided",
+			frontmatter: &Frontmatter{
+				CodeBlockToImageCommand: txt2imgCmd,
+			},
+			codeBlockToImageCmdArg: txt2imgCmd,
+			hasCodeBlocks:          true,
+			expectError:            false,
+		},
+		{
+			name: "Use frontmatter command when argument is empty",
+			frontmatter: &Frontmatter{
+				CodeBlockToImageCommand: txt2imgCmd,
+			},
+			codeBlockToImageCmdArg: "",
+			hasCodeBlocks:          true,
+			expectError:            false,
+		},
+		{
+			name:                   "Use argument command when frontmatter is nil",
+			frontmatter:            nil,
+			codeBlockToImageCmdArg: txt2imgCmd,
+			hasCodeBlocks:          true,
+			expectError:            false,
+		},
+		{
+			name: "No error when no code blocks present",
+			frontmatter: &Frontmatter{
+				CodeBlockToImageCommand: txt2imgCmd,
+			},
+			codeBlockToImageCmdArg: "",
+			hasCodeBlocks:          false,
+			expectError:            false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := &Content{}
+			if tt.hasCodeBlocks {
+				content.CodeBlocks = []*CodeBlock{
+					{
+						Language: "go",
+						Content:  "fmt.Println(\"test\")",
+					},
+				}
+			}
+
+			md := &MD{
+				Contents:    Contents{content},
+				Frontmatter: tt.frontmatter,
+			}
+
+			_, err := md.ToSlides(ctx, tt.codeBlockToImageCmdArg)
+
+			if tt.expectError && err == nil {
+				t.Error("Expected error for non-existent command, got nil")
+			} else if !tt.expectError && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
 			}
 		})
 	}
