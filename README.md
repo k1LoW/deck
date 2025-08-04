@@ -34,6 +34,15 @@
 
 Get the presentation ID you want to operate. You can get a list with `deck ls`.
 
+```console
+$ deck ls
+xxxxxXXXXxxxxxXXXXxxxxxxxxxx    My Presentation
+yyyyyYYYYyyyyyYYYYyyyyyyyyyy    Team Project Slides
+```
+
+> [!NOTE]
+> `deck` fully supports Google Shared Drives (Team Drives). Presentations stored in shared drives are automatically included in listings and can be operated on just like personal drive presentations.
+
 For example, presentation ID is `xxxxxXXXXxxxxxXXXXxxxxxxxxxx` of https://docs.google.com/presentation/d/xxxxxXXXXxxxxxXXXXxxxxxxxxxx/edit .
 
 #### When creating a new presentation

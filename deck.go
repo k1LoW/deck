@@ -169,7 +169,7 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 		Name:     "Untitled",
 		MimeType: "application/vnd.google-apps.presentation",
 	}
-	f, err := d.driveSrv.Files.Copy(id, file).Do()
+	f, err := d.driveSrv.Files.Copy(id, file).SupportsAllDrives(true).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (d *Deck) UpdateTitle(ctx context.Context, title string) (err error) {
 	file := &drive.File{
 		Name: title,
 	}
-	if _, err := d.driveSrv.Files.Update(d.id, file).Context(ctx).Do(); err != nil {
+	if _, err := d.driveSrv.Files.Update(d.id, file).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
 		return err
 	}
 	return nil

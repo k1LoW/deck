@@ -35,7 +35,7 @@ func (d *Deck) List() (_ []*Presentation, err error) {
 	}()
 	var presentations []*Presentation
 
-	r, err := d.driveSrv.Files.List().Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
+	r, err := d.driveSrv.Files.List().SupportsAllDrives(true).IncludeItemsFromAllDrives(true).Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
 	if err != nil {
 		return nil, err
 	}
