@@ -36,6 +36,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+	if slices.ContainsFunc(pages, func(page int) bool {
+		return page < 1 || page > len(ss)
+	}) {
+		return fmt.Errorf("invalid page number in pages: %v", pages)
+	}
+
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
@@ -44,18 +50,17 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		layoutObjectIdMap[l.ObjectId] = l
 	}
 
-	before := make(Slides, 0, len(d.presentation.Slides))
-	var after Slides
-	for _, p := range d.presentation.Slides {
+	before := make(Slides, len(d.presentation.Slides))
+	after := make(Slides, len(d.presentation.Slides))
+	for i, p := range d.presentation.Slides {
 		slide := convertToSlide(p, layoutObjectIdMap)
-		before = append(before, slide)
-		after = append(after, slide)
+		before[i] = slide
+		after[i] = slide
 	}
 
-	for i, slide := range ss {
-		if !slices.Contains(pages, i+1) {
-			continue
-		}
+	for _, page := range pages {
+		i := page - 1
+		slide := ss[i]
 		if slide.Layout == "" {
 			if i == 0 {
 				slide.Layout = d.defaultTitleLayout
@@ -63,25 +68,14 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 				slide.Layout = d.defaultLayout
 			}
 		}
-		if len(after) < i {
+		if i < len(after) {
 			after[i] = slide
-		} else if len(after) == i {
-			after = append(after, slide)
 		} else {
-			after[i] = slide
+			after = append(after, slide)
 		}
 	}
 	if len(after) > len(ss) {
-		var deleteIndexes []int
-		for i := len(ss); i < len(after); i++ {
-			if !slices.Contains(pages, i+1) {
-				deleteIndexes = append(deleteIndexes, i)
-			}
-		}
-		slices.Reverse(deleteIndexes)
-		for _, i := range deleteIndexes {
-			after = slices.Delete(after, i, i+1)
-		}
+		after = after[:len(ss)]
 	}
 
 	actions, err := generateActions(before, after)
