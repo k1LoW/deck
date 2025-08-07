@@ -348,7 +348,7 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 	}()
 
 	var slides []*deck.Slide
-	for _, content := range contents {
+	for i, content := range contents {
 		if content.Ignore != nil && *content.Ignore {
 			// Skip ignored contents
 			continue
@@ -388,6 +388,7 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 			Images:         images,
 			BlockQuotes:    content.BlockQuotes,
 			SpeakerNote:    strings.Join(content.Comments, "\n\n"),
+			Page:           i + 1,
 		}
 		if content.Freeze != nil {
 			slide.Freeze = *content.Freeze
