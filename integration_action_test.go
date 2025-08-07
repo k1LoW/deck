@@ -29,12 +29,12 @@ func TestAction(t *testing.T) {
 	}{
 		{
 			name: "append slide (index 1)",
-			before: Slides{
-				{Layout: "title-and-body",
-					Titles:      []string{"Slide 1"},
-					TitleBodies: toBodies([]string{"Slide 1"}),
-				},
-			},
+			before: Slides{{
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
+			}},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.AppendPage(ctx, &Slide{
 					Layout:      "title-and-body",
@@ -45,8 +45,8 @@ func TestAction(t *testing.T) {
 				}
 			},
 			expected: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, Page: 1},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, Page: 2},
 			},
 		},
 		{
@@ -60,14 +60,17 @@ func TestAction(t *testing.T) {
 				}
 			},
 			expected: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, Page: 1},
 			},
 		},
 		{
 			name: "insert slide (index 0)",
-			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
-			},
+			before: Slides{{
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
+			}},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.InsertPage(ctx, 0, &Slide{
 					Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})}); err != nil {
@@ -75,16 +78,23 @@ func TestAction(t *testing.T) {
 				}
 			},
 			expected: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, Page: 1},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, Page: 2},
 			},
 		},
 		{
 			name: "insert slide (index 1)",
-			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})},
-			},
+			before: Slides{{
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
+			}, {
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
+			}},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.InsertPage(ctx, 1, &Slide{
 					Layout: "title-and-body", Titles: []string{"Slide 1.5"}, TitleBodies: toBodies([]string{"Slide 1.5"})}); err != nil {
@@ -92,57 +102,71 @@ func TestAction(t *testing.T) {
 				}
 			},
 			expected: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 1.5"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, Page: 1},
+				{Layout: "title-and-body", Titles: []string{"Slide 1.5"}, Page: 2},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, Page: 3},
 			},
 		},
 		{
 			name: "move slide (index 1)",
-			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})},
-			},
+			before: Slides{{
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
+			}, {
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
+			}},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.movePage(ctx, 1, 0); err != nil {
 					t.Fatal(err)
 				}
 			},
 			expected: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, Page: 1},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, Page: 2},
 			},
 		},
 		{
 			name: "move slide (index 0)",
-			before: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}, TitleBodies: toBodies([]string{"Slide 1"})},
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}, TitleBodies: toBodies([]string{"Slide 2"})},
-			},
+			before: Slides{{
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
+			}, {
+				Layout:      "title-and-body",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
+			}},
 			actions: func(t *testing.T, d *Deck) {
 				if err := d.movePage(ctx, 0, 1); err != nil {
 					t.Fatal(err)
 				}
 			},
 			expected: Slides{
-				{Layout: "title-and-body", Titles: []string{"Slide 2"}},
-				{Layout: "title-and-body", Titles: []string{"Slide 1"}},
+				{Layout: "title-and-body", Titles: []string{"Slide 2"}, Page: 1},
+				{Layout: "title-and-body", Titles: []string{"Slide 1"}, Page: 2},
 			},
 		},
 		{
 			name: "generateActions generated move operations",
 			before: Slides{
-				{Layout: "title", Titles: []string{"Delete Me 1"}, TitleBodies: toBodies([]string{"Delete Me 1"})},
-				{Layout: "title", Titles: []string{"Delete Me 2"}, TitleBodies: toBodies([]string{"Delete Me 2"})},
-				{Layout: "title", Titles: []string{"Keep Me A"}, TitleBodies: toBodies([]string{"Keep Me A"})},
-				{Layout: "title", Titles: []string{"Keep Me B"}, TitleBodies: toBodies([]string{"Keep Me B"})},
+				{Layout: "title", Titles: []string{"Delete Me 1"}, TitleBodies: toBodies([]string{"Delete Me 1"}), Page: 1},
+				{Layout: "title", Titles: []string{"Delete Me 2"}, TitleBodies: toBodies([]string{"Delete Me 2"}), Page: 2},
+				{Layout: "title", Titles: []string{"Keep Me A"}, TitleBodies: toBodies([]string{"Keep Me A"}), Page: 3},
+				{Layout: "title", Titles: []string{"Keep Me B"}, TitleBodies: toBodies([]string{"Keep Me B"}), Page: 4},
 			},
 			actions: func(t *testing.T, d *Deck) {
 				// Test using the actual generateActions generated actions
 				targetSlides := Slides{
-					{Layout: "title", Titles: []string{"Keep Me B"}, TitleBodies: toBodies([]string{"Keep Me B"})},
-					{Layout: "title", Titles: []string{"Keep Me A"}, TitleBodies: toBodies([]string{"Keep Me A"})},
-					{Layout: "title", Titles: []string{"New Page"}, TitleBodies: toBodies([]string{"New Page"})},
+					{Layout: "title", Titles: []string{"Keep Me B"}, TitleBodies: toBodies([]string{"Keep Me B"}), Page: 1},
+					{Layout: "title", Titles: []string{"Keep Me A"}, TitleBodies: toBodies([]string{"Keep Me A"}), Page: 2},
+					{Layout: "title", Titles: []string{"New Page"}, TitleBodies: toBodies([]string{"New Page"}), Page: 3},
 				}
 
 				// Apply the target slides using generateActions
@@ -151,9 +175,9 @@ func TestAction(t *testing.T) {
 				}
 			},
 			expected: Slides{
-				{Layout: "title", Titles: []string{"Keep Me B"}},
-				{Layout: "title", Titles: []string{"Keep Me A"}},
-				{Layout: "title", Titles: []string{"New Page"}},
+				{Layout: "title", Titles: []string{"Keep Me B"}, Page: 1},
+				{Layout: "title", Titles: []string{"Keep Me A"}, Page: 2},
+				{Layout: "title", Titles: []string{"New Page"}, Page: 3},
 			},
 		},
 	}

@@ -43,6 +43,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"New Slide"},
 				TitleBodies: toBodies([]string{"New Slide"}),
+				Page:        1,
 			},
 		},
 	},
@@ -53,6 +54,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Old Slide"},
 				TitleBodies: toBodies([]string{"Old Slide"}),
+				Page:        1,
 			},
 		},
 		after: Slides{},
@@ -64,11 +66,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide A"},
 				TitleBodies: toBodies([]string{"Slide A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide B"},
 				TitleBodies: toBodies([]string{"Slide B"}),
+				Page:        2,
 			},
 		},
 		after: Slides{
@@ -76,11 +80,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide B"},
 				TitleBodies: toBodies([]string{"Slide B"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide A"},
 				TitleBodies: toBodies([]string{"Slide A"}),
+				Page:        2,
 			},
 		},
 	},
@@ -91,6 +97,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Original Title"},
 				TitleBodies: toBodies([]string{"Original Title"}),
+				Page:        1,
 			},
 		},
 		after: Slides{
@@ -100,6 +107,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Original Title"}),
 				Subtitles:      []string{"New Subtitle"},
 				SubtitleBodies: toBodies([]string{"New Subtitle"}),
+				Page:           1,
 			},
 		},
 	},
@@ -110,16 +118,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide 1"},
 				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 2"},
 				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 3"},
 				TitleBodies: toBodies([]string{"Slide 3"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -127,11 +138,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide 2"},
 				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Slide"},
 				TitleBodies: toBodies([]string{"New Slide"}),
+				Page:        2,
 			},
 			{
 				Layout:         "title",
@@ -139,6 +152,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Slide 1"}),
 				Subtitles:      []string{"Updated"},
 				SubtitleBodies: toBodies([]string{"Updated"}),
+				Page:           3,
 			},
 		},
 	},
@@ -149,26 +163,31 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide 1"},
 				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 2"},
 				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 3"},
 				TitleBodies: toBodies([]string{"Slide 3"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 4"},
 				TitleBodies: toBodies([]string{"Slide 4"}),
+				Page:        4,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 5"},
 				TitleBodies: toBodies([]string{"Slide 5"}),
+				Page:        5,
 			},
 		},
 		after: Slides{
@@ -176,21 +195,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"New Slide A"},
 				TitleBodies: toBodies([]string{"New Slide A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 2"},
 				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Slide B"},
 				TitleBodies: toBodies([]string{"New Slide B"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 4"},
 				TitleBodies: toBodies([]string{"Slide 4"}),
+				Page:        4,
 			},
 		},
 	},
@@ -201,21 +224,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        4,
 			},
 		},
 		after: Slides{
@@ -223,16 +250,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"D"}, // moved from index 3 to 0
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"}, // moved from index 1 to 1 (no change)
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"A"}, // moved from index 0 to 2
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			},
 		},
 	},
@@ -243,16 +273,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"First Page"}, // This will be updated
 				TitleBodies: toBodies([]string{"First Page"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Second Page"},
 				TitleBodies: toBodies([]string{"Second Page"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Third Page"},
 				TitleBodies: toBodies([]string{"Third Page"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -260,16 +293,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"New First Page"}, // Updated page at index 0
 				TitleBodies: toBodies([]string{"New First Page"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Second Page"}, // No change
 				TitleBodies: toBodies([]string{"Second Page"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Third Page"}, // No change
 				TitleBodies: toBodies([]string{"Third Page"}),
+				Page:        3,
 			},
 		},
 	},
@@ -280,16 +316,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"First Page"}, // This will be replaced
 				TitleBodies: toBodies([]string{"First Page"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Second Page"}, // This will move to index 1
 				TitleBodies: toBodies([]string{"Second Page"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Third Page"}, // This will move to index 0
 				TitleBodies: toBodies([]string{"Third Page"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -297,16 +336,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Third Page"}, // Moved from index 2 to 0
 				TitleBodies: toBodies([]string{"Third Page"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Second Page"}, // Moved from index 1 to 1
 				TitleBodies: toBodies([]string{"Second Page"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Page"}, // Added at index 2
 				TitleBodies: toBodies([]string{"New Page"}),
+				Page:        3,
 			},
 		},
 	},
@@ -317,21 +359,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Delete Me 1"}, // index 0 - will be replaced
 				TitleBodies: toBodies([]string{"Delete Me 1"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Delete Me 2"}, // index 1 - will be replaced
 				TitleBodies: toBodies([]string{"Delete Me 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Keep Me A"}, // index 2 - will move to index 1
 				TitleBodies: toBodies([]string{"Keep Me A"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Keep Me B"}, // index 3 - will move to index 0
 				TitleBodies: toBodies([]string{"Keep Me B"}),
+				Page:        4,
 			},
 		},
 		after: Slides{
@@ -339,16 +385,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Keep Me B"}, // moved from index 3 to 0
 				TitleBodies: toBodies([]string{"Keep Me B"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Keep Me A"}, // moved from index 2 to 1
 				TitleBodies: toBodies([]string{"Keep Me A"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Page"}, // added at index 2
 				TitleBodies: toBodies([]string{"New Page"}),
+				Page:        3,
 			},
 		},
 	},
@@ -371,16 +420,19 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 			{
 				Layout:      "title-and-body",
 				Titles:      []string{"Different Title"},
 				TitleBodies: toBodies([]string{"Different Title"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Another Title"},
 				TitleBodies: toBodies([]string{"Another Title"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -388,6 +440,7 @@ var tests = []struct {
 				Layout:      "title-and-body",
 				Titles:      []string{"Different Title"},
 				TitleBodies: toBodies([]string{"Different Title"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
@@ -405,6 +458,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 2,
 			},
 		},
 	},
@@ -417,6 +471,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Target Title"}),
 				Subtitles:      []string{"Old subtitle"},
 				SubtitleBodies: toBodies([]string{"Old subtitle"}),
+				Page:           1,
 			},
 			{
 				Layout:      "title-and-body",
@@ -434,11 +489,13 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Other Title"},
 				TitleBodies: toBodies([]string{"Other Title"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -448,6 +505,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Target Title"}),
 				Subtitles:      []string{"New subtitle"},
 				SubtitleBodies: toBodies([]string{"New subtitle"}),
+				Page:           1,
 			},
 			{
 				Layout:      "title-and-body",
@@ -465,6 +523,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 2,
 			},
 		},
 	},
@@ -487,6 +546,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 			{
 				Layout:         "title",
@@ -494,11 +554,13 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Target Title"}),
 				Subtitles:      []string{"Old subtitle"},
 				SubtitleBodies: toBodies([]string{"Old subtitle"}),
+				Page:           2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Another Title"},
 				TitleBodies: toBodies([]string{"Another Title"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -508,6 +570,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Target Title"}),
 				Subtitles:      []string{"New subtitle"},
 				SubtitleBodies: toBodies([]string{"New subtitle"}),
+				Page:           1,
 			},
 		},
 	},
@@ -520,16 +583,19 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Title"}),
 				Subtitles:      []string{"subtitle"},
 				SubtitleBodies: toBodies([]string{"subtitle"}),
+				Page:           1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Title 2"},
 				TitleBodies: toBodies([]string{"Title 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Title 3"},
 				TitleBodies: toBodies([]string{"Title 3"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -539,6 +605,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Target Title"}),
 				Subtitles:      []string{"subtitle"},
 				SubtitleBodies: toBodies([]string{"subtitle"}),
+				Page:           1,
 			},
 		},
 	},
@@ -549,21 +616,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			}, // index 0
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			}, // index 1
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        3,
 			}, // index 2
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        4,
 			}, // index 3
 		},
 		after: Slides{
@@ -571,21 +642,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			}, // index 0 (no change)
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			}, // index 1 (moved from index 2)
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			}, // index 2 (moved from index 1)
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        4,
 			}, // index 3 (no change)
 		},
 	},
@@ -596,21 +671,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			}, // index 0
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			}, // index 1
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			}, // index 2
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        4,
 			}, // index 3
 		},
 		after: Slides{
@@ -618,21 +697,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			}, // index 0 (no change)
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			}, // index 1 (corrected: "B" → "A")
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        3,
 			}, // index 2 (corrected: "A" → "B")
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        4,
 			}, // index 3 (no change)
 		},
 	},
@@ -643,21 +726,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title-and-body",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title-and-body-half",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title-and-body-3col",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        4,
 			},
 		},
 		after: Slides{
@@ -665,16 +752,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title-and-body",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title-and-body-3col",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			},
 		},
 	},
@@ -716,6 +806,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 			{
 				Layout:         "title",
@@ -734,12 +825,14 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 2,
 			},
 			{
 				Layout:      "section",
 				Titles:      []string{"Title"},
 				TitleBodies: toBodies([]string{"Title"}),
 				SpeakerNote: "comment\n\ncomment",
+				Page:        3,
 			},
 			{
 				Layout:      "title-and-body",
@@ -756,6 +849,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 4,
 			},
 			{
 				Layout:         "title-and-body-3col",
@@ -792,6 +886,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 5,
 			},
 		},
 		after: Slides{
@@ -828,6 +923,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 		},
 	},
@@ -838,16 +934,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title-and-body",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title-and-body-3col",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -886,6 +985,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 			{
 				Layout:         "title",
@@ -904,12 +1004,14 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 2,
 			},
 			{
 				Layout:      "section",
 				Titles:      []string{"Title"},
 				TitleBodies: toBodies([]string{"Title"}),
 				SpeakerNote: "comment\n\ncomment",
+				Page:        3,
 			},
 			{
 				Layout:      "title-and-body",
@@ -926,6 +1028,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 4,
 			},
 			{
 				Layout:         "title-and-body-3col",
@@ -962,6 +1065,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 5,
 			},
 		},
 	},
@@ -985,12 +1089,14 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 			{
 				Layout:      "section",
 				Titles:      []string{"Title"},
 				TitleBodies: toBodies([]string{"Title"}),
 				SpeakerNote: "comment\n\ncomment",
+				Page:        2,
 			},
 			{
 				Layout:      "title-and-body",
@@ -1021,6 +1127,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 3,
 			},
 			{
 				Layout:      "title-and-body",
@@ -1037,6 +1144,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 4,
 			},
 			{
 				Layout:         "title-and-body-3col",
@@ -1073,6 +1181,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 5,
 			},
 		},
 		after: Slides{
@@ -1112,6 +1221,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 		},
 	},
@@ -1122,11 +1232,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Different Title"},
 				TitleBodies: toBodies([]string{"Different Title"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title-and-body",
 				Titles:      []string{"Target Title"},
 				TitleBodies: toBodies([]string{"Target Title"}),
+				Page:        2,
 			},
 		},
 		after: Slides{
@@ -1134,6 +1246,7 @@ var tests = []struct {
 				Layout:      "title-and-body",
 				Titles:      []string{"Target Title"},
 				TitleBodies: toBodies([]string{"Target Title"}),
+				Page:        1,
 			},
 		},
 	},
@@ -1144,6 +1257,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Different Title"},
 				TitleBodies: toBodies([]string{"Different Title"}),
+				Page:        1,
 			},
 			{
 				Layout:         "title-and-body",
@@ -1151,6 +1265,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Another Title"}),
 				Subtitles:      []string{"Same Subtitle"},
 				SubtitleBodies: toBodies([]string{"Same Subtitle"}),
+				Page:           2,
 			},
 		},
 		after: Slides{
@@ -1160,6 +1275,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"New Title"}),
 				Subtitles:      []string{"Same Subtitle"},
 				SubtitleBodies: toBodies([]string{"Same Subtitle"}),
+				Page:           1,
 			},
 		},
 	},
@@ -1170,16 +1286,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -1187,11 +1306,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        2,
 			},
 			{
 				Layout:         "title",
@@ -1199,6 +1320,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"B"}),
 				Subtitles:      []string{"Subtitle B"},
 				SubtitleBodies: toBodies([]string{"Subtitle B"}),
+				Page:           3,
 			},
 			{
 				Layout:         "title",
@@ -1206,6 +1328,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"C"}),
 				Subtitles:      []string{"Subtitle C"},
 				SubtitleBodies: toBodies([]string{"Subtitle C"}),
+				Page:           4,
 			},
 		},
 	},
@@ -1216,11 +1339,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title-and-body", // Different layout from target
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 		},
 		after: Slides{
@@ -1228,16 +1353,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title", // Different layout from before - similarity = 4 (title match only)
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        3,
 			},
 		},
 	},
@@ -1248,16 +1376,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"}, // similarity = 2 (layout + title match) <= 3
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title-and-body",
 				Titles:      []string{"C"}, // similarity = 4 (title match only) > 3
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -1265,21 +1396,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"}, // Should be moved (similarity <= 3)
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",       // Different layout from before - similarity = 4 (title match only) > 3
 				Titles:      []string{"C"}, // Should not be moved (similarity > 3)
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        4,
 			},
 		},
 	},
@@ -1290,16 +1425,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -1307,16 +1445,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 		},
 	},
@@ -1327,21 +1468,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        4,
 			},
 		},
 		after: Slides{
@@ -1349,16 +1494,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        3,
 			},
 		},
 	},
@@ -1369,21 +1517,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        4,
 			},
 		},
 		after: Slides{
@@ -1391,21 +1543,25 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        4,
 			},
 		},
 	},
@@ -1416,6 +1572,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Original Slide"},
 				TitleBodies: toBodies([]string{"Original Slide"}),
+				Page:        1,
 			},
 		},
 		after: Slides{
@@ -1423,16 +1580,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"First Part"},
 				TitleBodies: toBodies([]string{"First Part"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Second Part"},
 				TitleBodies: toBodies([]string{"Second Part"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Third Part"},
 				TitleBodies: toBodies([]string{"Third Part"}),
+				Page:        3,
 			},
 		},
 	},
@@ -1443,6 +1603,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Shared Title"},
 				TitleBodies: toBodies([]string{"Shared Title"}),
+				Page:        1,
 			},
 		},
 		after: Slides{
@@ -1450,16 +1611,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Shared Title"},
 				TitleBodies: toBodies([]string{"Shared Title"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Title 1"},
 				TitleBodies: toBodies([]string{"New Title 1"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Title 2"},
 				TitleBodies: toBodies([]string{"New Title 2"}),
+				Page:        3,
 			},
 		},
 	},
@@ -1470,6 +1634,7 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Original Content"},
 				TitleBodies: toBodies([]string{"Original Content"}),
+				Page:        1,
 			},
 		},
 		after: Slides{
@@ -1488,11 +1653,13 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Section 2"},
 				TitleBodies: toBodies([]string{"Section 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title-and-body",
@@ -1509,6 +1676,7 @@ var tests = []struct {
 						},
 					},
 				},
+				Page: 3,
 			},
 		},
 	},
@@ -1519,16 +1687,19 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"C"},
 				TitleBodies: toBodies([]string{"C"}),
+				Page:        3,
 			},
 		},
 		after: Slides{
@@ -1536,26 +1707,31 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"D"},
 				TitleBodies: toBodies([]string{"D"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"B"},
 				TitleBodies: toBodies([]string{"B"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"A"},
 				TitleBodies: toBodies([]string{"A"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"E"},
 				TitleBodies: toBodies([]string{"E"}),
+				Page:        4,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"F"},
 				TitleBodies: toBodies([]string{"F"}),
+				Page:        5,
 			},
 		},
 	},
@@ -1566,11 +1742,13 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide 2"},
 				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"New Slide"},
 				TitleBodies: toBodies([]string{"New Slide"}),
+				Page:        2,
 			},
 			{
 				Layout:         "title",
@@ -1578,6 +1756,7 @@ var tests = []struct {
 				TitleBodies:    toBodies([]string{"Slide 1"}),
 				Subtitles:      []string{"Updated"},
 				SubtitleBodies: toBodies([]string{"Updated"}),
+				Page:           3,
 			},
 		},
 		after: Slides{
@@ -1585,26 +1764,31 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide 1"},
 				TitleBodies: toBodies([]string{"Slide 1"}),
+				Page:        1,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 2"},
 				TitleBodies: toBodies([]string{"Slide 2"}),
+				Page:        2,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 3"},
 				TitleBodies: toBodies([]string{"Slide 3"}),
+				Page:        3,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 4"},
 				TitleBodies: toBodies([]string{"Slide 4"}),
+				Page:        4,
 			},
 			{
 				Layout:      "title",
 				Titles:      []string{"Slide 5"},
 				TitleBodies: toBodies([]string{"Slide 5"}),
+				Page:        5,
 			},
 		},
 	},
@@ -1797,6 +1981,7 @@ func TestAdjustSlideCount(t *testing.T) {
 							},
 						},
 					},
+					Page: 1,
 				}, // High similarity with after[0]
 				{Layout: "title-and-body", Titles: []string{"Different Title"}}, // Low similarity
 				{Layout: "title", Titles: []string{"Another Title"}},            // Medium similarity

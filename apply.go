@@ -24,23 +24,14 @@ func (d *Deck) Apply(ctx context.Context, slides Slides) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	pages := make([]int, 0, len(slides))
-	for i := range len(slides) {
-		pages = append(pages, i+1)
-	}
-	return d.ApplyPages(ctx, slides, pages)
+	return d.ApplyPages(ctx, slides, len(slides))
 }
 
 // ApplyPages applies the markdown slides to the presentation with the specified pages.
-func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err error) {
+func (d *Deck) ApplyPages(ctx context.Context, ss Slides, totalPages int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	if slices.ContainsFunc(pages, func(page int) bool {
-		return page < 1 || page > len(ss)
-	}) {
-		return fmt.Errorf("invalid page number in pages: %v", pages)
-	}
 
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
@@ -57,10 +48,8 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		before[i] = slide
 		after[i] = slide
 	}
-
-	for _, page := range pages {
-		i := page - 1
-		slide := ss[i]
+	for _, slide := range ss {
+		i := slide.Page - 1
 		if slide.Layout == "" {
 			if i == 0 {
 				slide.Layout = d.defaultTitleLayout
@@ -74,8 +63,8 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			after = append(after, slide)
 		}
 	}
-	if len(after) > len(ss) {
-		after = after[:len(ss)]
+	if len(after) > totalPages {
+		after = after[:totalPages]
 	}
 
 	actions, err := generateActions(before, after)

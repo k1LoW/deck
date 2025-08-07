@@ -157,11 +157,18 @@ var applyCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			slides, err := m.ToSlides(ctx, codeBlockToImageCmd)
+			allSlides, err := m.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				return fmt.Errorf("failed to convert markdown contents to slides: %w", err)
 			}
-			if err := d.ApplyPages(ctx, slides, pages); err != nil {
+			slides := make([]*deck.Slide, len(pages))
+			for i, p := range pages {
+				if p < 1 || p > len(allSlides) {
+					return fmt.Errorf("page number out of range: %d (total pages: %d)", p, len(allSlides))
+				}
+				slides[i] = allSlides[p-1]
+			}
+			if err := d.ApplyPages(ctx, slides, len(allSlides)); err != nil {
 				return err
 			}
 			logger.Info("apply completed", slog.String("presentation_id", presentationID), slog.Any("pages", pages))
@@ -325,12 +332,16 @@ func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldCont
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
 			newMD.ApplyConfig(cfg)
-			slides, err := newMD.ToSlides(ctx, codeBlockToImageCmd)
+			allSlides, err := newMD.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))
 				continue
 			}
-			if err := d.ApplyPages(ctx, slides, changedPages); err != nil {
+			slides := make([]*deck.Slide, len(changedPages))
+			for i, page := range changedPages {
+				slides[i] = allSlides[page-1]
+			}
+			if err := d.ApplyPages(ctx, slides, len(allSlides)); err != nil {
 				logger.Error("failed to apply changes", slog.String("error", err.Error()))
 				continue
 			}
