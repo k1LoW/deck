@@ -77,6 +77,7 @@ tags:
 
 			if md == nil {
 				t.Fatal("Parse() returned nil md")
+				return
 			}
 
 			got := md.Frontmatter

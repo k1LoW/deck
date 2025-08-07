@@ -2287,11 +2287,7 @@ func TestCopySlides(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			copied, err := copySlides(tt.slides)
-			if err != nil {
-				t.Fatalf("copySlides() error = %v", err)
-			}
-
+			copied := copySlides(tt.slides)
 			// Check that the copy matches the expected result
 			if diff := cmp.Diff(tt.expected, copied, cmpopts...); diff != "" {
 				t.Errorf("copySlides() mismatch (-want +got):\n%s", diff)
@@ -2345,18 +2341,12 @@ func TestDiffSlidesDoesNotModifyOriginal(t *testing.T) {
 	}
 
 	// Create deep copies for comparison
-	beforeCopy, err := copySlides(originalBefore)
-	if err != nil {
-		t.Fatalf("failed to create before copy: %v", err)
-	}
+	beforeCopy := copySlides(originalBefore)
 
-	afterCopy, err := copySlides(originalAfter)
-	if err != nil {
-		t.Fatalf("failed to create after copy: %v", err)
-	}
+	afterCopy := copySlides(originalAfter)
 
 	// Execute generateActions
-	_, err = generateActions(originalBefore, originalAfter)
+	_, err := generateActions(originalBefore, originalAfter)
 	if err != nil {
 		t.Fatalf("generateActions() error = %v", err)
 	}
@@ -2908,10 +2898,7 @@ func TestGenerateMoveActions(t *testing.T) {
 
 func actionsEmulator(t *testing.T, before Slides, actions []*action) Slides {
 	t.Helper()
-	beforeCopy, err := copySlides(before)
-	if err != nil {
-		t.Fatalf("actionsEmulator() failed to deep copy before slides: %v", err)
-	}
+	beforeCopy := copySlides(before)
 	for _, action := range actions {
 		switch action.actionType {
 		case actionTypeAppend:
@@ -2980,6 +2967,7 @@ func FuzzGenerateActions(f *testing.F) {
 		for _, slide := range testData.Before {
 			if slide == nil {
 				t.Skip("Nil slide in before")
+				continue
 			}
 			if len(slide.Titles) > 10 || len(slide.Subtitles) > 10 {
 				t.Skip("Too many titles/subtitles")
@@ -2989,6 +2977,7 @@ func FuzzGenerateActions(f *testing.F) {
 		for _, slide := range testData.After {
 			if slide == nil {
 				t.Skip("Nil slide in after")
+				continue
 			}
 			if len(slide.Titles) > 10 || len(slide.Subtitles) > 10 {
 				t.Skip("Too many titles/subtitles")

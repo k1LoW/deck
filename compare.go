@@ -23,6 +23,7 @@ func (s *Slide) Equal(other *Slide) bool {
 		bodiesEqual(s.Bodies, other.Bodies) &&
 		imagesEqual(s.Images, other.Images) &&
 		blockQuotesEqual(s.BlockQuotes, other.BlockQuotes) &&
+		tablesEqual(s.Tables, other.Tables) &&
 		s.SpeakerNote == other.SpeakerNote
 }
 
@@ -138,4 +139,49 @@ func mergeFragments(in []*Fragment) []*Fragment {
 		})
 	}
 	return merged
+}
+
+func tablesEqual(tables1, tables2 []*Table) bool {
+	if len(tables1) != len(tables2) {
+		return false
+	}
+
+	return slices.EqualFunc(tables1, tables2, func(a, b *Table) bool {
+		if a == nil || b == nil {
+			return a == b
+		}
+		return slices.EqualFunc(a.Rows, b.Rows, tableRowEqual)
+	})
+}
+
+func tableRowEqual(row1, row2 *TableRow) bool {
+	if row1 == nil || row2 == nil {
+		return row1 == row2
+	}
+	if len(row1.Cells) != len(row2.Cells) {
+		return false
+	}
+	return slices.EqualFunc(row1.Cells, row2.Cells, tableCellEqual)
+}
+
+func tableCellEqual(cell1, cell2 *TableCell) bool {
+	if cell1 == nil || cell2 == nil {
+		return cell1 == cell2
+	}
+	if cell1.Alignment != cell2.Alignment {
+		return false
+	}
+	if cell1.IsHeader != cell2.IsHeader {
+		return false
+	}
+	if len(cell1.Fragments) != len(cell2.Fragments) {
+		return false
+	}
+	return slices.EqualFunc(cell1.Fragments, cell2.Fragments, func(a, b *Fragment) bool {
+		return strings.TrimRight(a.Value, "\n") == strings.TrimRight(b.Value, "\n") &&
+			a.Bold == b.Bold &&
+			a.Italic == b.Italic &&
+			a.Link == b.Link &&
+			a.Code == b.Code
+	})
 }

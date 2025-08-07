@@ -21,6 +21,8 @@ import (
 	"github.com/k1LoW/exec"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
+	east "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
 	"golang.org/x/sync/errgroup"
 )
@@ -97,6 +99,7 @@ type Content struct {
 	Images         []*deck.Image      `json:"images,omitempty"`
 	CodeBlocks     []*CodeBlock       `json:"code_blocks,omitempty"`
 	BlockQuotes    []*deck.BlockQuote `json:"block_quotes,omitempty"`
+	Tables         []*deck.Table      `json:"tables,omitempty"`
 	Comments       []string           `json:"comments,omitempty"`
 	Headings       map[int][]string   `json:"headings,omitempty"`
 }
@@ -171,7 +174,7 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	}()
 
 	// Parse once and reuse the AST
-	md := goldmark.New()
+	md := newParser()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 
@@ -341,6 +344,12 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
 }
 
+func newParser() goldmark.Markdown {
+	return goldmark.New(
+		goldmark.WithExtensions(extension.Table),
+	)
+}
+
 // toSlides converts the contents to a slice of deck.Slide structures.
 func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
 	defer func() {
@@ -387,6 +396,7 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 			Bodies:         content.Bodies,
 			Images:         images,
 			BlockQuotes:    content.BlockQuotes,
+			Tables:         content.Tables,
 			SpeakerNote:    strings.Join(content.Comments, "\n\n"),
 		}
 		if content.Freeze != nil {
@@ -553,6 +563,13 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 					Language: string(lang),
 					Content:  string(c),
 				})
+			case *east.Table:
+				table, err := parseTable(v, baseDir, b, breaks)
+				if err != nil {
+					return ast.WalkStop, err
+				}
+				content.Tables = append(content.Tables, table)
+				return ast.WalkSkipChildren, nil
 			case *ast.Blockquote:
 				blockQuoteContent := &Content{
 					Headings: make(map[int][]string),
@@ -733,12 +750,11 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 				}
 				continue // Skip empty text fragments
 			}
-			value := convert(childNode.Segment.Value(b))
 			if childNode.HardLineBreak() {
-				value += "\n"
+				v += "\n"
 			}
 			frag := seedFragment
-			frag.Value = value
+			frag.Value = v
 			frag.StyleName = styleName
 			frags = append(frags, &fragment{
 				SoftLineBreak: childNode.SoftLineBreak(),
@@ -889,6 +905,18 @@ func DiffContents(oldContents, newContents Contents) []int {
 	return changedPages
 }
 
+func jsonEqual[T any](a, b T) bool {
+	aBytes, err := json.Marshal(a)
+	if err != nil {
+		return false
+	}
+	bBytes, err := json.Marshal(b)
+	if err != nil {
+		return false
+	}
+	return bytes.Equal(aBytes, bBytes)
+}
+
 // contentEqual compares two Content structs and returns true if they are equal.
 func contentEqual(old, new *Content) bool {
 	if old == nil && new == nil {
@@ -919,33 +947,13 @@ func contentEqual(old, new *Content) bool {
 	}
 
 	// Compare code blocks
-	{
-		a, err := json.Marshal(old.CodeBlocks)
-		if err != nil {
-			return false
-		}
-		b, err := json.Marshal(new.CodeBlocks)
-		if err != nil {
-			return false
-		}
-		if !bytes.Equal(a, b) {
-			return false
-		}
+	if !jsonEqual(old.CodeBlocks, new.CodeBlocks) {
+		return false
 	}
 
 	// Compare bodies
-	{
-		a, err := json.Marshal(old.Bodies)
-		if err != nil {
-			return false
-		}
-		b, err := json.Marshal(new.Bodies)
-		if err != nil {
-			return false
-		}
-		if !bytes.Equal(a, b) {
-			return false
-		}
+	if len(old.Bodies) != len(new.Bodies) {
+		return false
 	}
 
 	// Compare images
@@ -974,6 +982,16 @@ func contentEqual(old, new *Content) bool {
 		}
 	}
 
+	// Compare block quotes
+	if !jsonEqual(old.BlockQuotes, new.BlockQuotes) {
+		return false
+	}
+
+	// Compare tables
+	if !jsonEqual(old.Tables, new.Tables) {
+		return false
+	}
+
 	return true
 }
 
@@ -1000,7 +1018,7 @@ func isPageDelimiter(line []byte) bool {
 // splitPages splits markdown content by delimiters
 // while respecting fenced code blocks and setext headings to avoid splitting inside them.
 func splitPages(b []byte) [][]byte {
-	md := goldmark.New()
+	md := newParser()
 	reader := text.NewReader(b)
 	doc := md.Parser().Parse(reader)
 

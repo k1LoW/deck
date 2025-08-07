@@ -170,6 +170,11 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 			if err := d.batchUpdate(ctx, applyRequests); err != nil {
 				return fmt.Errorf("failed to apply pages in batches: %w", err)
 			}
+
+			// Fill table content for updated/appended slides
+			if err := d.fillTableContentForActions(ctx, actions); err != nil {
+				return err
+			}
 			if appendingCount > 0 {
 				d.logger.Info("appended pages", slog.Int("count", appendingCount))
 				appendingCount = 0
@@ -218,6 +223,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		if err := d.batchUpdate(ctx, applyRequests); err != nil {
 			return fmt.Errorf("failed to apply pages in batches: %w", err)
 		}
+
+		// Fill table content for updated/appended slides
+		if err := d.fillTableContentForActions(ctx, actions); err != nil {
+			return err
+		}
+
 		if appendingCount > 0 {
 			d.logger.Info("appended pages", slog.Int("count", appendingCount))
 		}
@@ -294,6 +305,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
 		currentTextBoxes          []*textBox
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
+		currentTables             []*slides.PageElement
 	)
 
 	// Use preloaded image data if available, otherwise fetch on demand
@@ -362,6 +374,8 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			tb.paragraphs = convertToParagraphs(element.Shape.Text)
 			currentTextBoxes = append(currentTextBoxes, tb)
 			currentTextBoxObjectIDMap[tb] = element.ObjectId
+		case element.Table != nil:
+			currentTables = append(currentTables, element)
 		}
 	}
 	var speakerNotesID string
@@ -510,6 +524,13 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			})
 		}
 	}
+
+	// set tables - compare with existing and only create/update as needed
+	tableRequests, err := d.handleTableUpdates(currentSlide.ObjectId, slide.Tables, currentTables)
+	if err != nil {
+		return nil, fmt.Errorf("failed to handle table updates: %w", err)
+	}
+	requests = append(requests, tableRequests...)
 
 	// set text boxes
 	for i, bq := range slide.BlockQuotes {
@@ -667,22 +688,13 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 			fValue := strings.ReplaceAll(fragment.Value, "\n", "\v")
 			flen := countString(fragment.Value)
 
-			var (
-				fields string
-				style  *slides.TextStyle
-			)
-			for _, r := range d.getInlineStyleRequests(fragment) {
-				// Merge elements with the latter taking priority.
-				fields = mergeFields(fields, r.Fields)
-				style = mergeStyles(style, r.Style, r.Fields)
-			}
-			if style != nil {
+			if r := d.getInlineStyleRequest(fragment); r != nil {
 				startIndex := count + int64(plen)
 				styleReqs = append(styleReqs, &slides.Request{
 					UpdateTextStyle: &slides.UpdateTextStyleRequest{
 						ObjectId: objectID,
-						Style:    style,
-						Fields:   fields,
+						Style:    r.Style,
+						Fields:   r.Fields,
 						TextRange: &slides.Range{
 							Type:       "FIXED_RANGE",
 							StartIndex: ptrInt64(startIndex),

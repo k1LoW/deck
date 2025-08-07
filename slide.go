@@ -35,6 +35,7 @@ type Slide struct {
 	Bodies         []*Body       `json:"bodies,omitempty"`
 	Images         []*Image      `json:"images,omitempty"`
 	BlockQuotes    []*BlockQuote `json:"block_quotes,omitempty"`
+	Tables         []*Table      `json:"tables,omitempty"`
 	SpeakerNote    string        `json:"speaker_note,omitempty"`
 
 	new    bool
@@ -66,6 +67,20 @@ type Fragment struct {
 type BlockQuote struct {
 	Paragraphs []*Paragraph `json:"paragraphs,omitempty"`
 	Nesting    int          `json:"nesting,omitempty"`
+}
+
+type Table struct {
+	Rows []*TableRow `json:"rows,omitempty"`
+}
+
+type TableRow struct {
+	Cells []*TableCell `json:"cells,omitempty"`
+}
+
+type TableCell struct {
+	Fragments []*Fragment `json:"content,omitempty"`
+	Alignment string      `json:"alignment,omitempty"`
+	IsHeader  bool        `json:"is_header,omitempty"`
 }
 
 // Bullet represents the type of bullet point for a paragraph.

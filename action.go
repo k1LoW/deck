@@ -47,15 +47,8 @@ func generateActions(before, after Slides) (_ []*action, err error) {
 	}()
 
 	// First, deep copy before and after slides
-	beforeCopy, err := copySlides(before)
-	if err != nil {
-		return nil, fmt.Errorf("failed to deep copy before slides: %w", err)
-	}
-
-	afterCopy, err := copySlides(after)
-	if err != nil {
-		return nil, fmt.Errorf("failed to deep copy after slides: %w", err)
-	}
+	beforeCopy := copySlides(before)
+	afterCopy := copySlides(after)
 
 	// Adjust slide count
 	adjustedBefore, adjustedAfter, err := adjustSlideCount(beforeCopy, afterCopy)
@@ -487,16 +480,14 @@ func copySlide(slide *Slide) *Slide {
 	// Marshal to JSON
 	data, err := json.Marshal(slide)
 	if err != nil {
-		// Fallback to original slide if marshal fails
-		return slide
+		return nil
 	}
 
 	// Unmarshal to new slide
 	copied := &Slide{}
 	err = json.Unmarshal(data, copied)
 	if err != nil {
-		// Fallback to original slide if unmarshal fails
-		return slide
+		return nil
 	}
 
 	// Copy unexported fields manually
@@ -519,40 +510,15 @@ func copySlide(slide *Slide) *Slide {
 }
 
 // copySlides creates a deep copy of slides using JSON marshal/unmarshal.
-func copySlides(slides Slides) (_ Slides, err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-
+func copySlides(slides Slides) Slides {
 	if slides == nil {
-		return nil, nil
+		return nil
 	}
-
-	// Marshal to JSON
-	data, err := json.Marshal(slides)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal slides: %w", err)
-	}
-
-	// Unmarshal to new slides
-	var copied Slides
-	if err := json.Unmarshal(data, &copied); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal slides: %w", err)
-	}
-
+	var copied = make(Slides, len(slides))
 	for i, slide := range slides {
-		for _, image := range slide.Images {
-			for _, copiedImage := range copied[i].Images {
-				if image.Equivalent(copiedImage) {
-					copiedImage.fromMarkdown = image.fromMarkdown
-					copiedImage.codeBlock = image.codeBlock
-					copiedImage.modTime = image.modTime
-				}
-			}
-		}
+		copied[i] = copySlide(slide)
 	}
-
-	return copied, nil
+	return copied
 }
 
 func getSimilarity(beforeSlide, afterSlide *Slide) int {
@@ -588,6 +554,10 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 
 		if len(beforeSlide.BlockQuotes) > 0 && len(afterSlide.BlockQuotes) > 0 && blockQuotesEqual(beforeSlide.BlockQuotes, afterSlide.BlockQuotes) {
 			score += 30
+		}
+
+		if len(beforeSlide.Tables) > 0 && len(afterSlide.Tables) > 0 && tablesEqual(beforeSlide.Tables, afterSlide.Tables) {
+			score += 35
 		}
 	}
 
