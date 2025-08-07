@@ -401,8 +401,8 @@ func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
 		layoutObjectIdMap[l.ObjectId] = l
 	}
 	slides := make(Slides, 0, len(d.presentation.Slides))
-	for _, p := range d.presentation.Slides {
-		slide := convertToSlide(p, layoutObjectIdMap)
+	for i, p := range d.presentation.Slides {
+		slide := convertToSlide(p, i+1, layoutObjectIdMap)
 		slides = append(slides, slide)
 	}
 	return slides, nil

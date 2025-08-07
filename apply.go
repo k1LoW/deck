@@ -53,7 +53,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	before := make(Slides, len(d.presentation.Slides))
 	after := make(Slides, len(d.presentation.Slides))
 	for i, p := range d.presentation.Slides {
-		slide := convertToSlide(p, layoutObjectIdMap)
+		slide := convertToSlide(p, i+1, layoutObjectIdMap)
 		before[i] = slide
 		after[i] = slide
 	}

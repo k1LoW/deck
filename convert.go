@@ -7,10 +7,11 @@ import (
 	"google.golang.org/api/slides/v1"
 )
 
-func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *Slide {
+func convertToSlide(p *slides.Page, page int, layoutObjectIdMap map[string]*slides.Page) *Slide {
 	slide := &Slide{
 		Layout: "",
 		Freeze: false,
+		Page:   page,
 	}
 	if p.SlideProperties != nil {
 		page, ok := layoutObjectIdMap[p.SlideProperties.LayoutObjectId]
