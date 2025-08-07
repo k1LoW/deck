@@ -182,8 +182,9 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 		return nil, err
 	}
 	// create first slide
-	if err := d.createPage(ctx, 0, &Slide{
+	if err := d.createPage(ctx, &Slide{
 		Layout: d.defaultTitleLayout,
+		Page:   1,
 	}); err != nil {
 		return nil, err
 	}
@@ -312,7 +313,8 @@ func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
 	}()
 	d.logger.Info("appending new page")
 	index := len(d.presentation.Slides)
-	if err := d.createPage(ctx, index, slide); err != nil {
+	slide.Page = index + 1
+	if err := d.createPage(ctx, slide); err != nil {
 		return fmt.Errorf("failed to create page: %w", err)
 	}
 	if err := d.refresh(ctx); err != nil {
@@ -355,7 +357,8 @@ func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err err
 	if len(d.presentation.Slides) <= index {
 		return fmt.Errorf("index out of range: %d", index)
 	}
-	if err := d.createPage(ctx, index, slide); err != nil {
+	slide.Page = index + 1
+	if err := d.createPage(ctx, slide); err != nil {
 		return fmt.Errorf("failed to create page: %w", err)
 	}
 	if index == 0 {
@@ -472,10 +475,11 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	return nil
 }
 
-func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err error) {
+func (d *Deck) createPage(ctx context.Context, slide *Slide) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+	index := slide.Page - 1 // convert 1-based page number to 0-based index
 
 	layoutMap := d.layoutMap()
 	layout, ok := layoutMap[slide.Layout]

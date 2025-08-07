@@ -846,10 +846,12 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 		err = errors.WithStack(err)
 	}()
 	currentSlide := d.presentation.Slides[index]
-	// create new page
-	if err := d.createPage(ctx, index+1, slide); err != nil {
+	// create a new page next to the current slide
+	slide.Page = index + 2
+	if err := d.createPage(ctx, slide); err != nil {
 		return err
 	}
+	slide.Page = index + 1
 
 	newSlide := d.presentation.Slides[index+1]
 	req := &slides.BatchUpdatePresentationRequest{

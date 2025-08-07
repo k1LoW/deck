@@ -36,6 +36,7 @@ type Slide struct {
 	Images         []*Image      `json:"images,omitempty"`
 	BlockQuotes    []*BlockQuote `json:"block_quotes,omitempty"`
 	SpeakerNote    string        `json:"speaker_note,omitempty"`
+	Page           int           `json:"page,omitempty"`
 
 	new    bool
 	delete bool
