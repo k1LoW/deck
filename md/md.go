@@ -59,6 +59,8 @@ type Frontmatter struct {
 	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
 	// command to convert code blocks to images
 	CodeBlockToImageCommand string `yaml:"codeBlockToImageCommand,omitempty" json:"codeBlockToImageCommand,omitempty"`
+	// Variables for template substitution
+	Variables map[string]string `yaml:"variables,omitempty" json:"variables,omitempty"`
 }
 
 type DefaultCondition struct {
@@ -339,6 +341,12 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 				}
 				break // Use the first matching condition
 			}
+		}
+	}
+	// Apply variable substitution if variables are defined
+	if md.Frontmatter.Variables != nil && len(md.Frontmatter.Variables) > 0 {
+		if err := md.applyVariableSubstitution(); err != nil {
+			return nil, fmt.Errorf("failed to apply variable substitution: %w", err)
 		}
 	}
 	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
@@ -1175,4 +1183,100 @@ func inferCELType(value any) *cel.Type {
 	default:
 		return cel.AnyType
 	}
+}
+
+// applyVariableSubstitution applies variable substitution to all text content in the MD
+func (md *MD) applyVariableSubstitution() error {
+	if md.Frontmatter == nil || md.Frontmatter.Variables == nil {
+		return nil
+	}
+
+	// Convert Variables map[string]string to map[string]any for expandTemplate
+	store := make(map[string]any)
+	for k, v := range md.Frontmatter.Variables {
+		store[k] = v
+	}
+
+	// Apply substitution to each content
+	for _, content := range md.Contents {
+		// Apply to titles
+		for i, title := range content.Titles {
+			expanded, err := expandTemplate(title, store)
+			if err != nil {
+				return fmt.Errorf("failed to expand title template: %w", err)
+			}
+			content.Titles[i] = expanded
+		}
+
+		// Apply to title bodies
+		for _, body := range content.TitleBodies {
+			if err := applyVariableSubstitutionToBody(body, store); err != nil {
+				return fmt.Errorf("failed to expand title body template: %w", err)
+			}
+		}
+
+		// Apply to subtitles
+		for i, subtitle := range content.Subtitles {
+			expanded, err := expandTemplate(subtitle, store)
+			if err != nil {
+				return fmt.Errorf("failed to expand subtitle template: %w", err)
+			}
+			content.Subtitles[i] = expanded
+		}
+
+		// Apply to subtitle bodies
+		for _, body := range content.SubtitleBodies {
+			if err := applyVariableSubstitutionToBody(body, store); err != nil {
+				return fmt.Errorf("failed to expand subtitle body template: %w", err)
+			}
+		}
+
+		// Apply to bodies
+		for _, body := range content.Bodies {
+			if err := applyVariableSubstitutionToBody(body, store); err != nil {
+				return fmt.Errorf("failed to expand body template: %w", err)
+			}
+		}
+
+		// Apply to comments (speaker notes)
+		for i, comment := range content.Comments {
+			expanded, err := expandTemplate(comment, store)
+			if err != nil {
+				return fmt.Errorf("failed to expand comment template: %w", err)
+			}
+			content.Comments[i] = expanded
+		}
+
+		// Apply to headings
+		for level, headings := range content.Headings {
+			for i, heading := range headings {
+				expanded, err := expandTemplate(heading, store)
+				if err != nil {
+					return fmt.Errorf("failed to expand heading template: %w", err)
+				}
+				content.Headings[level][i] = expanded
+			}
+		}
+	}
+
+	return nil
+}
+
+// applyVariableSubstitutionToBody applies variable substitution to all fragments in a body
+func applyVariableSubstitutionToBody(body *deck.Body, store map[string]any) error {
+	if body == nil {
+		return nil
+	}
+
+	for _, paragraph := range body.Paragraphs {
+		for _, fragment := range paragraph.Fragments {
+			expanded, err := expandTemplate(fragment.Value, store)
+			if err != nil {
+				return fmt.Errorf("failed to expand fragment template: %w", err)
+			}
+			fragment.Value = expanded
+		}
+	}
+
+	return nil
 }
