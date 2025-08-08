@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.10.0](https://github.com/k1LoW/deck/compare/v1.9.0...v1.10.0) - 2025-08-08
+### Other Changes
+- chore: tidy up ApplyPage by @Songmu in https://github.com/k1LoW/deck/pull/332
+- feat: GFM table syntax support by @Songmu in https://github.com/k1LoW/deck/pull/335
+
 ## [v1.9.0](https://github.com/k1LoW/deck/compare/v1.8.0...v1.9.0) - 2025-08-04
 ### New Features 🎉
 - feat: support shared drive (always enable) by @takaidohigasi in https://github.com/k1LoW/deck/pull/330
