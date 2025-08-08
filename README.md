@@ -317,6 +317,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - `<br>` (for newline)
 - Image (`![Image](path/to/image.png)` )
 - Block quote ( `> block quote` )
+- Table (GitHub Flavored Markdown tables)
 - RAW inline HTML (e.g., `<mark>`, `<small>`, `<kbd>`, `<cite>`, `<q>`, `<span>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<var>`, `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`)
 
 #### Line break handling
@@ -338,6 +339,21 @@ When `breaks: true` is set, line breaks in the markdown source are preserved as 
 When `breaks: false` (default), you can still create line breaks by using:
 - Hard line breaks: add two spaces at the end of a line (standard Markdown/CommonMark syntax)
 - HTML: use `<br>` tags
+
+#### Tables
+
+`deck` supports GitHub Flavored Markdown (GFM) table syntax:
+
+```markdown
+| Header 1 | Header 2 | Header 3 |
+|----------|----------|----------|
+| Cell 1   | **Bold** | `code`   |
+| Cell 2   | *Italic* | Normal   |
+```
+
+- Table headers are automatically styled with bold text and a gray background
+- Cell content supports inline formatting (bold, italic, code, links, etc.)
+- Tables created manually in Google Slides are preserved and not overwritten
 
 #### Style for syntax
 
@@ -538,7 +554,8 @@ When using profiles, authentication files are managed as follows:
 
 By collaborating with AI agents to create Markdown-formatted slides, you may be able to create effective presentations.
 
-For example, it is a good idea to provide the following rules for creating deck slides in the prompt.
+<details>
+<summary>It is a good idea to provide the following rules for creating deck slides in the prompt. (Click to expand)</summary>
 
     Create a presentation in Markdown according to the following rules.
 
@@ -598,6 +615,20 @@ For example, it is a good idea to provide the following rules for creating deck 
       ```
     - Mermaid diagrams (in code blocks with `mermaid` language)
 
+    ### Tables
+    - GitHub Flavored Markdown (GFM) tables
+    - Supports table headers with automatic bold formatting
+    - Cell content can include inline formatting (bold, italic, code)
+    - Example:
+      ```markdown
+      | Header 1 | Header 2 | Header 3 |
+      |----------|----------|----------|
+      | Cell 1   | **Bold** | `code`   |
+      | Cell 2   | *Italic* | Normal   |
+      ```
+    - Header rows are automatically styled with bold text and gray background
+    - Tables created by users in Google Slides are preserved
+
     ### HTML Elements
     You can use the following HTML inline elements:
     - `<strong>`, `<em>`, `<b>`, `<i>`, `<mark>`, `<small>`
@@ -624,6 +655,7 @@ For example, it is a good idea to provide the following rules for creating deck 
     - Write speaker notes in separate comments, not in JSON configuration comments
     - Code blocks can be converted to images using the `--code-block-to-image-command` option
 
+</details>
 
 ## Install
 

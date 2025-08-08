@@ -24,6 +24,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	var bodies []*Body
 	var images []*Image
 	var blockQuotes []*BlockQuote
+	var tables []*Table
 
 	// Extract titles, subtitles, and bodies from page elements
 	for _, element := range p.PageElements {
@@ -73,6 +74,12 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 				Paragraphs: convertToParagraphs(element.Shape.Text),
 			}
 			blockQuotes = append(blockQuotes, bq)
+		case element.Table != nil:
+			// Convert Google Slides table to deck Table
+			table := convertSlidesToTable(element.Table)
+			if table != nil {
+				tables = append(tables, table)
+			}
 		}
 	}
 
@@ -81,6 +88,7 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 	slide.Bodies = bodies
 	slide.Images = images
 	slide.BlockQuotes = blockQuotes
+	slide.Tables = tables
 
 	// Extract speaker notes
 	if p.SlideProperties != nil && p.SlideProperties.NotesPage != nil {
@@ -163,47 +171,9 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 			if currentParagraph == nil {
 				continue
 			}
-
-			// Process text content
-			content := element.TextRun.Content
-
-			// Get styles from TextRun
-			var bold, italic, code bool
-			var link string
-			if element.TextRun.Style != nil {
-				bold = element.TextRun.Style.Bold
-				italic = element.TextRun.Style.Italic
-				if element.TextRun.Style.Link != nil && element.TextRun.Style.Link.Url != "" {
-					link = element.TextRun.Style.Link.Url
-				}
-
-				// Detect code style (based on font family and background color)
-				if element.TextRun.Style.FontFamily == defaultCodeFontFamily ||
-					(element.TextRun.Style.BackgroundColor != nil &&
-						element.TextRun.Style.BackgroundColor.OpaqueColor != nil &&
-						element.TextRun.Style.BackgroundColor.OpaqueColor.RgbColor != nil) {
-					code = true
-				}
+			if frag := convertTextRunToFragment(element.TextRun); frag != nil {
+				currentParagraph.Fragments = append(currentParagraph.Fragments, frag)
 			}
-
-			// When checking the API response, a newline is always added to the end of the value of the
-			// TextRun element before the modified paragraph, but since it is not necessary for the
-			// information structure, we will delete it.
-			content = strings.TrimSuffix(content, "\n")
-
-			// When checking the API response, inline line breaks seem to be converted as vertical tabs,
-			// so we will normalize them to line breaks.
-			content = strings.ReplaceAll(content, "\v", "\n")
-			if content != "" {
-				currentParagraph.Fragments = append(currentParagraph.Fragments, &Fragment{
-					Value:  content,
-					Bold:   bold,
-					Italic: italic,
-					Code:   code,
-					Link:   link,
-				})
-			}
-
 		case element.AutoText != nil:
 			// Only one of ParagraphMarker, TextRun, or AutoText in the element's properties will be non-nil.
 			// Currently, nothing happens with AutoText, but we will prepare a branch just in case.
@@ -216,4 +186,115 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 	}
 
 	return paragraphs
+}
+
+func convertTextRunToFragment(textRun *slides.TextRun) *Fragment {
+	// Get styles from TextRun
+	var bold, italic, code bool
+	var link string
+	if textRun.Style != nil {
+		bold = textRun.Style.Bold
+		italic = textRun.Style.Italic
+		if textRun.Style.Link != nil && textRun.Style.Link.Url != "" {
+			link = textRun.Style.Link.Url
+		}
+
+		// Detect code style (based on font family and background color)
+		if textRun.Style.FontFamily == defaultCodeFontFamily ||
+			(textRun.Style.BackgroundColor != nil &&
+				textRun.Style.BackgroundColor.OpaqueColor != nil &&
+				textRun.Style.BackgroundColor.OpaqueColor.RgbColor != nil) {
+			code = true
+		}
+	}
+
+	content := textRun.Content
+	// When checking the API response, a newline is always added to the end of the value of the
+	// TextRun element before the modified paragraph, but since it is not necessary for the
+	// information structure, we will delete it.
+	content = strings.TrimSuffix(content, "\n")
+
+	// When checking the API response, inline line breaks seem to be converted as vertical tabs,
+	// so we will normalize them to line breaks.
+	content = strings.ReplaceAll(content, "\v", "\n")
+	if content == "" {
+		return nil
+	}
+	return &Fragment{
+		Value:  content,
+		Bold:   bold,
+		Italic: italic,
+		Code:   code,
+		Link:   link,
+	}
+}
+
+// convertSlidesToTable converts a Google Slides table to deck Table structure.
+func convertSlidesToTable(slidesTable *slides.Table) *Table {
+	if slidesTable == nil || len(slidesTable.TableRows) == 0 {
+		return nil
+	}
+
+	table := &Table{
+		Rows: make([]*TableRow, len(slidesTable.TableRows)),
+	}
+
+	for i, slidesRow := range slidesTable.TableRows {
+		if slidesRow == nil {
+			continue
+		}
+
+		row := &TableRow{
+			Cells: make([]*TableCell, len(slidesRow.TableCells)),
+		}
+
+		for j, slidesCell := range slidesRow.TableCells {
+			if slidesCell == nil {
+				continue
+			}
+
+			row.Cells[j] = &TableCell{
+				Fragments: extractFragmentsFromTableCell(slidesCell),
+				Alignment: extractAlignmentFromTableCell(slidesCell),
+				IsHeader:  i == 0,
+			}
+		}
+
+		table.Rows[i] = row
+	}
+
+	return table
+}
+
+// extractFragmentsFromTableCell extracts text fragments from a table cell.
+func extractFragmentsFromTableCell(cell *slides.TableCell) []*Fragment {
+	if cell.Text == nil || len(cell.Text.TextElements) == 0 {
+		return nil
+	}
+
+	var fragments []*Fragment
+
+	for _, element := range cell.Text.TextElements {
+		if element.TextRun != nil {
+			if frag := convertTextRunToFragment(element.TextRun); frag != nil {
+				fragments = append(fragments, frag)
+			}
+		}
+	}
+
+	return fragments
+}
+
+// extractAlignmentFromTableCell extracts text alignment from a table cell.
+func extractAlignmentFromTableCell(cell *slides.TableCell) string {
+	if cell.Text == nil || len(cell.Text.TextElements) == 0 {
+		return ""
+	}
+	// Look for paragraph style in the first text element
+	for _, element := range cell.Text.TextElements {
+		if element.ParagraphMarker != nil && element.ParagraphMarker.Style != nil {
+			return element.ParagraphMarker.Style.Alignment
+		}
+	}
+	return ""
 }

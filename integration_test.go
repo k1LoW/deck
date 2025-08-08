@@ -57,6 +57,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/blockquote.md"},
 		{"testdata/codeblock.md"},
 		{"testdata/defaults.md"},
+		{"testdata/tables.md"},
 	}
 
 	for _, tt := range tests {
@@ -179,6 +180,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		{"testdata/nested_list.md"},
 		{"testdata/images.md"},
 		//{"testdata/blockquote.md"},
+		//{"testdata/tables.md"},
 	}
 
 	cmpopts := cmp.Options{

@@ -44,6 +44,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/ignore.md"},
 		{"../testdata/skip.md"},
 		{"../testdata/hr.md"},
+		{"../testdata/tables.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {

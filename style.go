@@ -122,7 +122,9 @@ var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
 	styleSamp: monospaceStyleFunc,
 }
 
-func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.UpdateTextStyleRequest) {
+func (d *Deck) getInlineStyleRequest(fragment *Fragment) *slides.UpdateTextStyleRequest {
+	var reqs []*slides.UpdateTextStyleRequest
+
 	if fragment.Code {
 		s, ok := d.styles[styleCode]
 		if ok {
@@ -183,7 +185,24 @@ func (d *Deck) getInlineStyleRequests(fragment *Fragment) (reqs []*slides.Update
 		}
 	}
 
-	return reqs
+	if len(reqs) == 0 {
+		return nil
+	}
+
+	var (
+		fields string
+		style  *slides.TextStyle
+	)
+	for _, r := range reqs {
+		// Merge elements with the latter taking priority.
+		fields = mergeFields(fields, r.Fields)
+		style = mergeStyles(style, r.Style, r.Fields)
+	}
+
+	return &slides.UpdateTextStyleRequest{
+		Style:  style,
+		Fields: fields,
+	}
 }
 
 func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest {
