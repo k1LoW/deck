@@ -80,15 +80,14 @@ var applyCmd = &cobra.Command{
 			presentationID = args[0]
 			f = args[1]
 		}
-		m, err := md.ParseFile(f)
-		if err != nil {
-			return err
-		}
 		cfg, err := config.Load(profile)
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
 		}
-		m.ApplyConfig(cfg)
+		m, err := md.ParseFile(f, cfg)
+		if err != nil {
+			return err
+		}
 		if len(args) == 1 {
 			if m.Frontmatter != nil {
 				if presentationID == "" && m.Frontmatter.PresentationID != "" {
@@ -311,7 +310,7 @@ func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldCont
 			}
 			logger.Info("file modified", slog.String("file", fileName))
 
-			newMD, err := md.ParseFile(filePath)
+			newMD, err := md.ParseFile(filePath, cfg)
 			if err != nil {
 				logger.Error("failed to parse file", slog.String("error", err.Error()))
 				continue
@@ -324,7 +323,6 @@ func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldCont
 			}
 
 			logger.Info("detected changes", slog.Any("pages", changedPages))
-			newMD.ApplyConfig(cfg)
 			slides, err := newMD.ToSlides(ctx, codeBlockToImageCmd)
 			if err != nil {
 				logger.Error("failed to convert markdown contents to slides", slog.String("error", err.Error()))

@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 
 	"github.com/goccy/go-yaml"
+	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/errors"
 )
 
@@ -79,4 +81,30 @@ func ApplyFrontmatterToMD(mdFile, title, presentationID string) (err error) {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 	return nil
+}
+
+func (fm *Frontmatter) applyConfig(cfg *config.Config) *Frontmatter {
+	if cfg == nil || reflect.DeepEqual(*cfg, config.Config{}) {
+		return fm
+	}
+	if fm == nil {
+		fm = &Frontmatter{}
+	}
+	if fm.Breaks == nil {
+		fm.Breaks = cfg.Breaks
+	}
+	if fm.CodeBlockToImageCommand == "" {
+		fm.CodeBlockToImageCommand = cfg.CodeBlockToImageCommand
+	}
+	// append default conditions from config
+	for _, cond := range cfg.Defaults {
+		fm.Defaults = append(fm.Defaults, DefaultCondition{
+			If:     cond.If,
+			Layout: cond.Layout,
+			Freeze: cond.Freeze,
+			Ignore: cond.Ignore,
+			Skip:   cond.Skip,
+		})
+	}
+	return fm
 }

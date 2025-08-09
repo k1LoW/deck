@@ -21,7 +21,7 @@ var openCmd = &cobra.Command{
 
 		if len(args) == 1 {
 			f := args[0]
-			markdownData, err := md.ParseFile(f)
+			markdownData, err := md.ParseFile(f, nil)
 			if err != nil {
 				return err
 			}
