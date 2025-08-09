@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.10.1](https://github.com/k1LoW/deck/compare/v1.10.0...v1.10.1) - 2025-08-09
+### Other Changes
+- fix: issue where all pages are listed as diff pages in DiffContents due to the `defaults` setting by @Songmu in https://github.com/k1LoW/deck/pull/338
+
 ## [v1.10.0](https://github.com/k1LoW/deck/compare/v1.9.0...v1.10.0) - 2025-08-08
 ### Other Changes
 - chore: tidy up ApplyPage by @Songmu in https://github.com/k1LoW/deck/pull/332
