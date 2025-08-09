@@ -71,7 +71,7 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			m, err := md.Parse("testdata", b)
+			m, err := md.Parse("testdata", b, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -201,7 +201,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			m, err := md.Parse("testdata", b)
+			m, err := md.Parse("testdata", b, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

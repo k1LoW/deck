@@ -39,7 +39,7 @@ var lsLayoutsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		if len(args) > 0 {
 			f := args[0]
-			markdownData, err := md.ParseFile(f)
+			markdownData, err := md.ParseFile(f, nil)
 			if err != nil {
 				// Deprecated
 				presentationID = f

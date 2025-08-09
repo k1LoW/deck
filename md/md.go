@@ -104,7 +104,7 @@ type Content struct {
 }
 
 // ParseFile parses a markdown file into contents.
-func ParseFile(f string) (_ *MD, err error) {
+func ParseFile(f string, cfg *config.Config) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -118,12 +118,12 @@ func ParseFile(f string) (_ *MD, err error) {
 		return nil, err
 	}
 	baseDir := filepath.Dir(abs)
-	return Parse(baseDir, b)
+	return Parse(baseDir, b, cfg)
 }
 
 // Parse parses markdown bytes into contents.
 // It splits the input by "---" delimiters and parses each section as a separate content.
-func Parse(baseDir string, b []byte) (_ *MD, err error) {
+func Parse(baseDir string, b []byte, cfg *config.Config) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -132,7 +132,6 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 	// Extract YAML frontmatter if present
 	var frontmatter *Frontmatter
 	mayHaveFrontmatter := bytes.HasPrefix(b, sep)
-
 	if mayHaveFrontmatter {
 		stuff := bytes.SplitN(bytes.TrimPrefix(b, sep), sep, 2)
 		if len(stuff) == 2 {
@@ -144,6 +143,8 @@ func Parse(baseDir string, b []byte) (_ *MD, err error) {
 			}
 		}
 	}
+	frontmatter = frontmatter.applyConfig(cfg)
+
 	bpages := splitPages(bytes.TrimPrefix(b, sep))
 	var breaks bool
 	if frontmatter != nil && frontmatter.Breaks != nil {
@@ -221,31 +222,6 @@ func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error)
 	}
 
 	return content, nil
-}
-
-func (md *MD) ApplyConfig(cfg *config.Config) {
-	if cfg == nil {
-		return // No config to apply
-	}
-	if md.Frontmatter == nil {
-		md.Frontmatter = &Frontmatter{}
-	}
-	if md.Frontmatter.Breaks == nil {
-		md.Frontmatter.Breaks = cfg.Breaks
-	}
-	if md.Frontmatter.CodeBlockToImageCommand == "" {
-		md.Frontmatter.CodeBlockToImageCommand = cfg.CodeBlockToImageCommand
-	}
-	// append default conditions from config
-	for _, cond := range cfg.Defaults {
-		md.Frontmatter.Defaults = append(md.Frontmatter.Defaults, DefaultCondition{
-			If:     cond.If,
-			Layout: cond.Layout,
-			Freeze: cond.Freeze,
-			Ignore: cond.Ignore,
-			Skip:   cond.Skip,
-		})
-	}
 }
 
 func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.Slides, err error) {
