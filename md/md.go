@@ -843,7 +843,7 @@ func contentEqual(old, new *Content) bool {
 	}
 
 	// Compare bodies
-	if len(old.Bodies) != len(new.Bodies) {
+	if !jsonEqual(old.Bodies, new.Bodies) {
 		return false
 	}
 
