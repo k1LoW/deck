@@ -9,6 +9,9 @@ import (
 )
 
 func (md *MD) reflectDefaults() error {
+	if md.Frontmatter == nil {
+		return nil
+	}
 	env, err := cel.NewEnv(
 		cel.Variable("page", cel.IntType),
 		cel.Variable("pageTotal", cel.IntType),

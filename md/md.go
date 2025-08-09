@@ -160,10 +160,14 @@ func Parse(baseDir string, b []byte, cfg *config.Config) (_ *MD, err error) {
 		contents = append(contents, c)
 	}
 
-	return &MD{
+	md := &MD{
 		Frontmatter: frontmatter,
 		Contents:    contents,
-	}, nil
+	}
+	if err := md.reflectDefaults(); err != nil {
+		return nil, fmt.Errorf("failed to reflect defaults while parsing: %w", err)
+	}
+	return md, nil
 }
 
 // ParseContent parses a single markdown content into a Content structure.
@@ -228,14 +232,8 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	if md.Frontmatter == nil {
-		return md.Contents.toSlides(ctx, codeBlockToImageCmd)
-	}
-	if codeBlockToImageCmd == "" {
+	if codeBlockToImageCmd == "" && md.Frontmatter != nil {
 		codeBlockToImageCmd = md.Frontmatter.CodeBlockToImageCommand
-	}
-	if err := md.reflectDefaults(); err != nil {
-		return nil, fmt.Errorf("failed to reflect defaults: %w", err)
 	}
 	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
 }
