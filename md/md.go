@@ -787,11 +787,7 @@ func DiffContents(oldContents, newContents Contents) []int {
 		}
 
 		// Compare the content of the pages
-		if !contentEqual(oldContents[i], newContents[i]) {
-			if newContents[i].Freeze != nil && *newContents[i].Freeze {
-				// The frozen page is considered unchanged
-				continue
-			}
+		if (newContents[i].Freeze == nil || !*newContents[i].Freeze) && !contentEqual(oldContents[i], newContents[i]) {
 			changedPages = append(changedPages, i+1) // 1-indexed
 		}
 	}
@@ -818,7 +814,7 @@ func contentEqual(old, new *Content) bool {
 	}
 
 	// Compare layout and freeze flag
-	if old.Layout != new.Layout || old.Freeze != new.Freeze {
+	if old.Layout != new.Layout || old.Freeze != new.Freeze || old.Skip != new.Skip {
 		return false
 	}
 
