@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	dataHomePath  string
-	stateHomePath string
+	homePath       string
+	configHomePath string
+	dataHomePath   string
+	stateHomePath  string
 )
 
 type Config struct {
@@ -30,17 +32,25 @@ type DefaultCondition struct {
 	Skip   *bool  `json:"skip,omitempty"`   // whether to skip the page if condition is true
 }
 
+func init() {
+	var err error
+	homePath, err = os.UserHomeDir()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get home directory: %v", err))
+	}
+}
+
 // Load loads the configuration from the config file.
 // It searches for config files in the following order:
-// 1. $XDG_DATA_HOME/deck/config-{profile}.yml
-// 2. $XDG_DATA_HOME/deck/config.yml
+// 1. $XDG_CONFIG_HOME/deck/config-{profile}.yml
+// 2. $XDG_CONFIG_HOME/deck/config.yml
 // If no config file is found, it returns an empty Config struct.
 func Load(profile string) (*Config, error) {
 	var configBasePaths []string
 	if profile != "" {
-		configBasePaths = append(configBasePaths, filepath.Join(DataHomePath(), fmt.Sprintf("config-%s", profile)))
+		configBasePaths = append(configBasePaths, filepath.Join(configPath(), fmt.Sprintf("config-%s", profile)))
 	}
-	configBasePaths = append(configBasePaths, filepath.Join(DataHomePath(), "config"))
+	configBasePaths = append(configBasePaths, filepath.Join(configPath(), "config"))
 	cfg := &Config{}
 	for _, basePath := range configBasePaths {
 		for _, ext := range []string{".yml", ".yaml"} {
@@ -57,15 +67,29 @@ func Load(profile string) (*Config, error) {
 	return cfg, nil
 }
 
+// configPath returns the path to the configuration directory.
+func configPath() string {
+	if configHomePath != "" {
+		return configHomePath
+	}
+	if v := os.Getenv("XDG_CONFIG_HOME"); v != "" {
+		configHomePath = filepath.Join(v, "deck")
+	} else {
+		configHomePath = filepath.Join(homePath, ".config", "deck")
+	}
+	return configHomePath
+}
+
 // DataHomePath returns the path to the data home directory.
 func DataHomePath() string {
 	if dataHomePath != "" {
 		return dataHomePath
 	}
-	if os.Getenv("XDG_DATA_HOME") != "" {
-		dataHomePath = filepath.Join(os.Getenv("XDG_DATA_HOME"), "deck")
+	if v := os.Getenv("XDG_DATA_HOME"); v != "" {
+		dataHomePath = filepath.Join(v, "deck")
+	} else {
+		dataHomePath = filepath.Join(homePath, ".local", "share", "deck")
 	}
-	dataHomePath = filepath.Join(os.Getenv("HOME"), ".local", "share", "deck")
 	return dataHomePath
 }
 
@@ -73,9 +97,10 @@ func StateHomePath() string {
 	if stateHomePath != "" {
 		return stateHomePath
 	}
-	if os.Getenv("XDG_STATE_HOME") != "" {
-		stateHomePath = filepath.Join(os.Getenv("XDG_STATE_HOME"), "deck")
+	if v := os.Getenv("XDG_STATE_HOME"); v != "" {
+		stateHomePath = filepath.Join(v, "deck")
+	} else {
+		stateHomePath = filepath.Join(homePath, ".local", "state", "deck")
 	}
-	stateHomePath = filepath.Join(os.Getenv("HOME"), ".local", "state", "deck")
 	return stateHomePath
 }
