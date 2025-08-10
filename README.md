@@ -149,8 +149,8 @@ The frontmatter must be:
 
 `deck` supports global configuration files that provide default settings for all presentations. Configuration files are loaded in the following priority order:
 
-1. `$XDG_DATA_HOME/deck/config-{profile}.yml` (when using `--profile` option)
-2. `$XDG_DATA_HOME/deck/config.yml` (default config file)
+1. `${XDG_CONFIG_HOME:-~/.config}/deck/config-{profile}.yml` (when using `--profile` option)
+2. `${XDG_CONFIG_HOME:-~/.config}/deck/config.yml` (default config file)
 
 The configuration file uses YAML format and supports the same fields as frontmatter. Settings in frontmatter take precedence over configuration file settings, which in turn take precedence over built-in defaults.
 
