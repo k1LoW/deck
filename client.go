@@ -23,8 +23,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-var _ retryablehttp.LeveledLogger = (*slog.Logger)(nil)
-
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/k1LoW/deck)"
 
 func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.Client, err error) {

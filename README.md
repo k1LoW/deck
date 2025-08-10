@@ -26,7 +26,8 @@
 - Go to `Credentials` page and click `+ CREATE CREDENTIALS` at the top.
 - Create `OAuth client ID` type of credentials.
 - Choose type `Desktop app`.
-- Download credentials file to `~/.local/share/deck/credentials.json` ( or `${XDG_DATA_HOME}/deck/credentials.json` ).
+    - Since there is no need to publish the app, add your email address as a test user from [Google Auth Platform / Audience](https://console.cloud.google.com/auth/audience).
+- Download credentials file to `${XDG_DATA_HOME:-~/.local/share}/deck/credentials.json`.
 
 ### Get presentation ID
 
@@ -72,16 +73,10 @@ The slide pages are separated by a line containing only three or more consecutiv
 
 > [!NOTE]
 > The `---` at the beginning of the markdown is ignored.
-> 
+>
 > Other horizontal rule elements (like `- - -`, `***`, `___`) are not treated as page separators but remain in the content as visual separators for multiple body placeholders.
 
 ### Apply deck written in markdown to Google Slides presentation
-
-```console
-$ deck apply deck.md --presentation-id xxxxxXXXXxxxxxXXXXxxxxxxxxxx
-```
-
-If your markdown file includes `presentationID` in the frontmatter, you can use the simplified syntax:
 
 ```console
 $ deck apply deck.md
@@ -90,12 +85,6 @@ $ deck apply deck.md
 #### Watch mode
 
 You can use the `--watch` flag to continuously monitor changes to your markdown file and automatically apply them to the presentation:
-
-```console
-$ deck apply --watch deck.md --presentation-id xxxxxXXXXxxxxxXXXXxxxxxxxxxx
-```
-
-Or with frontmatter:
 
 ```console
 $ deck apply --watch deck.md
@@ -180,7 +169,7 @@ defaults:
 
 - **`breaks`** (boolean): Global line break rendering behavior
 - **`codeBlockToImageCommand`** (string): Global command to convert code blocks to images
-- **`defaults`** (array): Global default conditions and actions using CEL expressions
+- **`defaults`** (array): A series of conditions and actions written in CEL expressions for default page configs
 
 ##### Configuration precedence
 
@@ -191,71 +180,6 @@ Settings are applied in the following order (highest to lowest priority):
 3. **Built-in defaults** - Used when neither frontmatter nor config file specify the setting
 
 This allows you to set organization-wide or project-wide defaults while still maintaining the flexibility to override them on a per-file basis using frontmatter.
-
-#### Default conditions and actions
-
-The `defaults` field allows you to define conditional actions using CEL (Common Expression Language) expressions. This feature automatically sets layouts and controls page behavior based on their structure and content, eliminating the need for manual configuration on each page.
-
-##### Available actions
-
-The following actions can be applied to pages through the `defaults` configuration:
-
-- **`layout`**: Set layout automatically
-- **`freeze`**: Freeze page from modifications
-- **`ignore`**: Exclude page from generation
-- **`skip`**: Skip page during presentation
-
-```yaml
----
-defaults:
-  # First page should always use title layout
-  - if: page == 1
-    layout: title
-  # Pages with only one title and one H2 heading use section layout
-  - if: titles.size() == 1 && headings[2].size() == 1
-    layout: section-purple
-  # Skip pages with TODO in speaker notes
-  - if: speakerNote.contains("TODO")
-    skip: true
-  # Default layout for all other pages
-  - if: true
-    layout: title-and-body
----
-```
-
-##### Available CEL variables
-
-| Variable | Type | Description |
-|----------|------|-------------|
-| `page` | `int` | Current page number (1-based) |
-| `pageTotal` | `int` | Total number of pages |
-| `titles` | `[]string` | List of titles in the page |
-| `subtitles` | `[]string` | List of subtitles in the page |
-| `bodies` | `[]string` | List of body texts in the page |
-| `blockQuotes` | `[]string` | List of block quotes in the page |
-| `codeBlocks` | `[]CodeBlock` | List of code blocks in the page |
-| `images` | `[]Image` | List of images in the page |
-| `comments` | `[]string` | List of comments in the page |
-| `headings` | `map[int][]string` | Headings grouped by level |
-| `speakerNote` | `string` | Speaker note |
-| `topHeadingLevel` | `int` | The highest heading level in the content |
-
-##### CEL condition examples
-
-- `page == 1` - First page only
-- `titles.size() == 0` - Pages without titles
-- `codeBlocks.size() > 0` - Pages containing code blocks
-- `headings[3].size() >= 2` - Pages with 2 or more H3 headings
-- `bodies[0].contains("TODO")` - Pages with TODO in first body text
-- `page > pageTotal - 3` - Last 3 pages
-- `images.size() >= 2` - Pages with 2 or more images
-
-##### Important notes
-
-- **Evaluation order**: Conditions are evaluated in order, and the first matching condition's action is applied
-- **Priority**: Default actions only apply to pages without explicit page configuration (via JSON comments like `<!-- {"layout": "title"} -->`)
-- **Performance**: Using `ignore` for unnecessary content improves processing speed
-- **Workflow**: This feature enables automatic page management based on content patterns, reducing manual configuration overhead
 
 ### Insertion rule
 
@@ -277,7 +201,9 @@ For example:
 >
 > Also, if there are not enough placeholders, the remaining contents will not be rendered.
 
-#### Input markdown document
+#### Example
+
+**Input markdown document:**
 
 ```markdown
 # CAP theorem
@@ -297,11 +223,11 @@ Every request received by a non-failing node in the system must result in a resp
 The system continues to operate despite an arbitrary number of messages being dropped (or delayed) by the network between nodes.
 ```
 
-#### Layout and placeholders
+**Layout and placeholders:**
 
 ![img](img/layout.png)
 
-#### Result of applying
+**Result of applying:**
 
 ![img](img/result.png)
 
@@ -448,17 +374,17 @@ These methods can be used in combination, and you can choose the appropriate met
 
 ```console
 # Convert Mermaid diagrams to images
-$ deck apply -c 'mmdc -i - -o {{output}} --quiet' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'mmdc -i - -o {{output}} --quiet' deck.md
 ```
 
 ```console
 # Generate code images using the built-in text-to-image tool
-$ deck apply -c 'go run testdata/txt2img/main.go' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'go run testdata/txt2img/main.go' deck.md
 ```
 
 ```console
 # Use different tools depending on the language
-$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --quiet; else go run testdata/txt2img/main.go; fi' -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
+$ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --quiet; else go run testdata/txt2img/main.go; fi' deck.md
 ```
 
 ### Comment
@@ -489,7 +415,7 @@ The layout name (e.g. `title-and-body`) is specified.
 > With `deck ls-layouts` it is possible to obtain a list of the layout names for a specific presentation.
 >
 > ```console
-> $ deck ls-layouts -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+> $ deck ls-layouts deck.md
 > title
 > section
 > section-dark
@@ -532,7 +458,72 @@ It is possible to skip the target page during presentation.
 <!-- {"skip": true} -->
 ```
 
-#### Profile support
+### Default page configs with CEL expressions
+
+The `defaults` field in Frontmatter or configuration file allows you to define default page configs using CEL (Common Expression Language) expressions. This feature automatically sets layouts and controls page behavior based on their structure and content, eliminating the need for manual configuration on each page.
+
+#### Available actions
+
+The following actions can be applied to pages through the `defaults` configuration:
+
+- **`layout`**: Set layout automatically
+- **`freeze`**: Freeze page from modifications
+- **`ignore`**: Exclude page from generation
+- **`skip`**: Skip page during presentation
+
+```yaml
+---
+defaults:
+  # First page should always use title layout
+  - if: page == 1
+    layout: title
+  # Pages with only one title and one H2 heading use section layout
+  - if: titles.size() == 1 && headings[2].size() == 1
+    layout: section-purple
+  # Skip pages with TODO in speaker notes
+  - if: speakerNote.contains("TODO")
+    skip: true
+  # Default layout for all other pages
+  - if: true
+    layout: title-and-body
+---
+```
+
+#### Available CEL variables
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `page` | `int` | Current page number (1-based) |
+| `pageTotal` | `int` | Total number of pages |
+| `titles` | `[]string` | List of titles in the page |
+| `subtitles` | `[]string` | List of subtitles in the page |
+| `bodies` | `[]string` | List of body texts in the page |
+| `blockQuotes` | `[]string` | List of block quotes in the page |
+| `codeBlocks` | `[]CodeBlock` | List of code blocks in the page |
+| `images` | `[]Image` | List of images in the page |
+| `comments` | `[]string` | List of comments in the page |
+| `headings` | `map[int][]string` | Headings grouped by level |
+| `speakerNote` | `string` | Speaker note |
+| `topHeadingLevel` | `int` | The highest heading level in the content |
+
+#### CEL condition examples
+
+- `page == 1` - First page only
+- `titles.size() == 0` - Pages without titles
+- `codeBlocks.size() > 0` - Pages containing code blocks
+- `headings[3].size() >= 2` - Pages with 2 or more H3 headings
+- `bodies[0].contains("TODO")` - Pages with TODO in first body text
+- `page > pageTotal - 3` - Last 3 pages
+- `images.size() >= 2` - Pages with 2 or more images
+
+#### Important notes
+
+- **Evaluation order**: Conditions are evaluated in order, and the first matching condition's action is applied
+- **Priority**: Default actions only apply to pages without explicit page configuration (via JSON comments like `<!-- {"layout": "title"} -->`)
+- **Performance**: Using `ignore` for unnecessary content improves processing speed
+- **Workflow**: This feature enables automatic page management based on content patterns, reducing manual configuration overhead
+
+## Profile support
 
 `deck` supports multiple profiles through the `--profile` option. This feature allows you to manage separate profiles (authentication Google accounts or environments).
 

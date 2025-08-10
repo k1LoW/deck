@@ -430,9 +430,6 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	if d.logger == nil {
 		d.logger = slog.New(slog.NewJSONHandler(io.Discard, nil))
 	}
-	if err := os.MkdirAll(config.DataHomePath(), 0700); err != nil {
-		return err
-	}
 	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
 		return err
 	}
