@@ -63,6 +63,9 @@ func Load(profile string) (*Config, error) {
 	return cfg, nil
 }
 
+// On macOS, we use directories that conform to the XDG Base Directory instead of `os.UserConfigDir`
+// or `os.UserDataDir`, etc. It is more intuitive for CLI applications.
+
 var configHomePath = sync.OnceValue(func() string {
 	if v := os.Getenv("XDG_CONFIG_HOME"); v != "" {
 		return filepath.Join(v, "deck")
