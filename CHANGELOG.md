@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.11.0](https://github.com/k1LoW/deck/compare/v1.10.1...v1.11.0) - 2025-08-10
+### Fix bug 🐛
+- fix: adjust configuration and data file placement rules by @Songmu in https://github.com/k1LoW/deck/pull/340
+
 ## [v1.10.1](https://github.com/k1LoW/deck/compare/v1.10.0...v1.10.1) - 2025-08-09
 ### Other Changes
 - fix: issue where all pages are listed as diff pages in DiffContents due to the `defaults` setting by @Songmu in https://github.com/k1LoW/deck/pull/338
