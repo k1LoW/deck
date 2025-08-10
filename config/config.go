@@ -4,15 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/goccy/go-yaml"
-)
-
-var (
-	homePath       string
-	configHomePath string
-	dataHomePath   string
-	stateHomePath  string
 )
 
 type Config struct {
@@ -32,9 +26,11 @@ type DefaultCondition struct {
 	Skip   *bool  `json:"skip,omitempty"`   // whether to skip the page if condition is true
 }
 
+var homeDir string
+
 func init() {
 	var err error
-	homePath, err = os.UserHomeDir()
+	homeDir, err = os.UserHomeDir()
 	if err != nil {
 		panic(fmt.Sprintf("failed to get home directory: %v", err))
 	}
@@ -48,9 +44,9 @@ func init() {
 func Load(profile string) (*Config, error) {
 	var configBasePaths []string
 	if profile != "" {
-		configBasePaths = append(configBasePaths, filepath.Join(configPath(), fmt.Sprintf("config-%s", profile)))
+		configBasePaths = append(configBasePaths, filepath.Join(configHomePath(), fmt.Sprintf("config-%s", profile)))
 	}
-	configBasePaths = append(configBasePaths, filepath.Join(configPath(), "config"))
+	configBasePaths = append(configBasePaths, filepath.Join(configHomePath(), "config"))
 	cfg := &Config{}
 	for _, basePath := range configBasePaths {
 		for _, ext := range []string{".yml", ".yaml"} {
@@ -67,40 +63,32 @@ func Load(profile string) (*Config, error) {
 	return cfg, nil
 }
 
-// configPath returns the path to the configuration directory.
-func configPath() string {
-	if configHomePath != "" {
-		return configHomePath
-	}
+var configHomePath = sync.OnceValue(func() string {
 	if v := os.Getenv("XDG_CONFIG_HOME"); v != "" {
-		configHomePath = filepath.Join(v, "deck")
-	} else {
-		configHomePath = filepath.Join(homePath, ".config", "deck")
+		return filepath.Join(v, "deck")
 	}
-	return configHomePath
-}
+	return filepath.Join(homeDir, ".config", "deck")
+})
+
+var dataHomePath = sync.OnceValue(func() string {
+	if v := os.Getenv("XDG_DATA_HOME"); v != "" {
+		return filepath.Join(v, "deck")
+	}
+	return filepath.Join(homeDir, ".local", "share", "deck")
+})
+
+var stateHomePath = sync.OnceValue(func() string {
+	if v := os.Getenv("XDG_STATE_HOME"); v != "" {
+		return filepath.Join(v, "deck")
+	}
+	return filepath.Join(homeDir, ".local", "state", "deck")
+})
 
 // DataHomePath returns the path to the data home directory.
 func DataHomePath() string {
-	if dataHomePath != "" {
-		return dataHomePath
-	}
-	if v := os.Getenv("XDG_DATA_HOME"); v != "" {
-		dataHomePath = filepath.Join(v, "deck")
-	} else {
-		dataHomePath = filepath.Join(homePath, ".local", "share", "deck")
-	}
-	return dataHomePath
+	return dataHomePath()
 }
 
 func StateHomePath() string {
-	if stateHomePath != "" {
-		return stateHomePath
-	}
-	if v := os.Getenv("XDG_STATE_HOME"); v != "" {
-		stateHomePath = filepath.Join(v, "deck")
-	} else {
-		stateHomePath = filepath.Join(homePath, ".local", "state", "deck")
-	}
-	return stateHomePath
+	return stateHomePath()
 }
