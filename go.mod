@@ -4,7 +4,7 @@ go 1.24.5
 
 require (
 	github.com/briandowns/spinner v1.23.2
-	github.com/chromedp/chromedp v0.14.0
+	github.com/chromedp/chromedp v0.14.1
 	github.com/corona10/goimagehash v1.1.0
 	github.com/fatih/color v1.18.0
 	github.com/fsnotify/fsnotify v1.9.0
@@ -25,7 +25,7 @@ require (
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sync v0.16.0
-	google.golang.org/api v0.244.0
+	google.golang.org/api v0.246.0
 )
 
 require (
