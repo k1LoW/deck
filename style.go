@@ -126,30 +126,15 @@ func (d *Deck) getInlineStyleRequest(fragment *Fragment) *slides.UpdateTextStyle
 	var reqs []*slides.UpdateTextStyleRequest
 
 	if fragment.Code {
-		s, ok := d.styles[styleCode]
-		if ok {
-			reqs = append(reqs, buildCustomStyleRequest(s))
-		} else {
-			reqs = append(reqs, defaultStyles[styleCode]())
-		}
+		reqs = append(reqs, d.getRequestForStyle(styleCode))
 	}
 
 	if fragment.Bold {
-		s, ok := d.styles[styleBold]
-		if ok {
-			reqs = append(reqs, buildCustomStyleRequest(s))
-		} else {
-			reqs = append(reqs, defaultStyles[styleBold]())
-		}
+		reqs = append(reqs, d.getRequestForStyle(styleBold))
 	}
 
 	if fragment.Italic {
-		s, ok := d.styles[styleItalic]
-		if ok {
-			reqs = append(reqs, buildCustomStyleRequest(s))
-		} else {
-			reqs = append(reqs, defaultStyles[styleItalic]())
-		}
+		reqs = append(reqs, d.getRequestForStyle(styleItalic))
 	}
 
 	if fragment.Link != "" {
@@ -174,14 +159,9 @@ func (d *Deck) getInlineStyleRequest(fragment *Fragment) *slides.UpdateTextStyle
 	}
 
 	if fragment.StyleName != "" {
-		s, ok := d.styles[fragment.StyleName]
-		if ok {
-			reqs = append(reqs, buildCustomStyleRequest(s))
-		} else {
-			s, ok := defaultStyles[fragment.StyleName]
-			if ok {
-				reqs = append(reqs, s())
-			}
+		r := d.getRequestForStyle(fragment.StyleName)
+		if r != nil {
+			reqs = append(reqs, r)
 		}
 	}
 
@@ -203,6 +183,16 @@ func (d *Deck) getInlineStyleRequest(fragment *Fragment) *slides.UpdateTextStyle
 		Style:  style,
 		Fields: fields,
 	}
+}
+
+func (d *Deck) getRequestForStyle(styleName string) *slides.UpdateTextStyleRequest {
+	if s, ok := d.styles[styleName]; ok {
+		return buildCustomStyleRequest(s)
+	}
+	if f, ok := defaultStyles[styleName]; ok {
+		return f()
+	}
+	return nil
 }
 
 func buildCustomStyleRequest(s *slides.TextStyle) *slides.UpdateTextStyleRequest {
