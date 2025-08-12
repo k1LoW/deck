@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -242,6 +244,8 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	return d.refresh(ctx)
 }
 
+var apiErrReg = regexp.MustCompile(`googleapi: Error 400: Invalid requests\[([0-9]+)\]\.`)
+
 func (d *Deck) batchUpdate(ctx context.Context, requests []*slides.Request) error {
 	d.logger.Info("batch updating presentation request", slog.Int("count", len(requests)))
 	// Although there is no explicit request limit specified in the Google Slides API specifications,
@@ -261,6 +265,14 @@ func (d *Deck) batchUpdate(ctx context.Context, requests []*slides.Request) erro
 			Requests: requests,
 		}
 		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+			errMsg := err.Error()
+			if matches := apiErrReg.FindStringSubmatch(errMsg); len(matches) == 2 {
+				errIndex, err := strconv.Atoi(matches[1])
+				if err == nil && errIndex < len(requests) {
+					errReq := requests[errIndex]
+					d.logger.Debug("invalid request found in batchUpdate", slog.Any("request", errReq), slog.Int("index", errIndex))
+				}
+			}
 			return fmt.Errorf("failed to batch update presentation: %w", err)
 		}
 	}
