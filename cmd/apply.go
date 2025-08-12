@@ -38,6 +38,7 @@ import (
 	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/deck/logger/dot"
 	"github.com/k1LoW/deck/md"
+	"github.com/k1LoW/errors"
 	"github.com/k1LoW/tail"
 	slogmulti "github.com/samber/slog-multi"
 	"github.com/spf13/cobra"
@@ -48,7 +49,7 @@ var (
 	title               string
 	page                string
 	watch               bool
-	verbosity           int
+	verbosity           int // 1: info, >=2: debug
 	logger              *slog.Logger
 	codeBlockToImageCmd string
 	tb                  = tail.New(30)
@@ -333,7 +334,11 @@ func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldCont
 				continue
 			}
 			if err := d.ApplyPages(ctx, slides, changedPages); err != nil {
-				logger.Error("failed to apply changes", slog.String("error", err.Error()))
+				slogArgs := []any{slog.String("error", err.Error())}
+				if verbosity > 1 {
+					slogArgs = append(slogArgs, slog.String("stacktrace", errors.StackTraces(err).String()))
+				}
+				logger.Error("failed to apply changes", slogArgs...)
 				continue
 			}
 

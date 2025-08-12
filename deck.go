@@ -265,10 +265,7 @@ func (d *Deck) DeletePages(ctx context.Context, indices []int) (err error) {
 	}
 	if len(reqs) > 0 {
 		d.logger.Info("deleting pages", slog.Any("indices", indices))
-		req := &slides.BatchUpdatePresentationRequest{
-			Requests: reqs,
-		}
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		if err := d.batchUpdate(ctx, reqs); err != nil {
 			return fmt.Errorf("failed to delete pages: %w", err)
 		}
 		if err := d.refresh(ctx); err != nil {
@@ -283,21 +280,19 @@ func (d *Deck) DeletePageAfter(ctx context.Context, index int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	if len(d.presentation.Slides) <= index {
+	if len(d.presentation.Slides) <= index+1 {
 		return nil
 	}
-	req := &slides.BatchUpdatePresentationRequest{}
+	var reqs []*slides.Request
+
 	for i := index + 1; i < len(d.presentation.Slides); i++ {
-		req.Requests = append(req.Requests, &slides.Request{
+		reqs = append(reqs, &slides.Request{
 			DeleteObject: &slides.DeleteObjectRequest{
 				ObjectId: d.presentation.Slides[i].ObjectId,
 			},
 		})
 	}
-	if len(req.Requests) == 0 {
-		return nil
-	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+	if err := d.batchUpdate(ctx, reqs); err != nil {
 		return err
 	}
 	if err := d.refresh(ctx); err != nil {
@@ -321,10 +316,7 @@ func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
 	if reqs, err := d.prepareToApplyPage(ctx, index, slide, nil); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
 	} else if len(reqs) > 0 {
-		req := &slides.BatchUpdatePresentationRequest{
-			Requests: reqs,
-		}
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		if err := d.batchUpdate(ctx, reqs); err != nil {
 			return err
 		}
 	}
@@ -369,10 +361,7 @@ func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err err
 	if reqs, err := d.prepareToApplyPage(ctx, index, slide, nil); err != nil {
 		return fmt.Errorf("failed to apply page: %w", err)
 	} else if len(reqs) > 0 {
-		req := &slides.BatchUpdatePresentationRequest{
-			Requests: reqs,
-		}
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+		if err := d.batchUpdate(ctx, reqs); err != nil {
 			return err
 		}
 	}
@@ -481,23 +470,18 @@ func (d *Deck) createPage(ctx context.Context, index int, slide *Slide) (err err
 	}
 
 	// create new page
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{
-			{
-				CreateSlide: &slides.CreateSlideRequest{
-					InsertionIndex: int64(index),
-					SlideLayoutReference: &slides.LayoutReference{
-						LayoutId: layout.ObjectId,
-					},
-				},
+	reqs := []*slides.Request{{
+		CreateSlide: &slides.CreateSlideRequest{
+			InsertionIndex: int64(index),
+			SlideLayoutReference: &slides.LayoutReference{
+				LayoutId: layout.ObjectId,
 			},
 		},
-	}
+	}}
 
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
-		return err
+	if err := d.batchUpdate(ctx, reqs); err != nil {
+		return fmt.Errorf("failed to create page: %w", err)
 	}
-
 	if err := d.refresh(ctx); err != nil {
 		return err
 	}
@@ -523,10 +507,7 @@ func (d *Deck) preparePages(ctx context.Context, startIdx int, layoutIDs []strin
 		}
 		slideIdx++
 	}
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: reqs,
-	}
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+	if err := d.batchUpdate(ctx, reqs); err != nil {
 		return err
 	}
 	return d.refresh(ctx)
@@ -546,19 +527,14 @@ func (d *Deck) movePage(ctx context.Context, from_index, to_index int) (err erro
 		to_index++
 	}
 
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{
-			{
-				UpdateSlidesPosition: &slides.UpdateSlidesPositionRequest{
-					SlideObjectIds:  []string{currentSlide.ObjectId},
-					InsertionIndex:  int64(to_index),
-					ForceSendFields: []string{"InsertionIndex"},
-				},
-			},
+	reqs := []*slides.Request{{
+		UpdateSlidesPosition: &slides.UpdateSlidesPositionRequest{
+			SlideObjectIds:  []string{currentSlide.ObjectId},
+			InsertionIndex:  int64(to_index),
+			ForceSendFields: []string{"InsertionIndex"},
 		},
-	}
-
-	if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+	}}
+	if err := d.batchUpdate(ctx, reqs); err != nil {
 		return err
 	}
 	if err := d.refresh(ctx); err != nil {
