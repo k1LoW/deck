@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.12.1](https://github.com/k1LoW/deck/compare/v1.12.0...v1.12.1) - 2025-08-12
+### Fix bug 🐛
+- fix: correct `ignore` handing by @k1LoW in https://github.com/k1LoW/deck/pull/349
+
 ## [v1.12.0](https://github.com/k1LoW/deck/compare/v1.11.0...v1.12.0) - 2025-08-12
 ### Other Changes
 - chore: cleanup code and docs by @Songmu in https://github.com/k1LoW/deck/pull/342
