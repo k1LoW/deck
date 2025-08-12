@@ -814,7 +814,7 @@ func contentEqual(old, new *Content) bool {
 	}
 
 	// Compare layout and freeze flag
-	if old.Layout != new.Layout || old.Freeze != new.Freeze || old.Skip != new.Skip {
+	if old.Layout != new.Layout || old.Freeze != new.Freeze || old.Skip != new.Skip || old.Ignore != new.Ignore {
 		return false
 	}
 
