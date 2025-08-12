@@ -864,10 +864,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 	}
 
 	newSlide := d.presentation.Slides[index+1]
-	req := &slides.BatchUpdatePresentationRequest{
-		Requests: []*slides.Request{},
-	}
 	var (
+		reqs       []*slides.Request
 		insertReqs []*slides.Request
 		styleReqs  []*slides.Request
 		bulletReqs []*slides.Request
@@ -880,7 +878,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 			if element.Description == descriptionImageFromMarkdown {
 				imageObjectID = fmt.Sprintf("image-%s", uuid.New().String())
 			}
-			req.Requests = append(req.Requests, &slides.Request{
+			reqs = append(reqs, &slides.Request{
 				CreateImage: &slides.CreateImageRequest{
 					ObjectId: imageObjectID,
 					ElementProperties: &slides.PageElementProperties{
@@ -892,7 +890,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 				},
 			})
 			if imageObjectID != "" {
-				req.Requests = append(req.Requests, &slides.Request{
+				reqs = append(reqs, &slides.Request{
 					UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
 						ObjectId:    imageObjectID,
 						Description: descriptionImageFromMarkdown,
@@ -971,7 +969,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 					paragraphInfos[i].endIndex = currentIndex - 1
 				}
 			}
-			req.Requests = append(req.Requests, &slides.Request{
+			reqs = append(reqs, &slides.Request{
 				CreateShape: &slides.CreateShapeRequest{
 					ObjectId: shapeObjectID,
 					ElementProperties: &slides.PageElementProperties{
@@ -1055,13 +1053,12 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 			}
 		}
 	}
-	req.Requests = append(req.Requests, insertReqs...)
-	if len(req.Requests) > 0 {
-		if _, err := d.srv.Presentations.BatchUpdate(d.id, req).Context(ctx).Do(); err != nil {
+	reqs = append(reqs, insertReqs...)
+	if len(reqs) > 0 {
+		if err := d.batchUpdate(ctx, reqs); err != nil {
 			return fmt.Errorf("failed to copy images or insert text: %w", err)
 		}
 	}
-
 	if err := d.DeletePages(ctx, []int{index}); err != nil {
 		return err
 	}
