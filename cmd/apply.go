@@ -320,7 +320,14 @@ func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldCont
 				logger.Error("failed to parse file", slog.String("error", err.Error()))
 				continue
 			}
-			changedPages := md.DiffContents(oldContents, newMD.Contents)
+			var newContents md.Contents
+			for _, content := range newMD.Contents {
+				if content.Ignore != nil && *content.Ignore {
+					continue
+				}
+				newContents = append(newContents, content)
+			}
+			changedPages := md.DiffContents(oldContents, newContents)
 
 			if len(changedPages) == 0 {
 				logger.Info("no changes detected")
@@ -344,7 +351,7 @@ func watchFile(ctx context.Context, cfg *config.Config, filePath string, oldCont
 
 			logger.Info("applied changes", slog.Any("pages", changedPages))
 
-			oldContents = newMD.Contents
+			oldContents = newContents
 		}
 	}
 }
