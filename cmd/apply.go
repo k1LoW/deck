@@ -197,9 +197,7 @@ func pageToPages(page string, total int) ([]int, error) {
 
 	var result []int
 	// Split by comma to handle comma-separated list
-	parts := strings.Split(page, ",")
-
-	for _, part := range parts {
+	for part := range strings.SplitSeq(page, ",") {
 		// Check if it's a range (contains "-")
 		if strings.Contains(part, "-") {
 			rangeParts := strings.Split(part, "-")
