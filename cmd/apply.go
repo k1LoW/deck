@@ -48,7 +48,7 @@ var (
 	title               string
 	page                string
 	watch               bool
-	verbose             bool
+	verbosity           int
 	logger              *slog.Logger
 	codeBlockToImageCmd string
 	tb                  = tail.New(30)
@@ -107,10 +107,16 @@ var applyCmd = &cobra.Command{
 		tailHandler := slog.NewJSONHandler(tb, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})
-		if verbose {
+		if verbosity > 0 {
+			var opt *slog.HandlerOptions
+			if verbosity > 1 {
+				opt = &slog.HandlerOptions{
+					Level: slog.LevelDebug,
+				}
+			}
 			logger = slog.New(
 				slogmulti.Fanout(
-					slog.NewJSONHandler(os.Stdout, nil),
+					slog.NewJSONHandler(os.Stdout, opt),
 					tailHandler,
 				),
 			)
@@ -176,7 +182,7 @@ func init() {
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
 	applyCmd.Flags().StringVarP(&codeBlockToImageCmd, "code-block-to-image-command", "c", "", "command to convert code blocks to images")
 	applyCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch for changes")
-	applyCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "verbose output")
+	applyCmd.Flags().CountVarP(&verbosity, "verbose", "v", "verbose output (can be used multiple times for more verbosity)")
 }
 
 func pageToPages(page string, total int) ([]int, error) {
