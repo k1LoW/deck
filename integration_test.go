@@ -32,6 +32,8 @@ func TestApplyMarkdown(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	browserClose := deck.InitChrome(ctx)
+	t.Cleanup(browserClose)
 
 	tests := []struct {
 		in string
