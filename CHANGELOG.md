@@ -1,5 +1,14 @@
 # Changelog
 
+## [v1.12.0](https://github.com/k1LoW/deck/compare/v1.11.0...v1.12.0) - 2025-08-12
+### Other Changes
+- chore: cleanup code and docs by @Songmu in https://github.com/k1LoW/deck/pull/342
+- chore: define d.getRequestForStyle for commonization and use it by @Songmu in https://github.com/k1LoW/deck/pull/344
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/345
+- feat: support debug level logging with -vv option by @Songmu in https://github.com/k1LoW/deck/pull/346
+- chore: use (strings|bytes).SplitSeq if we can by @Songmu in https://github.com/k1LoW/deck/pull/347
+- chore: display detailed API error message on debug logging by @Songmu in https://github.com/k1LoW/deck/pull/348
+
 ## [v1.11.0](https://github.com/k1LoW/deck/compare/v1.10.1...v1.11.0) - 2025-08-10
 ### Fix bug 🐛
 - fix: adjust configuration and data file placement rules by @Songmu in https://github.com/k1LoW/deck/pull/340
