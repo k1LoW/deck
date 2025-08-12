@@ -385,6 +385,9 @@ $ deck apply -c 'go run testdata/txt2img/main.go' deck.md
 ```console
 # Use different tools depending on the language
 $ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --quiet; else go run testdata/txt2img/main.go; fi' deck.md
+
+# Alternatively, you can use Songmu/laminate to use the appropriate tool for each language.
+$ deck apply -c 'laminate' deck.md
 ```
 
 ### Comment
@@ -540,6 +543,7 @@ When using profiles, authentication files are managed as follows:
 ## Integration
 
 - [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Creating deck using Markdown and Google Slides.
+- [Songmu/laminate](https://github.com/Songmu/laminate) ... A tool for selecting image generation commands corresponding to the specified language from a configuration file. Useful for converting code blocks.
 
 ## With AI agent
 
