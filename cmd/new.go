@@ -25,11 +25,15 @@ import (
 	"fmt"
 
 	"github.com/k1LoW/deck"
+	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/deck/md"
 	"github.com/spf13/cobra"
 )
 
-var from string
+var (
+	from     string
+	folderID string
+)
 
 var newCmd = &cobra.Command{
 	Use:   "new [markdown-file]",
@@ -41,12 +45,27 @@ If the file doesn't exist, it will be created.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+
+		// Load config to get default folderID if not specified via flag
+		cfg, err := config.Load(profile)
+		if err != nil {
+			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Use flag folderID if provided, otherwise use config folderID
+		targetFolderID := folderID
+		if targetFolderID == "" && cfg.FolderID != "" {
+			targetFolderID = cfg.FolderID
+		}
+
 		opts := []deck.Option{
 			deck.WithProfile(profile),
 		}
+		if targetFolderID != "" {
+			opts = append(opts, deck.WithFolderID(targetFolderID))
+		}
 		var (
-			d   *deck.Deck
-			err error
+			d *deck.Deck
 		)
 		if from != "" {
 			d, err = deck.CreateFrom(ctx, from, opts...)
@@ -84,4 +103,5 @@ func init() {
 	rootCmd.AddCommand(newCmd)
 	newCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	newCmd.Flags().StringVarP(&from, "from", "f", "", "presentation id that uses the theme you want to use")
+	newCmd.Flags().StringVarP(&folderID, "folder-id", "", "", "folder id to create the presentation in")
 }

@@ -52,6 +52,7 @@ var (
 	verbosity           int // 1: info, >=2: debug
 	logger              *slog.Logger
 	codeBlockToImageCmd string
+	applyFolderID       string
 	tb                  = tail.New(30)
 )
 
@@ -84,6 +85,12 @@ var applyCmd = &cobra.Command{
 		cfg, err := config.Load(profile)
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
+		}
+
+		// Use flag applyFolderID if provided, otherwise use config folderID
+		targetFolderID := applyFolderID
+		if targetFolderID == "" && cfg.FolderID != "" {
+			targetFolderID = cfg.FolderID
 		}
 		m, err := md.ParseFile(f, cfg)
 		if err != nil {
@@ -138,6 +145,9 @@ var applyCmd = &cobra.Command{
 			deck.WithPresentationID(presentationID),
 			deck.WithLogger(logger),
 		}
+		if targetFolderID != "" {
+			opts = append(opts, deck.WithFolderID(targetFolderID))
+		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			return err
@@ -182,6 +192,7 @@ func init() {
 	applyCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
 	applyCmd.Flags().StringVarP(&codeBlockToImageCmd, "code-block-to-image-command", "c", "", "command to convert code blocks to images")
+	applyCmd.Flags().StringVarP(&applyFolderID, "folder-id", "", "", "folder id to upload temporary images to")
 	applyCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch for changes")
 	applyCmd.Flags().CountVarP(&verbosity, "verbose", "v", "verbose output (can be used multiple times for more verbosity)")
 }
