@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.13.0](https://github.com/k1LoW/deck/compare/v1.12.1...v1.13.0) - 2025-08-13
+### Other Changes
+- chore: improv the efficiency of screenshot capture during testing by @Songmu in https://github.com/k1LoW/deck/pull/351
+- doc: description of integration with laminate by @Songmu in https://github.com/k1LoW/deck/pull/352
+- feat: add --folder-id flag and config for Drive folder by @Songmu in https://github.com/k1LoW/deck/pull/354
+
 ## [v1.12.1](https://github.com/k1LoW/deck/compare/v1.12.0...v1.12.1) - 2025-08-12
 ### Fix bug 🐛
 - fix: correct `ignore` handing by @k1LoW in https://github.com/k1LoW/deck/pull/349
