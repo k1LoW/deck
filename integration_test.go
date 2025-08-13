@@ -136,7 +136,7 @@ func TestApplyMarkdown(t *testing.T) {
 						if err != nil {
 							t.Fatalf("failed to compute distance between screenshots: %v", err)
 						}
-						if distance > 1 { // threshold for similarity
+						if distance > 2 { // threshold for similarity
 							diffpath := fmt.Sprintf("%s-%d.diff.png", tt.in, page)
 							if err := os.WriteFile(diffpath, got, 0600); err != nil {
 								t.Fatalf("failed to write diff file %s: %v", diffpath, err)

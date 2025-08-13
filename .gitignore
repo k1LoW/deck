@@ -5,3 +5,4 @@ deck
 *~lock~*
 .DS_Store
 md/testdata/fuzz
+gha-creds-*.json

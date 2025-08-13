@@ -2,6 +2,7 @@ package deck
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -17,7 +18,11 @@ var browserCtx context.Context
 
 // InitChrome initializes and preloads a Chrome browser context for testing.
 func InitChrome(ctx context.Context) func() {
-	aCtx, aCancel := chromedp.NewExecAllocator(ctx, chromedp.DefaultExecAllocatorOptions[:]...)
+	opts := chromedp.DefaultExecAllocatorOptions[:]
+	if os.Getenv("GITHUB_ACTIONS") == "true" {
+		opts = append(opts, chromedp.NoSandbox)
+	}
+	aCtx, aCancel := chromedp.NewExecAllocator(ctx, opts...)
 	var bCancel context.CancelFunc
 	browserCtx, bCancel = chromedp.NewContext(aCtx)
 	return func() {
