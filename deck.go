@@ -25,6 +25,7 @@ var profileRe = regexp.MustCompile(`^[a-zA-Z0-9_-]*$`)
 type Deck struct {
 	id                 string
 	profile            string
+	folderID           string
 	srv                *slides.Service
 	driveSrv           *drive.Service
 	presentation       *slides.Presentation
@@ -57,6 +58,13 @@ func WithProfile(profile string) Option {
 			return fmt.Errorf("invalid profile name: %s, only alphanumeric characters, underscores, and hyphens are allowed", profile)
 		}
 		d.profile = profile
+		return nil
+	}
+}
+
+func WithFolderID(folderID string) Option {
+	return func(d *Deck) error {
+		d.folderID = folderID
 		return nil
 	}
 }
@@ -136,7 +144,10 @@ func Create(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 		Name:     title,
 		MimeType: "application/vnd.google-apps.presentation",
 	}
-	f, err := d.driveSrv.Files.Create(file).Do()
+	if d.folderID != "" {
+		file.Parents = []string{d.folderID}
+	}
+	f, err := d.driveSrv.Files.Create(file).SupportsAllDrives(true).Do()
 	if err != nil {
 		return nil, err
 	}
@@ -168,6 +179,9 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 	file := &drive.File{
 		Name:     "Untitled",
 		MimeType: "application/vnd.google-apps.presentation",
+	}
+	if d.folderID != "" {
+		file.Parents = []string{d.folderID}
 	}
 	f, err := d.driveSrv.Files.Copy(id, file).SupportsAllDrives(true).Do()
 	if err != nil {

@@ -149,6 +149,7 @@ The configuration file uses YAML format and supports the same fields as frontmat
 # Global configuration for deck
 breaks: true
 codeBlockToImageCommand: "go run testdata/txt2img/main.go"
+folderID: "1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
 
 defaults:
   # First page should always use title layout
@@ -169,6 +170,7 @@ defaults:
 
 - **`breaks`** (boolean): Global line break rendering behavior
 - **`codeBlockToImageCommand`** (string): Global command to convert code blocks to images
+- **`folderID`** (string): Default folder ID to create presentations and upload temporary images to
 - **`defaults`** (array): A series of conditions and actions written in CEL expressions for default page configs
 
 ##### Configuration precedence

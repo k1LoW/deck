@@ -16,6 +16,8 @@ type Config struct {
 	Defaults []DefaultCondition `yaml:"defaults,omitempty" json:"defaults,omitempty"`
 	// command to convert code blocks to images
 	CodeBlockToImageCommand string `yaml:"codeBlockToImageCommand,omitempty" json:"codeBlockToImageCommand,omitempty"`
+	// folder ID to create presentations and upload temporary images to
+	FolderID string `yaml:"folderID,omitempty" json:"folderID,omitempty"`
 }
 
 type DefaultCondition struct {
