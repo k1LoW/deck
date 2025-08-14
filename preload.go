@@ -277,27 +277,6 @@ func (d *Deck) startUploadingImages(
 	return uploadedCh
 }
 
-// deleteOrTrashFile attempts to delete a file, or move it to trash if deletion is not allowed.
-func (d *Deck) deleteOrTrashFile(ctx context.Context, id string) error {
-	file, err := d.driveSrv.Files.Get(id).SupportsAllDrives(true).Fields("capabilities").Context(ctx).Do()
-	if err != nil {
-		return fmt.Errorf("file not found or not accessible before deletion (file ID: %s): %w", id, err)
-	}
-
-	if file.Capabilities == nil || file.Capabilities.CanDelete {
-		return d.driveSrv.Files.Delete(id).SupportsAllDrives(true).Context(ctx).Do()
-	}
-	if file.Capabilities.CanTrash {
-		updateRequest := &drive.File{Trashed: true}
-		_, err := d.driveSrv.Files.Update(id, updateRequest).SupportsAllDrives(true).Context(ctx).Do()
-		if err != nil {
-			return fmt.Errorf("failed to trash presentation: %w", err)
-		}
-		return nil
-	}
-	return fmt.Errorf("file cannot be deleted or trashed (file ID: %s)", id)
-}
-
 // cleanupUploadedImages deletes uploaded images in parallel.
 func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uploadedImageInfo) error {
 	sem := semaphore.NewWeighted(maxPreloadWorkersNum)
