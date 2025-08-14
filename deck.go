@@ -220,7 +220,7 @@ func Delete(ctx context.Context, id string, opts ...Option) (err error) {
 	if err := d.initialize(ctx); err != nil {
 		return err
 	}
-	if err := d.driveSrv.Files.Delete(id).Context(ctx).Do(); err != nil {
+	if err := d.deleteOrTrashFile(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete presentation: %w", err)
 	}
 	return nil
@@ -420,7 +420,7 @@ func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
 		Type: "anyone",
 		Role: "reader",
 	}
-	if _, err := d.driveSrv.Permissions.Create(d.id, permission).Context(ctx).Do(); err != nil {
+	if _, err := d.driveSrv.Permissions.Create(d.id, permission).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
 		return fmt.Errorf("failed to set permission: %w", err)
 	}
 	return nil
