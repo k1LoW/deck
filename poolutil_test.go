@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"sync"
 	"testing"
@@ -15,6 +16,24 @@ const (
 	basePresentationID = "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
 	titleForTest       = "For deck integration test (Unless you are testing the deck, you can delete this file without any problems)"
 )
+
+// BuildTestOptions creates test options with logger if DECK_TEST_DEBUG is set.
+func BuildTestOptions() []Option {
+	var opts []Option
+
+	if os.Getenv("DECK_TEST_DEBUG") != "" {
+		logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}))
+		opts = append(opts, WithLogger(logger))
+	}
+
+	if testFolderID := os.Getenv("DECK_TEST_FOLDER_ID"); testFolderID != "" {
+		opts = append(opts, WithFolderID(testFolderID))
+	}
+
+	return opts
+}
 
 // global presentation pool instance.
 var presentationPool chan string
@@ -34,7 +53,8 @@ func initPresentationPool(ctx context.Context) ([]string, error) {
 
 	for i := range parallelCount {
 		eg.Go(func() error {
-			d, err := CreateFrom(egCtx, basePresentationID)
+			opts := BuildTestOptions()
+			d, err := CreateFrom(egCtx, basePresentationID, opts...)
 			if err != nil {
 				return fmt.Errorf("failed to create presentation %d: %w", i, err)
 			}
@@ -88,7 +108,9 @@ func TestMain(m *testing.M) {
 		wg.Add(1)
 		go func(presentationID string) {
 			defer wg.Done()
-			if err := Delete(context.Background(), presentationID); err != nil {
+
+			opts := BuildTestOptions()
+			if err := Delete(context.Background(), presentationID, opts...); err != nil {
 				log.Printf("Failed to delete presentation %s: %v\n", presentationID, err)
 			}
 		}(id)
