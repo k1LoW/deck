@@ -223,9 +223,9 @@ func (d *Deck) startUploadingImages(
 				if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
 					Type: "anyone",
 					Role: "reader",
-				}).Do(); err != nil {
+				}).SupportsAllDrives(true).Do(); err != nil {
 					// Clean up uploaded file on permission error
-					if deleteErr := d.driveSrv.Files.Delete(uploaded.Id).SupportsAllDrives(true).Do(); deleteErr != nil {
+					if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
 						d.logger.Error("failed to delete uploaded file after permission error",
 							slog.String("id", uploaded.Id),
 							slog.Any("error", deleteErr))
@@ -235,10 +235,10 @@ func (d *Deck) startUploadingImages(
 				}
 
 				// Get webContentLink
-				f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").Do()
+				f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").SupportsAllDrives(true).Do()
 				if err != nil {
 					// Clean up uploaded file on error
-					if deleteErr := d.driveSrv.Files.Delete(uploaded.Id).SupportsAllDrives(true).Do(); deleteErr != nil {
+					if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
 						d.logger.Error("failed to delete uploaded file after webContentLink fetch error",
 							slog.String("id", uploaded.Id),
 							slog.Any("error", deleteErr))
@@ -249,7 +249,7 @@ func (d *Deck) startUploadingImages(
 
 				if f.WebContentLink == "" {
 					// Clean up uploaded file on error
-					if deleteErr := d.driveSrv.Files.Delete(uploaded.Id).SupportsAllDrives(true).Do(); deleteErr != nil {
+					if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
 						d.logger.Error("failed to delete uploaded file after empty webContentLink",
 							slog.String("id", uploaded.Id),
 							slog.Any("error", deleteErr))
@@ -306,7 +306,7 @@ func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uplo
 				// Note: We only log errors here instead of returning them to ensure
 				// all images are attempted to be deleted. A single deletion failure
 				// should not prevent cleanup of other successfully uploaded images.
-				if err := d.driveSrv.Files.Delete(info.uploadedID).SupportsAllDrives(true).Do(); err != nil {
+				if err := d.deleteOrTrashFile(ctx, info.uploadedID); err != nil {
 					d.logger.Error("failed to delete uploaded image",
 						slog.String("id", info.uploadedID),
 						slog.Any("error", err))

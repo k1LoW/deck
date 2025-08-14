@@ -220,7 +220,7 @@ func Delete(ctx context.Context, id string, opts ...Option) (err error) {
 	if err := d.initialize(ctx); err != nil {
 		return err
 	}
-	if err := d.driveSrv.Files.Delete(id).Context(ctx).Do(); err != nil {
+	if err := d.deleteOrTrashFile(ctx, id); err != nil {
 		return fmt.Errorf("failed to delete presentation: %w", err)
 	}
 	return nil
@@ -420,7 +420,7 @@ func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
 		Type: "anyone",
 		Role: "reader",
 	}
-	if _, err := d.driveSrv.Permissions.Create(d.id, permission).Context(ctx).Do(); err != nil {
+	if _, err := d.driveSrv.Permissions.Create(d.id, permission).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
 		return fmt.Errorf("failed to set permission: %w", err)
 	}
 	return nil
@@ -628,4 +628,25 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	}
 
 	return nil
+}
+
+// deleteOrTrashFile attempts to delete a file, or move it to trash if deletion is not allowed.
+func (d *Deck) deleteOrTrashFile(ctx context.Context, id string) error {
+	file, err := d.driveSrv.Files.Get(id).SupportsAllDrives(true).Fields("capabilities").Context(ctx).Do()
+	if err != nil {
+		return fmt.Errorf("file not found or not accessible before deletion (file ID: %s): %w", id, err)
+	}
+
+	if file.Capabilities == nil || file.Capabilities.CanDelete {
+		return d.driveSrv.Files.Delete(id).SupportsAllDrives(true).Context(ctx).Do()
+	}
+	if file.Capabilities.CanTrash {
+		updateRequest := &drive.File{Trashed: true}
+		_, err := d.driveSrv.Files.Update(id, updateRequest).SupportsAllDrives(true).Context(ctx).Do()
+		if err != nil {
+			return fmt.Errorf("failed to trash presentation: %w", err)
+		}
+		return nil
+	}
+	return fmt.Errorf("file cannot be deleted or trashed (file ID: %s)", id)
 }
