@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.13.1](https://github.com/k1LoW/deck/compare/v1.13.0...v1.13.1) - 2025-08-14
+### Fix bug 🐛
+- fix: to work properly with Shared Drive by @Songmu in https://github.com/k1LoW/deck/pull/356
+### Other Changes
+- chore: Define BuildTestOptions for debugging on testing by @Songmu in https://github.com/k1LoW/deck/pull/358
+
 ## [v1.13.0](https://github.com/k1LoW/deck/compare/v1.12.1...v1.13.0) - 2025-08-13
 ### Other Changes
 - chore: improv the efficiency of screenshot capture during testing by @Songmu in https://github.com/k1LoW/deck/pull/351
