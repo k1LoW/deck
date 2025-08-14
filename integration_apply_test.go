@@ -29,7 +29,8 @@ func TestApply(t *testing.T) {
 			// Acquire a presentation from the pool
 			presentationID := AcquirePresentation(t)
 
-			d, err := New(ctx, WithPresentationID(presentationID))
+			opts := append([]Option{WithPresentationID(presentationID)}, BuildTestOptions()...)
+			d, err := New(ctx, opts...)
 			if err != nil {
 				t.Fatal(err)
 			}

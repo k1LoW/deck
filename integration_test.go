@@ -81,7 +81,8 @@ func TestApplyMarkdown(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
+			opts := append([]deck.Option{deck.WithPresentationID(presentationID)}, deck.BuildTestOptions()...)
+			d, err := deck.New(ctx, opts...)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -211,7 +212,8 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			d, err := deck.New(ctx, deck.WithPresentationID(presentationID))
+			opts := append([]deck.Option{deck.WithPresentationID(presentationID)}, deck.BuildTestOptions()...)
+			d, err := deck.New(ctx, opts...)
 			if err != nil {
 				t.Fatal(err)
 			}
