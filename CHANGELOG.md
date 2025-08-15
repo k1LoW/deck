@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.14.0](https://github.com/k1LoW/deck/compare/v1.13.1...v1.14.0) - 2025-08-15
+### New Features 🎉
+- feat: support service account with several authentication methods by @Songmu in https://github.com/k1LoW/deck/pull/359
+### Other Changes
+- chore: define deck.newDeck for code reuse by @Songmu in https://github.com/k1LoW/deck/pull/360
+- chore: update and cleanup Makefile by @Songmu in https://github.com/k1LoW/deck/pull/362
+- chore: enhance and filter error.json by @Songmu in https://github.com/k1LoW/deck/pull/364
+
 ## [v1.13.1](https://github.com/k1LoW/deck/compare/v1.13.0...v1.13.1) - 2025-08-14
 ### Fix bug 🐛
 - fix: to work properly with Shared Drive by @Songmu in https://github.com/k1LoW/deck/pull/356
