@@ -1,8 +1,7 @@
 PKG = github.com/k1LoW/deck
-COMMIT = $$(git describe --tags --always)
-DATE = $$(date '+%Y-%m-%d_%H:%M:%S%z')
+COMMIT = $(shell git rev-parse --short HEAD)
 
-BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT) -X $(PKG).date=$(DATE)
+BUILD_LDFLAGS = "-s -w -X $(PKG)/version.Revision=$(COMMIT)"
 
 default: test
 

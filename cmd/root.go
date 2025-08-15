@@ -42,7 +42,7 @@ var rootCmd = &cobra.Command{
 	Short:        "deck is a tool for creating deck using Markdown and Google Slides",
 	Long:         `deck is a tool for creating deck using Markdown and Google Slides.`,
 	SilenceUsage: true,
-	Version:      version.Version,
+	Version:      fmt.Sprintf("%s (rev:%s)", version.Version, version.Revision),
 }
 
 type errorData struct {
@@ -50,6 +50,7 @@ type errorData struct {
 	StackTraces any       `json:"stack_traces"`
 	CreatedAt   time.Time `json:"created_at"`
 	Version     string    `json:"version"`
+	Revision    string    `json:"revision"`
 }
 
 // https://slides.googleapis.com/v1/presentations/xxxxxx
@@ -75,6 +76,7 @@ func Execute() {
 			StackTraces: errors.StackTraces(err),
 			CreatedAt:   time.Now(),
 			Version:     version.Version,
+			Revision:    version.Revision,
 		}
 		b, err := json.Marshal(d)
 		if err != nil {
