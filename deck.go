@@ -104,16 +104,8 @@ func New(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d := &Deck{
-		styles: map[string]*slides.TextStyle{},
-		shapes: map[string]*slides.ShapeProperties{},
-	}
-	for _, opt := range opts {
-		if err := opt(d); err != nil {
-			return nil, err
-		}
-	}
-	if err := d.initialize(ctx); err != nil {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
 		return nil, err
 	}
 	if err := d.refresh(ctx); err != nil {
@@ -127,16 +119,8 @@ func Create(ctx context.Context, opts ...Option) (_ *Deck, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d := &Deck{
-		styles: map[string]*slides.TextStyle{},
-		shapes: map[string]*slides.ShapeProperties{},
-	}
-	for _, opt := range opts {
-		if err := opt(d); err != nil {
-			return nil, err
-		}
-	}
-	if err := d.initialize(ctx); err != nil {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
 		return nil, err
 	}
 	title := "Untitled"
@@ -163,16 +147,8 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d := &Deck{
-		styles: map[string]*slides.TextStyle{},
-		shapes: map[string]*slides.ShapeProperties{},
-	}
-	for _, opt := range opts {
-		if err := opt(d); err != nil {
-			return nil, err
-		}
-	}
-	if err := d.initialize(ctx); err != nil {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
 		return nil, err
 	}
 	// copy presentation
@@ -209,15 +185,8 @@ func Delete(ctx context.Context, id string, opts ...Option) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d := &Deck{
-		styles: map[string]*slides.TextStyle{},
-	}
-	for _, opt := range opts {
-		if err := opt(d); err != nil {
-			return err
-		}
-	}
-	if err := d.initialize(ctx); err != nil {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
 		return err
 	}
 	if err := d.deleteOrTrashFile(ctx, id); err != nil {
@@ -424,6 +393,20 @@ func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to set permission: %w", err)
 	}
 	return nil
+}
+
+func newDeck(ctx context.Context, opts ...Option) (*Deck, error) {
+	d := &Deck{
+		styles: map[string]*slides.TextStyle{},
+		shapes: map[string]*slides.ShapeProperties{},
+	}
+	for _, opt := range opts {
+		if err := opt(d); err != nil {
+			return nil, err
+		}
+	}
+	err := d.initialize(ctx)
+	return d, err
 }
 
 func (d *Deck) initialize(ctx context.Context) (err error) {
