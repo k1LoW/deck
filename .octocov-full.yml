@@ -1,3 +1,4 @@
+# Settings for full testing. Badges will also be generated based on the output from here.
 codeToTestRatio:
   code:
     - '**/*.go'
@@ -8,7 +9,7 @@ testExecutionTime:
   if: true
 diff:
   datastores:
-    - artifact://${GITHUB_REPOSITORY}/default
+    - artifact://${GITHUB_REPOSITORY}
 comment:
   if: is_pull_request
 summary:
@@ -16,4 +17,4 @@ summary:
 report:
   if: is_default_branch
   datastores:
-    - artifact://${GITHUB_REPOSITORY}/default
+    - artifact://${GITHUB_REPOSITORY}
