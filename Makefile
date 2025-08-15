@@ -14,10 +14,10 @@ fulltest:
 	env TEST_INTEGRATION=1 go test -v ./... -coverprofile=coverage.out -covermode=count -count=1
 
 build:
-	go build -ldflags="$(BUILD_LDFLAGS)" -o deck cmd/deck/main.go
+	go build -ldflags=$(BUILD_LDFLAGS) -o deck cmd/deck/main.go
 
 install:
-	go install -ldflags="$(BUILD_LDFLAGS)" ./cmd/deck
+	go install -ldflags=$(BUILD_LDFLAGS) ./cmd/deck
 
 lint:
 	golangci-lint run ./...
