@@ -9,7 +9,7 @@ The service account needs the following OAuth2 scopes:
 - `https://www.googleapis.com/auth/presentations`
 - `https://www.googleapis.com/auth/drive`
 
-## Shared Drive Requirement
+### Shared Drive Requirement
 Newly created service accounts don't have their own Google Drive storage quota. You must:
 
 1. Create a **Shared Drive** (not a shared folder)
@@ -46,12 +46,12 @@ More secure as it doesn't require storing long-lived credentials.
 
 ```yaml
 - uses: google-github-actions/auth@v2
- with:
-   workload_identity_provider: 'projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_NAME>/providers/<PROVIDER_NAME>'
-   service_account: '<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com'
+  with:
+    workload_identity_provider: 'projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/<POOL_NAME>/providers/<PROVIDER_NAME>'
+    service_account: '<SERVICE_ACCOUNT_NAME>@<PROJECT_ID>.iam.gserviceaccount.com'
 - run: deck apply slides.md --folder-id <SHARED_DRIVE_ID>
- env:
-   DECK_ENABLE_ADC: '1'
+  env:
+    DECK_ENABLE_ADC: '1'
 ```
 
 ### Method 3: Access Token (For long-running tasks)
