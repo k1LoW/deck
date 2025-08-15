@@ -6,13 +6,11 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/errors"
-	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	"google.golang.org/api/slides/v1"
@@ -419,27 +417,13 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	if err := os.MkdirAll(config.StateHomePath(), 0700); err != nil {
 		return err
 	}
-	creds := filepath.Join(config.DataHomePath(), "credentials.json")
-	if d.profile != "" {
-		p := filepath.Join(config.DataHomePath(), fmt.Sprintf("credentials-%s.json", d.profile))
-		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
-			creds = p
-		}
-	}
-	b, err := os.ReadFile(creds)
+
+	// Get client option (service account or OAuth2)
+	client, err := d.getHTTPClient(ctx)
 	if err != nil {
 		return err
 	}
 
-	config, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
-	if err != nil {
-		return err
-	}
-
-	client, err := d.getHTTPClient(ctx, config)
-	if err != nil {
-		return err
-	}
 	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return err

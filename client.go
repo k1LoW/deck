@@ -21,14 +21,90 @@ import (
 	"github.com/k1LoW/errors"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/slides/v1"
+)
+
+// Authentication environment variables.
+// These are primarily for service account usage and override the default OAuth2 flow.
+const (
+	// EnvServiceAccountKey - JSON content of a service account key (not a file path).
+	// Example: DECK_SERVICE_ACCOUNT_KEY='{"type":"service_account","project_id":"..."}'.
+	EnvServiceAccountKey = "DECK_SERVICE_ACCOUNT_KEY"
+
+	// EnvEnableADC - Enables Application Default Credentials (ADC) via google.DefaultClient.
+	// Primarily for GitHub Actions with Workload Identity Federation.
+	// ref. https://github.com/google-github-actions/auth
+	EnvEnableADC = "DECK_ENABLE_ADC"
+
+	// EnvAccessToken - Pre-existing OAuth2 access token for authentication.
+	// Useful for tasks >5 minutes since GitHub OIDC tokens expire in 5 minutes.
+	EnvAccessToken = "DECK_ACCESS_TOKEN"
 )
 
 var userAgent = "k1LoW-deck/" + version.Version + " (+https://github.com/k1LoW/deck)"
 
-func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.Client, err error) {
+// getHTTPClient returns the appropriate client option based on available credentials.
+func (d *Deck) getHTTPClient(ctx context.Context) (*http.Client, error) {
+	client, err := func(ctx context.Context) (*http.Client, error) {
+		if credsJSON := os.Getenv(EnvServiceAccountKey); credsJSON != "" {
+			d.logger.Debug("using service account key authentication")
+			return d.getServiceAccountHTTPClient(ctx, credsJSON)
+		}
+		if os.Getenv(EnvEnableADC) != "" {
+			d.logger.Debug("using Application Default Credentials")
+			return google.DefaultClient(ctx,
+				"https://www.googleapis.com/auth/presentations", "https://www.googleapis.com/auth/drive")
+		}
+		if token := os.Getenv(EnvAccessToken); token != "" {
+			d.logger.Debug("using access token authentication")
+			return oauth2.NewClient(ctx, oauth2.StaticTokenSource(&oauth2.Token{
+				AccessToken: token,
+			})), nil
+		}
+		// default OAuth2 user authentication
+		d.logger.Debug("using OAuth2 user authentication")
+		return d.getDefaultHTTPClient(ctx)
+	}(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get HTTP client: %w", err)
+	}
+
+	retryClient := retryablehttp.NewClient()
+	retryClient.HTTPClient = client
+	retryClient.RetryMax = 10
+	retryClient.RetryWaitMin = 1 * time.Second
+	retryClient.RetryWaitMax = 30 * time.Second
+	retryClient.Logger = newAPILogger(d.logger)
+
+	return retryClient.StandardClient(), nil
+}
+
+func (d *Deck) getOAuthConfig() (*oauth2.Config, error) {
+	creds := filepath.Join(config.DataHomePath(), "credentials.json")
+	if d.profile != "" {
+		p := filepath.Join(config.DataHomePath(), fmt.Sprintf("credentials-%s.json", d.profile))
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			creds = p
+		}
+	}
+	b, err := os.ReadFile(creds)
+	if err != nil {
+		return nil, err
+	}
+
+	return google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
+}
+
+func (d *Deck) getDefaultHTTPClient(ctx context.Context) (_ *http.Client, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+	cfg, err := d.getOAuthConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	tokenPath := filepath.Join(config.StateHomePath(), "token.json")
 	if d.profile != "" {
 		tokenPath = filepath.Join(config.StateHomePath(), fmt.Sprintf("token-%s.json", d.profile))
@@ -76,16 +152,7 @@ func (d *Deck) getHTTPClient(ctx context.Context, cfg *oauth2.Config) (_ *http.C
 			}
 		}
 	}
-	client := cfg.Client(ctx, token)
-
-	retryClient := retryablehttp.NewClient()
-	retryClient.HTTPClient = client
-	retryClient.RetryMax = 10
-	retryClient.RetryWaitMin = 1 * time.Second
-	retryClient.RetryWaitMax = 30 * time.Second
-	retryClient.Logger = newAPILogger(d.logger)
-
-	return retryClient.StandardClient(), nil
+	return cfg.Client(ctx, token), nil
 }
 
 func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (_ *oauth2.Token, err error) {
@@ -228,6 +295,18 @@ func generateCodeChallenge(verifier string) string {
 	h := sha256.New()
 	h.Write([]byte(verifier))
 	return base64.RawURLEncoding.EncodeToString(h.Sum(nil))
+}
+
+// getServiceAccountHTTPClient creates an HTTP client using service account credentials.
+func (d *Deck) getServiceAccountHTTPClient(ctx context.Context, credsJSON string) (*http.Client, error) {
+	config, err := google.JWTConfigFromJSON([]byte(credsJSON),
+		"https://www.googleapis.com/auth/presentations",
+		"https://www.googleapis.com/auth/drive",
+	)
+	if err != nil {
+		return nil, err
+	}
+	return config.Client(ctx), nil
 }
 
 var _ retryablehttp.LeveledLogger = (*apiLogger)(nil)
