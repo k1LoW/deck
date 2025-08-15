@@ -1,18 +1,22 @@
 name: Integration Test
 on:
   workflow_dispatch:
-  pull_request:
-    types: [labeled]
   schedule:
     - cron: "36 20 * * 0"
+  pull_request:
+    types: [labeled]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.label.name }}
+  cancel-in-progress: true
 jobs:
   integration:
     # Run only on manual, schedule trigger or when 'integration-test' label is added
-    if: contains(fromJSON('["workflow_dispatch", "schedule"]'), github.event_name) || (github.event_name == 'pull_request' && github.event.label.name == 'integration-test')
+    if: github.event_name != 'pull_request' || github.event.label.name == 'integration-test'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: 'read'
+      pull-requests: 'write'
       id-token: 'write'
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -38,3 +42,5 @@ jobs:
         make fulltest
     - name: Run octocov
       uses: k1LoW/octocov-action@73d561f65d59e66899ed5c87e4621a913b5d5c20 # v1.5.0
+      with:
+        config: .octocov-full.yml
