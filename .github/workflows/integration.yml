@@ -1,0 +1,40 @@
+name: Integration Test
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+  schedule:
+    - cron: "36 20 * * 0"
+jobs:
+  integration:
+    # Run only on manual, schedule trigger or when 'integration-test' label is added
+    if: contains(fromJSON('["workflow_dispatch", "schedule"]'), github.event_name) || (github.event_name == 'pull_request' && github.event.label.name == 'integration-test')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      with:
+        persist-credentials: false
+    - uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
+      with:
+        workload_identity_provider: projects/195438090918/locations/global/workloadIdentityPools/deck-integration/providers/github
+        service_account: deck-integration-test@braided-shift-468913-t8.iam.gserviceaccount.com
+    - name: Set up Go
+      uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+      with:
+        go-version-file: go.mod
+    - name: Set up Chrome
+      uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+      with:
+        chrome-version: stable
+    - name: Run integration tests
+      env:
+        DECK_TEST_FOLDER_ID: '0AIEL8jopnJdRUk9PVA'
+        DECK_ENABLE_ADC: "true"
+      run: |
+        make fulltest
+    - name: Run octocov
+      uses: k1LoW/octocov-action@73d561f65d59e66899ed5c87e4621a913b5d5c20 # v1.5.0
