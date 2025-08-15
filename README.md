@@ -29,6 +29,10 @@
     - Since there is no need to publish the app, add your email address as a test user from [Google Auth Platform / Audience](https://console.cloud.google.com/auth/audience).
 - Download credentials file to `${XDG_DATA_HOME:-~/.local/share}/deck/credentials.json`.
 
+#### For CI/CD automation (Service Account)
+
+If you're setting up deck for automated workflows (GitHub Actions, CI/CD pipelines), see [Service Account Setup Guide](docs/setup-service-account.md).
+
 ### Get presentation ID
 
 #### When using an existing presentation
