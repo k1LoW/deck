@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/k1LoW/deck/config"
@@ -64,6 +65,10 @@ func Execute() {
 		for _, line := range tb.Lines() {
 			// replace Google API URL last key with a placeholder
 			line = googleAPIURLRe.ReplaceAllString(line, "${1}**********************")
+			if strings.Contains(line, `"level":"DEBUG"`) && strings.Contains(line, `"request":`) {
+				// Skip debug logs that contain request details
+				continue
+			}
 			var m map[string]any
 			if err := json.Unmarshal([]byte(line), &m); err != nil {
 				latestLogs = append(latestLogs, line)
