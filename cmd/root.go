@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/k1LoW/deck/config"
@@ -42,7 +43,7 @@ var rootCmd = &cobra.Command{
 	Short:        "deck is a tool for creating deck using Markdown and Google Slides",
 	Long:         `deck is a tool for creating deck using Markdown and Google Slides.`,
 	SilenceUsage: true,
-	Version:      version.Version,
+	Version:      fmt.Sprintf("%s (rev:%s)", version.Version, version.Revision),
 }
 
 type errorData struct {
@@ -50,6 +51,7 @@ type errorData struct {
 	StackTraces any       `json:"stack_traces"`
 	CreatedAt   time.Time `json:"created_at"`
 	Version     string    `json:"version"`
+	Revision    string    `json:"revision"`
 }
 
 // https://slides.googleapis.com/v1/presentations/xxxxxx
@@ -63,6 +65,10 @@ func Execute() {
 		for _, line := range tb.Lines() {
 			// replace Google API URL last key with a placeholder
 			line = googleAPIURLRe.ReplaceAllString(line, "${1}**********************")
+			if strings.Contains(line, `"level":"DEBUG"`) && strings.Contains(line, `"request":`) {
+				// Skip debug logs that contain request details
+				continue
+			}
 			var m map[string]any
 			if err := json.Unmarshal([]byte(line), &m); err != nil {
 				latestLogs = append(latestLogs, line)
@@ -75,6 +81,7 @@ func Execute() {
 			StackTraces: errors.StackTraces(err),
 			CreatedAt:   time.Now(),
 			Version:     version.Version,
+			Revision:    version.Revision,
 		}
 		b, err := json.Marshal(d)
 		if err != nil {

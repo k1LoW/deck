@@ -1,5 +1,8 @@
 package version
 
-const Name string = "deck"
+const (
+	Name    = "deck"
+	Version = "1.13.1"
+)
 
-var Version = "1.13.1" //nostyle:repetition
+var Revision = "HEAD"

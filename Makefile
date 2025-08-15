@@ -1,8 +1,7 @@
 PKG = github.com/k1LoW/deck
-COMMIT = $$(git describe --tags --always)
-DATE = $$(date '+%Y-%m-%d_%H:%M:%S%z')
+COMMIT = $(shell git rev-parse --short HEAD)
 
-BUILD_LDFLAGS = -X $(PKG).commit=$(COMMIT) -X $(PKG).date=$(DATE)
+BUILD_LDFLAGS = "-s -w -X $(PKG)/version.Revision=$(COMMIT)"
 
 default: test
 
@@ -15,10 +14,10 @@ fulltest:
 	env TEST_INTEGRATION=1 go test -v ./... -coverprofile=coverage.out -covermode=count -count=1
 
 build:
-	go build -ldflags="$(BUILD_LDFLAGS)" -o deck cmd/deck/main.go
+	go build -ldflags=$(BUILD_LDFLAGS) -trimpath -o deck cmd/deck/main.go
 
 install:
-	go install -ldflags="$(BUILD_LDFLAGS)" ./cmd/deck
+	go install -ldflags=$(BUILD_LDFLAGS) -trimpath ./cmd/deck
 
 lint:
 	golangci-lint run ./...
