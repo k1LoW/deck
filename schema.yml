@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+
+"$schema": https://json-schema.org/draft/2020-12/schema
+title: deck Configuration Schema
+description: Configuration schema for deck - a tool for creating Google Slides presentations from Markdown
+type: object
+additionalProperties: false
+properties:
+  breaks:
+    type: boolean
+    description: "Whether to display line breaks in the presentation as line breaks"
+  codeBlockToImageCommand:
+    type: string
+    description: "Command to convert code blocks to images"
+    examples:
+    - "laminate"
+    - "silicon -l {{lang}} -o {{output}}"
+  folderID:
+    type: string
+    description: "Folder ID where new presentations are created and temporary images are uploaded"
+    pattern: "^[a-zA-Z0-9_-]+$"
+  basePresentationID:
+    type: string
+    description: "Base presentation ID whose theme will be reused for new presentations"
+    pattern: "^[a-zA-Z0-9_-]+$"
+  defaults:
+    type: array
+    description: "Default page configurations based on CEL expressions"
+    items:
+      type: object
+      additionalProperties: false
+      properties:
+        if:
+          type: string
+          description: "CEL expression condition for applying this default configuration"
+          examples:
+            - "page == 1"
+            - "titles.size() == 1 && headings[2].size() == 1"
+            - "speakerNote.contains('TODO')"
+            - "true"
+        layout:
+          type: string
+          description: "Slide layout to apply when the condition is met"
+          examples:
+            - "title"
+            - "title-and-body"
+            - "part"
+            - "section"
+            - "chapter"
+        freeze:
+          type: boolean
+          description: "Whether to freeze (fix and prevent updates to) the page when the condition is met"
+        ignore:
+          type: boolean
+          description: "Whether to ignore (exclude from processing) the page when the condition is met"
+        skip:
+          type: boolean
+          description: "Whether to skip (mark as skipped) the page when the condition is met"
+      required:
+        - if
+      oneOf:
+        - required: ["layout"]
+        - required: ["freeze"]
+        - required: ["ignore"]
+        - required: ["skip"]
