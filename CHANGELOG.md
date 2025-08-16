@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.15.0](https://github.com/k1LoW/deck/compare/v1.14.0...v1.15.0) - 2025-08-16
+### New Features 🎉
+- feat: Add basePresentationID configuration for default theme reuse by @Songmu in https://github.com/k1LoW/deck/pull/367
+- feat: Add JSON schema for configuration validation by @Songmu in https://github.com/k1LoW/deck/pull/368
+### Other Changes
+- ci: introduce integration test on GitHub Actions by @Songmu in https://github.com/k1LoW/deck/pull/355
+- ci: separate octocov settings for full tests and standard tests by @Songmu in https://github.com/k1LoW/deck/pull/366
+
 ## [v1.14.0](https://github.com/k1LoW/deck/compare/v1.13.1...v1.14.0) - 2025-08-15
 ### New Features 🎉
 - feat: support service account with several authentication methods by @Songmu in https://github.com/k1LoW/deck/pull/359
