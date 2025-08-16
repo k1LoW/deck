@@ -51,22 +51,20 @@ If the file doesn't exist, it will be created.`,
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
 		}
-
-		// Use flag folderID if provided, otherwise use config folderID
-		targetFolderID := folderID
-		if targetFolderID == "" && cfg.FolderID != "" {
-			targetFolderID = cfg.FolderID
+		if from == "" {
+			from = cfg.BasePresentationID
+		}
+		if folderID == "" {
+			folderID = cfg.FolderID
 		}
 
 		opts := []deck.Option{
 			deck.WithProfile(profile),
 		}
-		if targetFolderID != "" {
-			opts = append(opts, deck.WithFolderID(targetFolderID))
+		if folderID != "" {
+			opts = append(opts, deck.WithFolderID(folderID))
 		}
-		var (
-			d *deck.Deck
-		)
+		var d *deck.Deck
 		if from != "" {
 			d, err = deck.CreateFrom(ctx, from, opts...)
 			if err != nil {

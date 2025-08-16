@@ -18,6 +18,8 @@ type Config struct {
 	CodeBlockToImageCommand string `yaml:"codeBlockToImageCommand,omitempty" json:"codeBlockToImageCommand,omitempty"`
 	// folder ID to create presentations and upload temporary images to
 	FolderID string `yaml:"folderID,omitempty" json:"folderID,omitempty"`
+	// base presentation ID to use for new presentations
+	BasePresentationID string `yaml:"basePresentationID,omitempty" json:"basePresentationID,omitempty"`
 }
 
 type DefaultCondition struct {
