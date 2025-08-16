@@ -33,7 +33,42 @@
 
 If you're setting up deck for automated workflows (GitHub Actions, CI/CD pipelines), see [Service Account Setup Guide](docs/setup-service-account.md).
 
-### Get presentation ID
+### Prepare presentation ID and markdown file
+
+`deck` requires two main components:
+- **Presentation ID**: A unique identifier for your Google Slides presentation (e.g., `xxxxxXXXXxxxxxXXXXxxxxxxxxxx` from the URL `https://docs.google.com/presentation/d/xxxxxXXXXxxxxxXXXXxxxxxxxxxx/edit`)
+- **Markdown file**: Your slide content written in markdown format
+
+#### When creating a new presentation
+
+You can create a new presentation with the `deck new` command:
+
+```console
+$ deck new deck.md --title "Talk about deck"
+Applied frontmatter to deck.md
+xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+```
+
+This will create (or update) the specified markdown file with frontmatter containing the presentation ID and title.
+
+##### Reusing theme from an existing presentation
+
+To reuse the theme from an existing presentation, you have two options:
+
+**Option 1: Use the `--from` flag**
+```console
+$ deck new deck.md --from yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
+xxxxxXXXXxxxxxXXXXxxxxxxxxxx
+```
+
+**Option 2: Set a default base presentation in your configuration file**
+
+```yaml
+# ~/.config/deck/config.yml
+basePresentationID: "yyyyyyyYYYYyYYYYYYYyyyyyyyyy"
+```
+
+With this configuration, you can reuse the theme from the base presentation without using the `--from` flag. If both the configuration and `--from` flag are present, the `--from` flag takes precedence.
 
 #### When using an existing presentation
 
@@ -48,28 +83,7 @@ yyyyyYYYYyyyyyYYYYyyyyyyyyyy    Team Project Slides
 > [!NOTE]
 > `deck` fully supports Google Shared Drives (Team Drives). Presentations stored in shared drives are automatically included in listings and can be operated on just like personal drive presentations.
 
-For example, presentation ID is `xxxxxXXXXxxxxxXXXXxxxxxxxxxx` of https://docs.google.com/presentation/d/xxxxxXXXXxxxxxXXXXxxxxxxxxxx/edit .
-
-#### When creating a new presentation
-
-You can create a new presentation with the deck new command and obtain the presentation ID.
-
-If you want to apply a theme, specify the presentation ID of a presentation that is already using that theme with the `--from` option.
-
-```console
-$ deck new --from yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
-xxxxxXXXXxxxxxXXXXxxxxxxxxxx
-```
-
-You can also specify a markdown file:
-
-```console
-$ deck new presentation.md --title "Talk about deck"
-Applied frontmatter to presentation.md
-xxxxxXXXXxxxxxXXXXxxxxxxxxxx
-```
-
-This will create (or update) the specified markdown file with frontmatter containing the presentation ID and title.
+To use this presentation, specify it with the `--presentation-id` flag or add it to your markdown file's frontmatter as `presentationID`.
 
 ### Write deck in markdown
 
@@ -151,6 +165,7 @@ The configuration file uses YAML format and supports the same fields as frontmat
 
 ```yaml
 # Global configuration for deck
+basePresentationID: "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
 breaks: true
 codeBlockToImageCommand: "go run testdata/txt2img/main.go"
 folderID: "1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
@@ -172,6 +187,7 @@ defaults:
 
 ##### Available configuration fields
 
+- **`basePresentationID`** (string): Base presentation ID to use as a template when creating new presentations
 - **`breaks`** (boolean): Global line break rendering behavior
 - **`codeBlockToImageCommand`** (string): Global command to convert code blocks to images
 - **`folderID`** (string): Default folder ID to create presentations and upload temporary images to
