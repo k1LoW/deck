@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       with:
         persist-credentials: false
-    - uses: google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f # v2.1.7
+    - uses: google-github-actions/auth@b7593ed2efd1c1617e1b0254da33b86225adb2a5 # v2.1.12
       with:
         workload_identity_provider: projects/195438090918/locations/global/workloadIdentityPools/deck-integration/providers/github
         service_account: deck-integration-test@braided-shift-468913-t8.iam.gserviceaccount.com
@@ -31,7 +31,7 @@ jobs:
       with:
         go-version-file: go.mod
     - name: Set up Chrome
-      uses: browser-actions/setup-chrome@c785b87e244131f27c9f19c1a33e2ead956ab7ce # v1.7.3
+      uses: browser-actions/setup-chrome@b94431e051d1c52dcbe9a7092a4f10f827795416 # v2.1.0
       with:
         chrome-version: stable
     - name: Run integration tests
