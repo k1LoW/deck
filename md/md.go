@@ -889,8 +889,6 @@ func toBullet(m byte) deck.Bullet {
 		return deck.BulletDash
 	case '.', ')':
 		return deck.BulletNumber
-	case 'a':
-		return deck.BulletAlpha
 	default:
 		return deck.BulletNone
 	}
