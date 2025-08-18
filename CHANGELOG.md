@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.15.1](https://github.com/k1LoW/deck/compare/v1.15.0...v1.15.1) - 2025-08-18
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/370
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/369
+- fix: resolving inconsistencies in the information structure of list bullets by @Songmu in https://github.com/k1LoW/deck/pull/374
+
 ## [v1.15.0](https://github.com/k1LoW/deck/compare/v1.14.0...v1.15.0) - 2025-08-16
 ### New Features 🎉
 - feat: Add basePresentationID configuration for default theme reuse by @Songmu in https://github.com/k1LoW/deck/pull/367
