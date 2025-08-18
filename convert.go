@@ -2,6 +2,7 @@
 package deck
 
 import (
+	"regexp"
 	"strings"
 
 	"google.golang.org/api/slides/v1"
@@ -121,6 +122,9 @@ func extractText(text *slides.TextContent) string {
 	return strings.TrimSpace(str)
 }
 
+// Regexp to match numberd (ordered) bullet points. (e.g., "1.", "2.", "A.", "B.", "a.", "b.", "i.", "ii.", "iii.").
+var numberedBulletReg = regexp.MustCompile(`^(?:[0-9]+|[a-zA-Z]|i+)\.$`)
+
 // convertToParagraphs converts TextContent to a slice of Paragraphs.
 func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 	if text == nil || len(text.TextElements) == 0 {
@@ -149,9 +153,8 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 				// Determine the type of bullet points based on glyph content
 				if element.ParagraphMarker.Bullet.Glyph != "" {
 					glyph := element.ParagraphMarker.Bullet.Glyph
-					// Check for numbered bullets (1, 2, 3, etc.)
-					if strings.ContainsAny(glyph, "0123456789") {
-						currentBullet = BulletNumber
+					if numberedBulletReg.MatchString(glyph) {
+						currentBullet = BulletNumbered
 					} else {
 						currentBullet = BulletDash
 					}

@@ -833,9 +833,7 @@ func convertBullet(b Bullet) string {
 	switch b {
 	case BulletDash:
 		return "BULLET_DISC_CIRCLE_SQUARE"
-	case BulletNumber:
-		return "NUMBERED_DIGIT_ALPHA_ROMAN"
-	case BulletAlpha:
+	case BulletNumbered:
 		return "NUMBERED_DIGIT_ALPHA_ROMAN"
 	default:
 		return "UNRECOGNIZED"
@@ -847,20 +845,10 @@ func getBulletPresetFromSlidesBullet(bullet *slides.Bullet) Bullet {
 	if bullet == nil || bullet.Glyph == "" {
 		return BulletNone
 	}
-
 	glyph := bullet.Glyph
-	// Check for numbered bullets (1, 2, 3, etc.)
-	for _, digit := range "0123456789" {
-		if strings.Contains(glyph, string(digit)) {
-			return BulletNumber
-		}
+	if numberedBulletReg.MatchString(glyph) {
+		return BulletNumbered
 	}
-
-	// Check for alphabetic bullets (a., A., etc.)
-	if strings.ContainsAny(glyph, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ") {
-		return BulletAlpha
-	}
-
 	// Default to disc/circle/square bullets
 	return BulletDash
 }

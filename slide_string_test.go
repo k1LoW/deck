@@ -136,21 +136,10 @@ func TestParagraphString(t *testing.T) {
 				Fragments: []*Fragment{
 					{Value: "Number bullet item"},
 				},
-				Bullet:  BulletNumber,
+				Bullet:  BulletNumbered,
 				Nesting: 0,
 			},
 			expected: "1. Number bullet item",
-		},
-		{
-			name: "paragraph with alpha bullet",
-			paragraph: &Paragraph{
-				Fragments: []*Fragment{
-					{Value: "Alpha bullet item"},
-				},
-				Bullet:  BulletAlpha,
-				Nesting: 0,
-			},
-			expected: "a. Alpha bullet item",
 		},
 		{
 			name: "paragraph with nesting level 1",
@@ -206,7 +195,7 @@ func TestParagraphString(t *testing.T) {
 				Fragments: []*Fragment{
 					{Value: "Nested numbered item"},
 				},
-				Bullet:  BulletNumber,
+				Bullet:  BulletNumbered,
 				Nesting: 1,
 			},
 			expected: "  1. Nested numbered item",
@@ -393,18 +382,12 @@ func TestBlockQuoteString(t *testing.T) {
 						Fragments: []*Fragment{
 							{Value: "Number bullet"},
 						},
-						Bullet: BulletNumber,
-					},
-					{
-						Fragments: []*Fragment{
-							{Value: "Alpha bullet"},
-						},
-						Bullet: BulletAlpha,
+						Bullet: BulletNumbered,
 					},
 				},
 				Nesting: 0,
 			},
-			expected: "> - Dash bullet\n> 1. Number bullet\n> a. Alpha bullet\n",
+			expected: "> - Dash bullet\n> 1. Number bullet\n",
 		},
 	}
 

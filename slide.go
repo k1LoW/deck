@@ -88,10 +88,9 @@ type Bullet string
 
 // Bullet constants for different bullet point types.
 const (
-	BulletNone   Bullet = ""
-	BulletDash   Bullet = "-"
-	BulletNumber Bullet = "1"
-	BulletAlpha  Bullet = "a"
+	BulletNone     Bullet = ""
+	BulletDash     Bullet = "-"
+	BulletNumbered Bullet = "1"
 )
 
 type MIMEType string
@@ -157,10 +156,8 @@ func (p *Paragraph) String() string {
 	switch p.Bullet {
 	case BulletDash:
 		result.WriteString("- ")
-	case BulletNumber:
+	case BulletNumbered:
 		result.WriteString("1. ")
-	case BulletAlpha:
-		result.WriteString("a. ")
 	}
 	for _, fragment := range p.Fragments {
 		if fragment == nil {
