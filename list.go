@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/k1LoW/errors"
-	"google.golang.org/api/slides/v1"
 )
 
 // List Google Slides presentations.
@@ -13,16 +12,8 @@ func List(ctx context.Context, opts ...Option) (_ []*Presentation, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	d := &Deck{
-		styles: map[string]*slides.TextStyle{},
-		shapes: map[string]*slides.ShapeProperties{},
-	}
-	for _, opt := range opts {
-		if err := opt(d); err != nil {
-			return nil, err
-		}
-	}
-	if err := d.initialize(ctx); err != nil {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
 		return nil, err
 	}
 	return d.List()
@@ -35,7 +26,8 @@ func (d *Deck) List() (_ []*Presentation, err error) {
 	}()
 	var presentations []*Presentation
 
-	r, err := d.driveSrv.Files.List().SupportsAllDrives(true).IncludeItemsFromAllDrives(true).Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
+	r, err := d.driveSrv.Files.List().SupportsAllDrives(true).IncludeItemsFromAllDrives(true).
+		Q("mimeType='application/vnd.google-apps.presentation'").Fields("files(id, name)").Do()
 	if err != nil {
 		return nil, err
 	}
