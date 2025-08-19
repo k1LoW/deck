@@ -111,7 +111,7 @@ var applyCmd = &cobra.Command{
 			return fmt.Errorf("presentation ID is required, please specify it with --presentation-id or in the frontmatter of the markdown file")
 		}
 
-		var contents md.Contents
+		contents := make(md.Contents, 0, len(m.Contents))
 		for _, content := range m.Contents {
 			if content.Ignore != nil && *content.Ignore {
 				continue
