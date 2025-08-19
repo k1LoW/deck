@@ -80,19 +80,18 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 		h.spinner.Disable()
 		_, _ = h.stdout.Write(h.prefix)
 	}
-	if r.Message == "applied pages" {
+
+	switch r.Message {
+	case "applied pages":
 		msg := buildRepeatedSymbols(r, '.')
 		return h.write([]byte(yellow(msg)))
-	}
-	if r.Message == "deleted pages" {
+	case "deleted pages":
 		msg := buildRepeatedSymbols(r, '-')
 		return h.write([]byte(gray(msg)))
-	}
-	if r.Message == "appended pages" {
+	case "appended pages":
 		msg := buildRepeatedSymbols(r, '+')
 		return h.write([]byte(yellow(msg)))
-	}
-	if r.Message == "moved page" {
+	case "moved page":
 		var from, to int64
 		r.Attrs(func(attr slog.Attr) bool {
 			if attr.Key == "from_index" {
@@ -115,12 +114,7 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 		}
 		return nil
 	}
-	if r.Message == "inserted page" {
-		if err := h.write([]byte(yellow("+"))); err != nil {
-			return err
-		}
-		return nil
-	}
+
 	if strings.Contains(r.Message, "because freeze:true") {
 		if err := h.write([]byte(cyan("*"))); err != nil {
 			return err
@@ -131,11 +125,12 @@ func (h *dotHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 		if err := h.write([]byte(red("!"))); err != nil {
 			return err
 		}
-		return nil
+		_, err = h.stdout.Write([]byte("\n"))
+		return err
 	}
-	if r.Message == "apply completed" {
-		_, _ = h.stdout.Write([]byte("\n"))
-		return nil
+	if strings.Contains(r.Message, "apply completed") || r.Message == "applied changes" {
+		_, err = h.stdout.Write([]byte("\n"))
+		return err
 	}
 	return nil
 }

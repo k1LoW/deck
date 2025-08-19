@@ -85,33 +85,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		return fmt.Errorf("failed to generate actions: %w", err)
 	}
 
-	var actionDetails []actionDetail
-	for _, action := range actions {
-		switch action.actionType {
-		case actionTypeAppend:
-			actionDetails = append(actionDetails, actionDetail{
-				ActionType:  actionTypeAppend,
-				Titles:      action.slide.Titles,
-				Index:       nil,
-				MoveToIndex: nil,
-			})
-		case actionTypeUpdate:
-			actionDetails = append(actionDetails, actionDetail{
-				ActionType:  actionTypeUpdate,
-				Titles:      action.slide.Titles,
-				Index:       &action.index,
-				MoveToIndex: nil,
-			})
-		case actionTypeMove:
-			actionDetails = append(actionDetails, actionDetail{
-				ActionType:  actionTypeMove,
-				Titles:      action.slide.Titles,
-				Index:       &action.index,
-				MoveToIndex: &action.moveToIndex,
-			})
-		}
-	}
-
 	// Pre-fetch current images in parallel for only the slides that will be updated
 	currentImages, err := d.preloadCurrentImages(ctx, actions)
 	if err != nil {
@@ -132,7 +105,7 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		ClearAllUploadStateFromCache()
 	}()
 
-	d.logger.Info("applying actions", slog.Any("actions", actionDetails))
+	d.logger.Info("applying actions", slog.Any("actions", toActionLogs(actions)))
 
 	var layoutsForAppendPages []string
 	for _, action := range actions {
@@ -242,6 +215,26 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		return d.DeletePages(ctx, deletingIndices)
 	}
 	return d.refresh(ctx)
+}
+
+type actionLog struct {
+	ActionType  actionType `json:"action_type"`
+	Titles      []string   `json:"titles,omitempty"`
+	Index       *int       `json:"index,omitempty"`
+	MoveToIndex *int       `json:"move_to_index,omitempty"`
+}
+
+func toActionLogs(actions []*action) []*actionLog {
+	var actionLogs = make([]*actionLog, len(actions))
+	for i, action := range actions {
+		actionLogs[i] = &actionLog{
+			ActionType:  action.actionType,
+			Titles:      action.slide.Titles,
+			Index:       &action.index,
+			MoveToIndex: &action.moveToIndex,
+		}
+	}
+	return actionLogs
 }
 
 var apiErrReg = regexp.MustCompile(`googleapi: Error 400: Invalid requests\[([0-9]+)\]\.`)

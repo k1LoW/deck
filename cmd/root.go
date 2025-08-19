@@ -54,21 +54,27 @@ type errorData struct {
 	Revision    string    `json:"revision"`
 }
 
-// https://slides.googleapis.com/v1/presentations/xxxxxx
-// https://www.googleapis.com/drive/v3/files/xxxxxx
-var googleAPIURLRe = regexp.MustCompile(`(https://(?:slides.googleapis.com/v1/presentations|www.googleapis.com/drive/v3/files)/)([^\?"]+)`)
+var (
+	// https://slides.googleapis.com/v1/presentations/xxxxxx
+	// https://www.googleapis.com/drive/v3/files/xxxxxx
+	googleAPIURLRe = regexp.MustCompile(`(https://(?:slides.googleapis.com/v1/presentations|www.googleapis.com/drive/v3/files)/)([^\?"]+)`)
+	titleMaskRe    = regexp.MustCompile(`"titles":\[".*?"\]`)
+)
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		// Write stack trace log to state directory
 		var latestLogs []any
 		for _, line := range tb.Lines() {
-			// replace Google API URL last key with a placeholder
-			line = googleAPIURLRe.ReplaceAllString(line, "${1}**********************")
 			if strings.Contains(line, `"level":"DEBUG"`) && strings.Contains(line, `"request":`) {
 				// Skip debug logs that contain request details
 				continue
 			}
+
+			// replace Google API URL last key with a placeholder
+			line = googleAPIURLRe.ReplaceAllString(line, "${1}**********************")
+			line = titleMaskRe.ReplaceAllString(line, `"titles":["**********"]`)
+
 			var m map[string]any
 			if err := json.Unmarshal([]byte(line), &m); err != nil {
 				latestLogs = append(latestLogs, line)
