@@ -338,7 +338,7 @@ codeBlockToImageCommand: "some-command"
 **Frontmatter example:**
 ```yaml
 ---
-codeBlockToImageCommand: "some-sommand"
+codeBlockToImageCommand: "some-command"
 ---
 ```
 
