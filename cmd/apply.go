@@ -111,7 +111,13 @@ var applyCmd = &cobra.Command{
 			return fmt.Errorf("presentation ID is required, please specify it with --presentation-id or in the frontmatter of the markdown file")
 		}
 
-		contents := m.Contents
+		var contents md.Contents
+		for _, content := range m.Contents {
+			if content.Ignore != nil && *content.Ignore {
+				continue
+			}
+			contents = append(contents, content)
+		}
 		tailHandler := slog.NewJSONHandler(tb, &slog.HandlerOptions{
 			Level: slog.LevelDebug,
 		})
