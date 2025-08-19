@@ -84,13 +84,6 @@ type textBox struct {
 	fromMarkdown bool
 }
 
-type actionDetail struct {
-	ActionType  actionType `json:"action_type"`
-	Titles      []string   `json:"titles,omitempty"`
-	Index       *int       `json:"index,omitempty"`
-	MoveToIndex *int       `json:"move_to_index,omitempty"`
-}
-
 // Presentation represents a Google Slides presentation.
 type Presentation struct {
 	ID    string
