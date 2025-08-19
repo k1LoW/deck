@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.15.2](https://github.com/k1LoW/deck/compare/v1.15.1...v1.15.2) - 2025-08-19
+### Fix bug 🐛
+- fix: correct handling of `ignore` outside in non-watch mode. by @k1LoW in https://github.com/k1LoW/deck/pull/378
+### Other Changes
+- Fix typo in README.md by @willnet in https://github.com/k1LoW/deck/pull/376
+- chore: refine around logs by @Songmu in https://github.com/k1LoW/deck/pull/377
+
 ## [v1.15.1](https://github.com/k1LoW/deck/compare/v1.15.0...v1.15.1) - 2025-08-18
 ### Other Changes
 - chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/370
