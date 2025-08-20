@@ -425,7 +425,8 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 				})
 			case *ast.HTMLBlock:
 				if v.HTMLBlockType == ast.HTMLBlockType2 {
-					block := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(convert(v.Lines().Value(b))), "<!--"), "-->"))
+					block := strings.TrimSpace(strings.TrimSuffix(
+						strings.TrimPrefix(strings.TrimSpace(string(v.Lines().Value(b))), "<!--"), "-->"))
 					config := &Config{}
 					if err := json.Unmarshal([]byte(block), config); err == nil {
 						content.Layout = config.Layout
@@ -438,7 +439,7 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 				} else {
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{{
-							Value: convert(bytes.Trim(v.Lines().Value(b), " \n")),
+							Value: string(bytes.Trim(v.Lines().Value(b), " \n")),
 							Bold:  false,
 						}},
 						Bullet:  deck.BulletNone,
@@ -620,7 +621,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 				SoftLineBreak: children[0].SoftLineBreak,
 				Fragment: &deck.Fragment{
 					Value:     children[0].Value,
-					Link:      convert(childNode.Destination),
+					Link:      string(childNode.Destination),
 					Bold:      children[0].Bold,
 					Italic:    children[0].Italic,
 					Code:      children[0].Code,
@@ -637,7 +638,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 					StyleName: styleName,
 				}})
 		case *ast.Text:
-			v := convert(childNode.Segment.Value(b))
+			v := string(childNode.Segment.Value(b))
 			if v == "" {
 				if len(frags) > 0 {
 					frags[len(frags)-1].SoftLineBreak = childNode.SoftLineBreak()
@@ -714,7 +715,7 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 			// For String nodes, try to get their content
 			if childNode.Value != nil {
 				frag := seedFragment
-				frag.Value = convert(childNode.Value)
+				frag.Value = string(childNode.Value)
 				frag.StyleName = styleName
 				frags = append(frags, &fragment{Fragment: &frag})
 			} else {
@@ -752,13 +753,6 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 
 // classRe is a regular expression to extract class attribute from HTML tags.
 var classRe = regexp.MustCompile(`class="\s*([^"]*)\s*"|class='\s*([^']*)\s*'`)
-
-var convertRep = strings.NewReplacer("<br>", "\n", "<br/>", "\n", "<br />", "\n")
-
-// convert transforms input bytes to a string, replacing HTML line break tags with newlines.
-func convert(in []byte) string {
-	return convertRep.Replace(string(in))
-}
 
 // DiffContents compares two Contents and returns the page numbers that have changed.
 // Page numbers are 1-indexed.

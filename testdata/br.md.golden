@@ -19,6 +19,20 @@
                 "value": "World"
               }
             ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "You can use "
+              },
+              {
+                "value": "\u003cbr\u003e",
+                "code": true
+              },
+              {
+                "value": " to create line breaks in Markdown."
+              }
+            ]
           }
         ]
       }
