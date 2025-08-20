@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.15.3](https://github.com/k1LoW/deck/compare/v1.15.2...v1.15.3) - 2025-08-20
+### Fix bug 🐛
+- fix: removal of unnecessary <br> processing by @Songmu in https://github.com/k1LoW/deck/pull/379
+### Other Changes
+- ci: make tagpr work with workflow dispatch by @Songmu in https://github.com/k1LoW/deck/pull/381
+
 ## [v1.15.2](https://github.com/k1LoW/deck/compare/v1.15.1...v1.15.2) - 2025-08-19
 ### Fix bug 🐛
 - fix: correct handling of `ignore` outside in non-watch mode. by @k1LoW in https://github.com/k1LoW/deck/pull/378
