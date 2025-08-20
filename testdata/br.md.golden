@@ -33,6 +33,13 @@
                 "value": " to create line breaks in Markdown."
               }
             ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Backslash escape: \u003cbr\u003e"
+              }
+            ]
           }
         ]
       }

@@ -4,4 +4,6 @@ Hello<br>World
 
 You can use `<br>` to create line breaks in Markdown.
 
+Backslash escape: \<br\>
+
 <!-- {"layout":"title-and-body"} -->
