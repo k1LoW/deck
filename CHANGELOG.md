@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.16.1](https://github.com/k1LoW/deck/compare/v1.16.0...v1.16.1) - 2025-08-20
+### Other Changes
+- perf: for public image URLs, skip upload images via Google Drive. by @Songmu in https://github.com/k1LoW/deck/pull/385
+
 ## [v1.16.0](https://github.com/k1LoW/deck/compare/v1.15.3...v1.16.0) - 2025-08-20
 ### New Features 🎉
 - feat: support Backslash escapes by @Songmu in https://github.com/k1LoW/deck/pull/382
