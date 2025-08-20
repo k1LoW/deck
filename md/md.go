@@ -23,6 +23,7 @@ import (
 	"github.com/yuin/goldmark/extension"
 	east "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
+	gutil "github.com/yuin/goldmark/util"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -638,7 +639,11 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 					StyleName: styleName,
 				}})
 		case *ast.Text:
-			v := string(childNode.Segment.Value(b))
+			b := childNode.Segment.Value(b)
+			if !childNode.IsRaw() {
+				b = gutil.UnescapePunctuations(b)
+			}
+			v := string(b)
 			if v == "" {
 				if len(frags) > 0 {
 					frags[len(frags)-1].SoftLineBreak = childNode.SoftLineBreak()
