@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.16.0](https://github.com/k1LoW/deck/compare/v1.15.3...v1.16.0) - 2025-08-20
+### New Features 🎉
+- feat: support Backslash escapes by @Songmu in https://github.com/k1LoW/deck/pull/382
+
 ## [v1.15.3](https://github.com/k1LoW/deck/compare/v1.15.2...v1.15.3) - 2025-08-20
 ### Fix bug 🐛
 - fix: removal of unnecessary <br> processing by @Songmu in https://github.com/k1LoW/deck/pull/379
