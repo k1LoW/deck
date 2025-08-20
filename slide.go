@@ -201,7 +201,8 @@ func NewImage(pathOrURL string) (_ *Image, err error) {
 	}()
 	var b io.Reader
 	var modTime time.Time
-	if strings.HasPrefix(pathOrURL, "http://") || strings.HasPrefix(pathOrURL, "https://") {
+	isWebURL := strings.HasPrefix(pathOrURL, "http://") || strings.HasPrefix(pathOrURL, "https://")
+	if isWebURL {
 		i, ok := LoadImageCache(pathOrURL)
 		if ok {
 			return i, nil
@@ -251,6 +252,9 @@ func NewImage(pathOrURL string) (_ *Image, err error) {
 		return nil, fmt.Errorf("failed to create image from buffer: %w", err)
 	}
 	i.url = pathOrURL
+	if isWebURL {
+		i.webContentLink = pathOrURL
+	}
 	i.modTime = modTime
 	StoreImageCache(pathOrURL, i)
 	return i, nil
@@ -474,10 +478,7 @@ func (i *Image) UploadInfo(ctx context.Context) (*uploadInfo, error) {
 		i.uploadMutex.RUnlock()
 
 		switch state {
-		case uploadStateNotStarted:
-			// Image upload not started, return empty value
-			return nil, nil
-		case uploadStateCompleted:
+		case uploadStateNotStarted, uploadStateCompleted:
 			return &uploadInfo{
 				url:       link,
 				codeBlock: i.codeBlock,
@@ -499,13 +500,15 @@ func (i *Image) UploadInfo(ctx context.Context) (*uploadInfo, error) {
 func (i *Image) IsUploadNeeded() bool {
 	i.uploadMutex.RLock()
 	defer i.uploadMutex.RUnlock()
-	return i.uploadState == uploadStateNotStarted
+	return i.uploadState == uploadStateNotStarted && i.webContentLink == ""
 }
 
 func (i *Image) ClearUploadState() {
 	i.uploadMutex.Lock()
 	defer i.uploadMutex.Unlock()
-	i.uploadState = uploadStateNotStarted
-	i.webContentLink = ""
-	i.uploadError = nil
+	if i.uploadState != uploadStateNotStarted {
+		i.uploadState = uploadStateNotStarted
+		i.webContentLink = ""
+		i.uploadError = nil
+	}
 }
