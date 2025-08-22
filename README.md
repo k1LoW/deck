@@ -22,8 +22,8 @@
 #### Get and set your OAuth client credentials
 
 - Create (or reuse) a developer project at https://console.cloud.google.com.
-- Enable `Google Slides API` and `Google Drive API` at [`API & Services` page](https://console.cloud.google.com/apis/dashboard).
-- Go to `Credentials` page and click `+ CREATE CREDENTIALS` at the top.
+- Enable [`Google Slides API`](https://console.cloud.google.com/apis/library/slides.googleapis.com) and [`Google Drive API`](https://console.cloud.google.com/apis/library/drive.googleapis.com) at [`API & Services` page](https://console.cloud.google.com/apis/dashboard).
+- Go to [`Credentials` page](https://console.cloud.google.com/apis/credentials) and click [`+ CREATE CREDENTIALS`](https://console.cloud.google.com/auth/clients/create) at the top.
 - Create `OAuth client ID` type of credentials.
 - Choose type `Desktop app`.
 - Download credentials file to `~/.local/share/deck/credentials.json` ( or `${XDG_DATA_HOME}/deck/credentials.json` ).
