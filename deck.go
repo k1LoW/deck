@@ -414,6 +414,7 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	// Get client option (service account or OAuth2)
 	client, err := d.getHTTPClient(ctx)
 	if err != nil {
+		fmt.Println("Check https://github.com/k1LoW/deck?tab=readme-ov-file#setup for setup instructions")
 		return err
 	}
 
