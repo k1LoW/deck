@@ -93,7 +93,11 @@ func (d *Deck) getOAuthConfig() (*oauth2.Config, error) {
 		return nil, err
 	}
 
-	return google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
+	c, err := google.ConfigFromJSON(b, slides.PresentationsScope, slides.DriveScope)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get oauth config from json: %w", err)
+	}
+	return c, nil
 }
 
 func (d *Deck) getDefaultHTTPClient(ctx context.Context) (_ *http.Client, err error) {
