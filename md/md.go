@@ -306,8 +306,10 @@ func (contents Contents) toSlides(ctx context.Context, codeBlockToImageCmd strin
 }
 
 func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titleLevel int, breaks bool) error {
-	currentBody := &deck.Body{}
-	content.Bodies = append(content.Bodies, currentBody)
+	if len(content.Bodies) == 0 {
+		content.Bodies = append(content.Bodies, &deck.Body{})
+	}
+	currentBody := content.Bodies[len(content.Bodies)-1]
 	currentListMarker := deck.BulletNone
 	if err := ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if entering {
