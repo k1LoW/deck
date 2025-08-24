@@ -102,5 +102,52 @@
         "Block Quote"
       ]
     }
+  },
+  {
+    "layout": "",
+    "titles": [
+      "Multi Paragraphs in a Block Quote"
+    ],
+    "block_quotes": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "This is the first paragraph."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "This is the second paragraph."
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "This is a list item."
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "This is another list item."
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "2": [
+        "Multi Paragraphs in a Block Quote"
+      ]
+    }
   }
 ]
