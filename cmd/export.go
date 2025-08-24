@@ -24,6 +24,8 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/k1LoW/deck"
@@ -47,7 +49,13 @@ var exportCmd = &cobra.Command{
 				// Deprecated
 				presentationID = f
 				cmd.Println(color.YellowString("WARNING: The argument is deprecated. Use --presentation-id instead."))
-				// return err
+			} else if out == "" {
+				// If no output destination is specified, output to a file name based on the MD file name.
+				// We could also consider generating file names from presentation names or titles, but from a
+				// local file management perspective, it is more intuitive to use the same file name.
+				// Furthermore, if we use presentation names, we need to sanitize the string to make filesystem safe.
+				// So, following the MD file name is a good default.
+				out = strings.TrimSuffix(filepath.Base(f), filepath.Ext(f)) + ".pdf"
 			}
 			if presentationID == "" && markdownData.Frontmatter != nil && markdownData.Frontmatter.PresentationID != "" {
 				presentationID = markdownData.Frontmatter.PresentationID
@@ -56,6 +64,11 @@ var exportCmd = &cobra.Command{
 		if presentationID == "" {
 			return fmt.Errorf("presentation ID is required. Use --presentation-id or set it in the frontmatter of the markdown file")
 		}
+		if out == "" {
+			// If the presentationID is passed as an argument (not recommended), "deck.pdf" will be used as a default output name.
+			out = "deck.pdf"
+		}
+
 		opts := []deck.Option{
 			deck.WithProfile(profile),
 			deck.WithPresentationID(presentationID),
@@ -79,5 +92,5 @@ var exportCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(exportCmd)
 	exportCmd.Flags().StringVarP(&presentationID, "presentation-id", "i", "", "Google Slides presentation ID")
-	exportCmd.Flags().StringVarP(&out, "out", "o", "deck.pdf", "output file")
+	exportCmd.Flags().StringVarP(&out, "out", "o", "", `output file (default: follow the md file name, or "deck.pdf")`)
 }
