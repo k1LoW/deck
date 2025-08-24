@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Songmu/prompter"
 	"github.com/fatih/color"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/md"
@@ -76,6 +77,12 @@ var exportCmd = &cobra.Command{
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			return err
+		}
+		if _, err = os.Stat(out); err == nil {
+			if !prompter.YN(fmt.Sprintf("%q already exists. Do you want to overwrite it?", out), false) {
+				fmt.Fprintln(os.Stderr, "The export has been canceled.")
+				return nil
+			}
 		}
 		f, err := os.Create(out)
 		if err != nil {
