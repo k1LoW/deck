@@ -580,7 +580,10 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
 					ObjectId:        textBoxObjectID,
 					ShapeProperties: sp,
-					Fields:          "shapeBackgroundFill,outline,shadow",
+					// We want to specify `autofit.autofitType` (such as `SHAPE_AUTOFIT`), but we cannot specify it
+					// because there is a problem with the Google Slide API.
+					// See: https://issuetracker.google.com/issues/199176586
+					Fields: "shapeBackgroundFill,outline,shadow",
 				},
 			})
 		}
