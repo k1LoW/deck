@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	styleBlockQuote                = "blockquote"
-	descriptionImageFromMarkdown   = "Image generated from markdown"
-	descriptionTextboxFromMarkdown = "Textbox generated from markdown"
+	styleBlockQuote                          = "blockquote"
+	descriptionImageFromMarkdown             = "Image generated from markdown"
+	descriptionTextboxFromMarkdown           = "Textbox generated from markdown"
+	descriptionBlockquoteTextboxFromMarkdown = "Blockquote textbox generated from markdown"
 )
 
 // Apply the markdown slides to the presentation.
@@ -309,6 +310,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 		currentImages             []*Image
 		currentImageObjectIDMap   = map[*Image]string{} // key: *Image, value: objectID
 		currentTextBoxes          []*textBox
+		currentBlockquoteIDs      []string
 		currentTextBoxObjectIDMap = map[*textBox]string{} // key: *textBox, value: objectID
 		currentTables             []*slides.PageElement
 	)
@@ -373,8 +375,10 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			currentImageObjectIDMap[image] = element.ObjectId
 		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
 			tb := &textBox{}
-			if element.Description == descriptionTextboxFromMarkdown {
-				tb.fromMarkdown = true
+			tb.fromMarkdown = element.Description == descriptionTextboxFromMarkdown ||
+				element.Description == descriptionBlockquoteTextboxFromMarkdown
+			if element.Description == descriptionBlockquoteTextboxFromMarkdown {
+				currentBlockquoteIDs = append(currentBlockquoteIDs, element.ObjectId)
 			}
 			tb.paragraphs = convertToParagraphs(element.Shape.Text)
 			currentTextBoxes = append(currentTextBoxes, tb)
@@ -537,56 +541,70 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 	}
 	requests = append(requests, tableRequests...)
 
+	reuseBlockquotes := len(currentBlockquoteIDs) == len(slide.BlockQuotes)
 	// set text boxes
 	for i, bq := range slide.BlockQuotes {
-		found := slices.ContainsFunc(currentTextBoxes, func(currentTextBox *textBox) bool {
+		if slices.ContainsFunc(currentTextBoxes, func(currentTextBox *textBox) bool {
 			return slices.EqualFunc(currentTextBox.paragraphs, bq.Paragraphs, paragraphEqual)
-		})
-		if found {
+		}) {
 			continue
 		}
-		// create new text box
-		textBoxObjectID := fmt.Sprintf("textbox-%s", uuid.New().String())
-		requests = append(requests, &slides.Request{
-			CreateShape: &slides.CreateShapeRequest{
-				ObjectId: textBoxObjectID,
-				ElementProperties: &slides.PageElementProperties{
-					PageObjectId: currentSlide.ObjectId,
-					Size: &slides.Size{
-						Height: &slides.Dimension{
-							Magnitude: float64(500000 * len(bq.Paragraphs)),
-							Unit:      "EMU",
-						},
-						Width: &slides.Dimension{
-							Magnitude: 5000000,
-							Unit:      "EMU",
-						},
-					},
-					Transform: &slides.AffineTransform{
-						ScaleX:     1.0,
-						ScaleY:     1.0,
-						TranslateX: float64(i+1) * 100000,
-						TranslateY: float64(i+1) * 100000,
-						Unit:       "EMU",
-					},
-				},
-				ShapeType: "TEXT_BOX",
-			},
-		})
-
-		sp, ok := d.shapes[styleBlockQuote]
-		if ok {
+		var textBoxObjectID string
+		if reuseBlockquotes {
+			textBoxObjectID = currentBlockquoteIDs[i]
 			requests = append(requests, &slides.Request{
-				UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
-					ObjectId:        textBoxObjectID,
-					ShapeProperties: sp,
-					// We want to specify `autofit.autofitType` (such as `SHAPE_AUTOFIT`), but we cannot specify it
-					// because there is a problem with the Google Slide API.
-					// See: https://issuetracker.google.com/issues/199176586
-					Fields: "shapeBackgroundFill,outline,shadow",
+				DeleteText: &slides.DeleteTextRequest{
+					ObjectId: textBoxObjectID,
+					TextRange: &slides.Range{
+						Type: "ALL",
+					},
 				},
 			})
+		} else {
+			// create new text box
+			textBoxObjectID = fmt.Sprintf("textbox-%s", uuid.New().String())
+			requests = append(requests, &slides.Request{
+				CreateShape: &slides.CreateShapeRequest{
+					ObjectId: textBoxObjectID,
+					ElementProperties: &slides.PageElementProperties{
+						PageObjectId: currentSlide.ObjectId,
+						Size: &slides.Size{
+							Height: &slides.Dimension{
+								Magnitude: float64(500000 * len(bq.Paragraphs)),
+								Unit:      "EMU",
+							},
+							Width: &slides.Dimension{
+								Magnitude: 5000000,
+								Unit:      "EMU",
+							},
+						},
+						Transform: &slides.AffineTransform{
+							ScaleX:     1.0,
+							ScaleY:     1.0,
+							TranslateX: float64(i+1) * 100000,
+							TranslateY: float64(i+1) * 100000,
+							Unit:       "EMU",
+						},
+					},
+					ShapeType: "TEXT_BOX",
+				},
+			})
+
+			sp, ok := d.shapes[styleBlockQuote]
+			if ok {
+				requests = append(requests, &slides.Request{
+					UpdateShapeProperties: &slides.UpdateShapePropertiesRequest{
+						ObjectId:        textBoxObjectID,
+						ShapeProperties: sp,
+						// We want to specify `autofit.autofitType` (such as `SHAPE_AUTOFIT`), but we cannot specify it
+						// because there is a problem with the Google Slide API.
+						// See: https://issuetracker.google.com/issues/199176586
+						Fields: "shapeBackgroundFill,outline,shadow",
+					},
+				})
+			}
 		}
+
 		reqs, styleReqs, err := d.applyParagraphsRequests(textBoxObjectID, bq.Paragraphs)
 		if err != nil {
 			return nil, fmt.Errorf("failed to apply paragraphs: %w", err)
@@ -607,7 +625,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 		requests = append(requests, &slides.Request{
 			UpdatePageElementAltText: &slides.UpdatePageElementAltTextRequest{
 				ObjectId:    textBoxObjectID,
-				Description: descriptionTextboxFromMarkdown,
+				Description: descriptionBlockquoteTextboxFromMarkdown,
 			},
 		})
 	}
@@ -650,15 +668,17 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 		if !currentTextBox.fromMarkdown {
 			continue
 		}
-		found := slices.ContainsFunc(slide.BlockQuotes, func(bq *BlockQuote) bool {
+		if slices.ContainsFunc(slide.BlockQuotes, func(bq *BlockQuote) bool {
 			return slices.EqualFunc(currentTextBox.paragraphs, bq.Paragraphs, paragraphEqual)
-		})
-		if found {
+		}) {
 			continue
 		}
 		textBoxObjectID, ok := currentTextBoxObjectIDMap[currentTextBox]
 		if !ok {
 			return nil, fmt.Errorf("text box object ID not found for text box: %v", currentTextBox.paragraphs)
+		}
+		if reuseBlockquotes && slices.Contains(currentBlockquoteIDs, textBoxObjectID) {
+			continue
 		}
 		requests = append(requests, &slides.Request{
 			DeleteObject: &slides.DeleteObjectRequest{
