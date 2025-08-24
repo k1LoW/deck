@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.17.1](https://github.com/k1LoW/deck/compare/v1.17.0...v1.17.1) - 2025-08-24
+### Fix bug 🐛
+- fix: paragraph handling in blockquotes by @Songmu in https://github.com/k1LoW/deck/pull/396
+
 ## [v1.17.0](https://github.com/k1LoW/deck/compare/v1.16.1...v1.17.0) - 2025-08-24
 ### New Features 🎉
 - feat: derive the PDF name to be exported from the MD file name by @Songmu in https://github.com/k1LoW/deck/pull/392
