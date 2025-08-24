@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.17.0](https://github.com/k1LoW/deck/compare/v1.16.1...v1.17.0) - 2025-08-24
+### New Features 🎉
+- feat: derive the PDF name to be exported from the MD file name by @Songmu in https://github.com/k1LoW/deck/pull/392
+- feat: reuse blockquote block if possible by @Songmu in https://github.com/k1LoW/deck/pull/394
+### Other Changes
+- doc: quick links to GCP configuration by @exoego in https://github.com/k1LoW/deck/pull/388
+
 ## [v1.16.1](https://github.com/k1LoW/deck/compare/v1.16.0...v1.16.1) - 2025-08-20
 ### Other Changes
 - perf: for public image URLs, skip upload images via Google Drive. by @Songmu in https://github.com/k1LoW/deck/pull/385
