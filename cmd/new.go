@@ -27,6 +27,7 @@ import (
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/deck/md"
+	"github.com/k1LoW/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -65,16 +66,17 @@ If the file doesn't exist, it will be created.`,
 			opts = append(opts, deck.WithFolderID(folderID))
 		}
 		var d *deck.Deck
+		var err_ error
 		if from != "" {
-			d, err = deck.CreateFrom(ctx, from, opts...)
-			if err != nil {
-				return err
-			}
+			d, err_ = deck.CreateFrom(ctx, from, opts...)
 		} else {
-			d, err = deck.Create(ctx, opts...)
-			if err != nil {
-				return err
+			d, err_ = deck.Create(ctx, opts...)
+		}
+		if err_ != nil {
+			if errors.Is(err_, deck.HttpClientError) {
+				cmd.Println(deck.SetupInstructionMessage)
 			}
+			return err_
 		}
 		if title != "" {
 			if err := d.UpdateTitle(ctx, title); err != nil {

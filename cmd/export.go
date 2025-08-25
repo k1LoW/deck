@@ -31,6 +31,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/md"
+	"github.com/k1LoW/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -76,6 +77,9 @@ var exportCmd = &cobra.Command{
 		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
+			if errors.Is(err, deck.HttpClientError) {
+				cmd.Println(deck.SetupInstructionMessage)
+			}
 			return err
 		}
 		if _, err = os.Stat(out); err == nil {

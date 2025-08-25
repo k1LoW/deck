@@ -400,6 +400,10 @@ func newDeck(ctx context.Context, opts ...Option) (*Deck, error) {
 	return d, err
 }
 
+var HttpClientError = errors.New("http client error")
+
+const SetupInstructionMessage = "Check https://github.com/k1LoW/deck?tab=readme-ov-file#setup for setup instructions"
+
 func (d *Deck) initialize(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -414,7 +418,7 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	// Get client option (service account or OAuth2)
 	client, err := d.getHTTPClient(ctx)
 	if err != nil {
-		return err
+		return errors.Join(err, HttpClientError)
 	}
 
 	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
