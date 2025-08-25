@@ -57,8 +57,9 @@ type errorData struct {
 var (
 	// https://slides.googleapis.com/v1/presentations/xxxxxx
 	// https://www.googleapis.com/drive/v3/files/xxxxxx
-	googleAPIURLRe = regexp.MustCompile(`(https://(?:slides.googleapis.com/v1/presentations|www.googleapis.com/drive/v3/files)/)([^\?"]+)`)
-	titleMaskRe    = regexp.MustCompile(`"titles":\[".*?"\]`)
+	googleAPIURLRe = regexp.MustCompile(
+		`(https://(?:slides.googleapis.com/v1/presentations|www.googleapis.com/drive/v3/files)/)([^\?"]+)`)
+	titleMaskRe = regexp.MustCompile(`"titles":\[".*?"\]`)
 )
 
 func Execute() {
@@ -91,11 +92,11 @@ func Execute() {
 		}
 		b, err := json.Marshal(d)
 		if err != nil {
-			_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
+			rootCmd.Printf("%v\n", err)
 		} else {
 			dumpPath := filepath.Join(config.StateHomePath(), "error.json")
 			if err := os.WriteFile(dumpPath, b, 0o600); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "failed to write error.json to %s: %v\n", dumpPath, err)
+				rootCmd.Printf("failed to write error.json to %s: %v\n", dumpPath, err)
 			}
 		}
 		os.Exit(1)

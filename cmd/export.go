@@ -84,7 +84,7 @@ var exportCmd = &cobra.Command{
 		}
 		if _, err = os.Stat(out); err == nil {
 			if !prompter.YN(fmt.Sprintf("%q already exists. Do you want to overwrite it?", out), false) {
-				fmt.Fprintln(os.Stderr, "The export has been canceled.")
+				cmd.Println("The export has been canceled.")
 				return nil
 			}
 		}
