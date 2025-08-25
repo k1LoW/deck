@@ -402,8 +402,6 @@ func newDeck(ctx context.Context, opts ...Option) (*Deck, error) {
 
 var HttpClientError = errors.New("http client error")
 
-const SetupInstructionMessage = "Check https://github.com/k1LoW/deck?tab=readme-ov-file#setup for setup instructions"
-
 func (d *Deck) initialize(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)

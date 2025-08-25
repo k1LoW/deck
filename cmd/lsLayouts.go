@@ -61,7 +61,7 @@ var lsLayoutsCmd = &cobra.Command{
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			if errors.Is(err, deck.HttpClientError) {
-				cmd.Println(deck.SetupInstructionMessage)
+				cmd.Println(setupInstructionMessage)
 			}
 			return err
 		}

@@ -78,13 +78,13 @@ var exportCmd = &cobra.Command{
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			if errors.Is(err, deck.HttpClientError) {
-				cmd.Println(deck.SetupInstructionMessage)
+				cmd.Println(setupInstructionMessage)
 			}
 			return err
 		}
 		if _, err = os.Stat(out); err == nil {
 			if !prompter.YN(fmt.Sprintf("%q already exists. Do you want to overwrite it?", out), false) {
-				fmt.Fprintln(os.Stderr, "The export has been canceled.")
+				cmd.Println("The export has been canceled.")
 				return nil
 			}
 		}

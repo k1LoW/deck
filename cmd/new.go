@@ -65,19 +65,19 @@ If the file doesn't exist, it will be created.`,
 		if folderID != "" {
 			opts = append(opts, deck.WithFolderID(folderID))
 		}
-		var d *deck.Deck
-		var err_ error
-		if from != "" {
-			d, err_ = deck.CreateFrom(ctx, from, opts...)
-		} else {
-			d, err_ = deck.Create(ctx, opts...)
-		}
-		if err_ != nil {
-			if errors.Is(err_, deck.HttpClientError) {
-				cmd.Println(deck.SetupInstructionMessage)
+		d, err := func() (*deck.Deck, error) {
+			if from != "" {
+				return deck.CreateFrom(ctx, from, opts...)
 			}
-			return err_
+			return deck.Create(ctx, opts...)
+		}()
+		if err != nil {
+			if errors.Is(err, deck.HttpClientError) {
+				cmd.Println(setupInstructionMessage)
+			}
+			return err
 		}
+
 		if title != "" {
 			if err := d.UpdateTitle(ctx, title); err != nil {
 				return err
