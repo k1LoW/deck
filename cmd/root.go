@@ -36,6 +36,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const setupInstructionMessage = "Check https://github.com/k1LoW/deck?tab=readme-ov-file#setup for setup instructions"
+
 var profile string
 
 var rootCmd = &cobra.Command{
