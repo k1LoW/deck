@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.17.2](https://github.com/k1LoW/deck/compare/v1.17.1...v1.17.2) - 2025-08-25
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.247.0 to 0.248.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/398
+- chore: guide users to doc when HTTP client is not constructed by @exoego in https://github.com/k1LoW/deck/pull/387
+- chore: use cmd.Print instead of fmt.Fprint for messages by @Songmu in https://github.com/k1LoW/deck/pull/400
+
 ## [v1.17.1](https://github.com/k1LoW/deck/compare/v1.17.0...v1.17.1) - 2025-08-24
 ### Fix bug 🐛
 - fix: paragraph handling in blockquotes by @Songmu in https://github.com/k1LoW/deck/pull/396
