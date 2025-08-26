@@ -94,6 +94,13 @@ The slide pages are separated by a line containing only three or more consecutiv
 >
 > Other horizontal rule elements (like `- - -`, `***`, `___`) are not treated as page separators but remain in the content as visual separators for multiple body placeholders.
 
+> [!NOTE]
+> Page separators must have a blank line before them to be recognized as thematic breaks. This is because Markdown uses `---` for multiple purposes:
+> - **Setext headings**: Text followed by `---` creates an H2 heading
+> - **Thematic breaks**: `---` with a preceding blank line creates a horizontal rule (page separator)
+>
+> Without a preceding blank line, the `---` may be interpreted as a Setext heading instead of a page separator.
+
 ### Apply deck written in markdown to Google Slides presentation
 
 ```console
