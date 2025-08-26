@@ -62,3 +62,7 @@ H2 heading
 ---
 
 This should not be split because the above --- is a setext heading
+
+---     
+
+Page 10 - page delimiter with trailing space
