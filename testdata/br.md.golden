@@ -40,6 +40,37 @@
                 "value": "Backslash escape: \u003cbr\u003e"
               }
             ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "\n"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Single break"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "\n"
+              },
+              {
+                "value": "\n"
+              }
+            ]
+          },
+          {
+            "fragments": [
+              {
+                "value": "Double breaks"
+              }
+            ]
           }
         ]
       }
