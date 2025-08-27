@@ -440,15 +440,15 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 					}
 					content.Comments = append(content.Comments, block)
 				} else {
-					trimed := string(bytes.Trim(v.Lines().Value(b), " \n"))
+					trimmed := string(bytes.Trim(v.Lines().Value(b), " \n"))
 					// Normalize single <br> tag to newline character
 					// In cases of multiple <br> tags, goldmark can handle them.
-					if trimed == "<br>" || trimed == "<br/>" || trimed == "<br />" {
-						trimed = "\n"
+					if trimmed == "<br>" || trimmed == "<br/>" || trimmed == "<br />" {
+						trimmed = "\n"
 					}
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{{
-							Value: trimed,
+							Value: trimmed,
 							Bold:  false,
 						}},
 						Bullet:  deck.BulletNone,
