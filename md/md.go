@@ -440,7 +440,7 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 					}
 					content.Comments = append(content.Comments, block)
 				} else {
-					trimmed := string(bytes.Trim(v.Lines().Value(b), " \n"))
+					trimmed := string(bytes.TrimSpace(v.Lines().Value(b)))
 					// Normalize single <br> tag to newline character
 					// In cases of multiple <br> tags, goldmark can handle them.
 					if trimmed == "<br>" || trimmed == "<br/>" || trimmed == "<br />" {
