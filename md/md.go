@@ -440,9 +440,16 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 					}
 					content.Comments = append(content.Comments, block)
 				} else {
+					trimmed := string(bytes.TrimSpace(v.Lines().Value(b)))
+					// Normalize single <br> tag to newline character.
+					// In cases of multiple <br> tags, goldmark can handle them.
+					// NOTE: This handling for this single <br> is likely a workaround. If the Markdown parser's behavior is changed, it should be removed.
+					if trimmed == "<br>" || trimmed == "<br/>" || trimmed == "<br />" {
+						trimmed = "\n"
+					}
 					currentBody.Paragraphs = append(currentBody.Paragraphs, &deck.Paragraph{
 						Fragments: []*deck.Fragment{{
-							Value: string(bytes.Trim(v.Lines().Value(b), " \n")),
+							Value: trimmed,
 							Bold:  false,
 						}},
 						Bullet:  deck.BulletNone,
