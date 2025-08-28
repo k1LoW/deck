@@ -230,6 +230,106 @@ func TestToSlidesCodeBlockToImageCommand(t *testing.T) {
 	}
 }
 
+func TestIsPageDelimiter(t *testing.T) {
+	tests := []struct {
+		name     string
+		line     []byte
+		expected bool
+	}{
+		// Basic valid delimiters
+		{
+			name:     "minimal three dashes",
+			line:     []byte("---"),
+			expected: true,
+		},
+		{
+			name:     "four dashes",
+			line:     []byte("----"),
+			expected: true,
+		},
+		{
+			name:     "five dashes",
+			line:     []byte("-----"),
+			expected: true,
+		},
+		{
+			name:     "many dashes",
+			line:     []byte("----------"),
+			expected: true,
+		},
+
+		// Invalid cases - too short
+		{
+			name:     "empty line",
+			line:     []byte(""),
+			expected: false,
+		},
+		{
+			name:     "one dash",
+			line:     []byte("-"),
+			expected: false,
+		},
+		{
+			name:     "two dashes",
+			line:     []byte("--"),
+			expected: false,
+		},
+
+		// Invalid cases - contains non-dash characters
+		{
+			name:     "dashes with space in middle",
+			line:     []byte("-- -"),
+			expected: false,
+		},
+		{
+			name:     "dashes with text in middle",
+			line:     []byte("--a-"),
+			expected: false,
+		},
+		{
+			name:     "equals signs",
+			line:     []byte("==="),
+			expected: false,
+		},
+		{
+			name:     "dashes with newline",
+			line:     []byte("---\n"),
+			expected: false,
+		},
+
+		// Trailing spaces and tabs
+		{
+			name:     "dashes with trailing space",
+			line:     []byte("--- "),
+			expected: true,
+		},
+		{
+			name:     "dashes with multiple trailing spaces",
+			line:     []byte("---  "),
+			expected: true,
+		},
+		{
+			name:     "dashes with trailing tabs",
+			line:     []byte("---\t\t"),
+			expected: true,
+		},
+		{
+			name:     "dashes with trailing spaces and tabs",
+			line:     []byte("---\t \t  "),
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isPageDelimiter(tt.line)
+			if got != tt.expected {
+				t.Errorf("isPageDelimiter(%q) = %v, want %v", string(tt.line), got, tt.expected)
+			}
+		})
+	}
+}
+
 // boolPtr is a helper function that returns a pointer to a bool value.
 func boolPtr(b bool) *bool {
 	return &b

@@ -903,7 +903,11 @@ func toBullet(m byte) deck.Bullet {
 }
 
 func isPageDelimiter(line []byte) bool {
-	return len(line) >= 3 && !slices.ContainsFunc(line, func(b byte) bool {
+	if len(line) < 3 {
+		return false
+	}
+	trimmed := bytes.TrimRight(line, " \t")
+	return len(trimmed) >= 3 && !slices.ContainsFunc(trimmed, func(b byte) bool {
 		return b != '-'
 	})
 }

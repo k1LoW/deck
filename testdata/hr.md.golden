@@ -200,5 +200,21 @@
         "H2 heading"
       ]
     }
+  },
+  {
+    "layout": "",
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "Page 10 - page delimiter with trailing space"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 ]
