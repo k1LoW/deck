@@ -13,10 +13,11 @@ import (
 type actionType int
 
 const (
-	actionTypeAppend actionType = iota // Append slide to the end
-	actionTypeUpdate                   // Update existing slide at a specific index
-	actionTypeMove                     // Move existing slide to a new index
-	actionTypeDelete                   // Delete slide at a specific index (not used in this diff)
+	actionTypeAppend   actionType = iota // Append slide to the end
+	actionTypeUpdate                     // Update existing slide at a specific index
+	actionTypeMove                       // Move existing slide to a new index
+	actionTypeDelete                     // Delete slide at a specific index (not used in this diff)
+	actionTypeSentinel actionType = 99   // Sentinel value appended to the end of the actions before processing
 )
 
 func (at actionType) String() string { //nostyle:recvtype
@@ -29,6 +30,8 @@ func (at actionType) String() string { //nostyle:recvtype
 		return "move"
 	case actionTypeDelete:
 		return "delete"
+	case actionTypeSentinel:
+		return "sentinel"
 	default:
 		return "unknown"
 	}

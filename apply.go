@@ -132,6 +132,8 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		}
 	}
 
+	// add sentinel action to flush remaining requests
+	actions = append(actions, &action{actionType: actionTypeSentinel})
 	var (
 		nextAppendingIndex = currentSlidesLen
 		deletingIndices    []int
@@ -194,26 +196,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		case actionTypeDelete:
 			deletingIndices = append(deletingIndices, action.index)
 		}
-	}
-	if len(applyRequests) > 0 {
-		if err := d.batchUpdate(ctx, applyRequests); err != nil {
-			return fmt.Errorf("failed to apply pages in batches: %w", err)
-		}
-
-		// Fill table content for updated/appended slides
-		if err := d.fillTableContentForActions(ctx, actions); err != nil {
-			return err
-		}
-
-		if appendingCount > 0 {
-			d.logger.Info("appended pages", slog.Int("count", appendingCount))
-		}
-		if applyingCount > 0 {
-			d.logger.Info("applied pages", slog.Int("count", applyingCount))
-		}
-	}
-	if len(deletingIndices) > 0 {
-		return d.DeletePages(ctx, deletingIndices)
 	}
 	return d.refresh(ctx)
 }
