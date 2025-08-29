@@ -224,6 +224,7 @@ var apiErrReg = regexp.MustCompile(`googleapi: Error 400: Invalid requests\[([0-
 
 func (d *Deck) batchUpdate(ctx context.Context, requests []*slides.Request) error {
 	d.logger.Info("batch updating presentation request", slog.Int("count", len(requests)))
+	d.fresh = false
 	// Although there is no explicit request limit specified in the Google Slides API specifications,
 	// we will set an upper limit as a precaution.
 	// After testing several times, it handles around 1,000 requests without any issues so that we will
