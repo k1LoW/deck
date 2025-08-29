@@ -32,6 +32,7 @@ type Deck struct {
 	styles             map[string]*slides.TextStyle
 	shapes             map[string]*slides.ShapeProperties
 	logger             *slog.Logger
+	fresh              bool
 }
 
 type Option func(*Deck) error
@@ -531,6 +532,9 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+	if d.fresh {
+		return nil
+	}
 	presentation, err := d.srv.Presentations.Get(d.id).Context(ctx).Do()
 	if err != nil {
 		return err
@@ -588,7 +592,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 			d.defaultLayout = d.presentation.Layouts[0].LayoutProperties.DisplayName
 		}
 	}
-
+	d.fresh = true
 	return nil
 }
 
