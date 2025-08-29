@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.17.3](https://github.com/k1LoW/deck/compare/v1.17.2...v1.17.3) - 2025-08-28
+### Fix bug 🐛
+- fix: If a line contains only a single `<br>`, it will not be broken and will be escaped. by @k1LoW in https://github.com/k1LoW/deck/pull/402
+### Other Changes
+- feat: allow page delimiter with trailing spaces or tabs by @k1LoW in https://github.com/k1LoW/deck/pull/403
+
 ## [v1.17.2](https://github.com/k1LoW/deck/compare/v1.17.1...v1.17.2) - 2025-08-25
 ### Other Changes
 - chore(deps): bump google.golang.org/api from 0.247.0 to 0.248.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/398
