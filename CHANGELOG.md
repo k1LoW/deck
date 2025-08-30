@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.18.0](https://github.com/k1LoW/deck/compare/v1.17.3...v1.18.0) - 2025-08-30
+### New Features 🎉
+- feat: add --base flag to new subcommand by @Songmu in https://github.com/k1LoW/deck/pull/409
+### Other Changes
+- refactoring: add actionTypeSentinel to simplify code by @Songmu in https://github.com/k1LoW/deck/pull/405
+- refactoring: add a deck.fresh flag to reduce unnecessary requests by @Songmu in https://github.com/k1LoW/deck/pull/407
+- doc: trouble shooting about a setting permission for images by @Songmu in https://github.com/k1LoW/deck/pull/408
+
 ## [v1.17.3](https://github.com/k1LoW/deck/compare/v1.17.2...v1.17.3) - 2025-08-28
 ### Fix bug 🐛
 - fix: If a line contains only a single `<br>`, it will not be broken and will be escaped. by @k1LoW in https://github.com/k1LoW/deck/pull/402
