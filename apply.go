@@ -482,7 +482,7 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			imageObjectID = imagePlaceholders[i].objectID
 			requests = append(requests, &slides.Request{
 				ReplaceImage: &slides.ReplaceImageRequest{
-					ImageObjectId:      imagePlaceholders[i].objectID,
+					ImageObjectId:      imageObjectID,
 					ImageReplaceMethod: imageReplaceMethod,
 					Url:                info.url,
 				},
@@ -505,6 +505,19 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 			}
 			requests = append(requests, &slides.Request{
 				CreateImage: imageReq,
+			})
+		}
+		if info.link != "" {
+			requests = append(requests, &slides.Request{
+				UpdateImageProperties: &slides.UpdateImagePropertiesRequest{
+					ObjectId: imageObjectID,
+					ImageProperties: &slides.ImageProperties{
+						Link: &slides.Link{
+							Url: info.link,
+						},
+					},
+					Fields: "link",
+				},
 			})
 		}
 		if image.fromMarkdown {

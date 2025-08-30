@@ -625,6 +625,10 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 				return nil, nil, err
 			}
 			if len(children) == 0 {
+				for _, img := range childImages {
+					// Modifying the image.link will affect other images with different links, so we clone it.
+					images = append(images, img.CloneWithLink(string(childNode.Destination)))
+				}
 				continue
 			}
 			frags = append(frags, &fragment{

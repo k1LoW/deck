@@ -497,18 +497,6 @@ func copySlide(slide *Slide) *Slide {
 	copied.new = slide.new
 	copied.delete = slide.delete
 
-	for _, image := range slide.Images {
-		if image == nil {
-			continue
-		}
-		for _, copiedImage := range copied.Images {
-			if image.Equivalent(copiedImage) {
-				copiedImage.fromMarkdown = image.fromMarkdown
-				copiedImage.codeBlock = image.codeBlock
-				copiedImage.modTime = image.modTime
-			}
-		}
-	}
 	return copied
 }
 

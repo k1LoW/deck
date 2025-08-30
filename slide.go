@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"image"
@@ -111,6 +112,7 @@ type Image struct {
 	pHash        *goimagehash.ImageHash // Perceptual hash for JPEG images
 	modTime      time.Time              // Modification time of the image file, if applicable
 	codeBlock    bool                   // Whether the image was created from a code block
+	link         string                 // External link associated with the image
 
 	// Upload state management
 	uploadMutex    sync.RWMutex
@@ -314,11 +316,26 @@ func newImageFromBuffer(r io.Reader) (_ *Image, err error) {
 	}, nil
 }
 
+// CloneWithLink creates a clone of the image with the specified link.
+func (i *Image) CloneWithLink(link string) *Image {
+	// We don't do 'clone := *i' here to avoid copying the mutex.
+
+	b, _ := json.Marshal(i)
+	var clone Image
+	_ = json.Unmarshal(b, &clone)
+	clone.link = link
+
+	return &clone
+}
+
 func (i *Image) Equivalent(ii *Image) bool {
 	if i == nil || ii == nil {
 		return false
 	}
 	if i.mimeType != ii.mimeType {
+		return false
+	}
+	if i.link != ii.link {
 		return false
 	}
 	if i.Checksum() == ii.Checksum() {
@@ -407,18 +424,45 @@ func (i *Image) Bytes() []byte {
 	return i.b
 }
 
+type internalImage struct {
+	Data         string
+	URL          string
+	FromMarkdown bool
+	CodeBlock    bool
+	ModTime      time.Time
+	Link         string
+}
+
 func (i *Image) MarshalJSON() (_ []byte, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	return []byte(`"` + i.String() + `"`), nil
+	iimg := internalImage{
+		Data:         i.String(),
+		URL:          i.url,
+		FromMarkdown: i.fromMarkdown,
+		CodeBlock:    i.codeBlock,
+		ModTime:      i.modTime,
+		Link:         i.link,
+	}
+	return json.Marshal(iimg)
 }
 
 func (i *Image) UnmarshalJSON(data []byte) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	data = bytes.Trim(data, `"`)
+	var iimg internalImage
+	if err := json.Unmarshal(data, &iimg); err != nil {
+		return fmt.Errorf("failed to unmarshal image data: %w", err)
+	}
+	i.url = iimg.URL
+	i.fromMarkdown = iimg.FromMarkdown
+	i.codeBlock = iimg.CodeBlock
+	i.modTime = iimg.ModTime
+	i.link = iimg.Link
+
+	data = []byte(iimg.Data)
 	if !bytes.HasPrefix(data, []byte(`data:`)) {
 		return fmt.Errorf("invalid image data: %s", data)
 	}
@@ -465,6 +509,7 @@ func (i *Image) SetUploadResult(webContentLink string, err error) {
 
 type uploadInfo struct {
 	url       string
+	link      string
 	codeBlock bool
 }
 
@@ -481,6 +526,7 @@ func (i *Image) UploadInfo(ctx context.Context) (*uploadInfo, error) {
 		case uploadStateNotStarted, uploadStateCompleted:
 			return &uploadInfo{
 				url:       link,
+				link:      i.link,
 				codeBlock: i.codeBlock,
 			}, nil
 		case uploadStateFailed:

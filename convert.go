@@ -66,6 +66,11 @@ func convertToSlide(p *slides.Page, layoutObjectIdMap map[string]*slides.Page) *
 					continue // Skip if image cannot be created
 				}
 			}
+			if element.Image.ImageProperties != nil && element.Image.ImageProperties.Link != nil &&
+				element.Image.ImageProperties.Link.Url != "" {
+
+				image = image.CloneWithLink(element.Image.ImageProperties.Link.Url)
+			}
 			images = append(images, image)
 		case element.Shape != nil && element.Shape.ShapeType == "TEXT_BOX" && element.Shape.Text != nil:
 			if element.Description != descriptionTextboxFromMarkdown {

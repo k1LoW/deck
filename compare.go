@@ -2,6 +2,7 @@ package deck
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"slices"
 	"strings"
@@ -46,6 +47,10 @@ func imagesEqual(images1, images2 []*Image) bool {
 	copy(sorted2, images2)
 
 	f := func(a *Image, b *Image) int {
+		c := cmp.Compare(a.link, b.link)
+		if c != 0 {
+			return c
+		}
 		return int(a.Checksum()) - int(b.Checksum())
 	}
 	slices.SortFunc(sorted1, f)
