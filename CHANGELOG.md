@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.18.1](https://github.com/k1LoW/deck/compare/v1.18.0...v1.18.1) - 2025-08-30
+### New Features 🎉
+- feat: add support for normalizing CRLF line endings by @k1LoW in https://github.com/k1LoW/deck/pull/413
+### Other Changes
+- chore: use pull_request_target to run integration test on forked repo by @Songmu in https://github.com/k1LoW/deck/pull/410
+
 ## [v1.18.0](https://github.com/k1LoW/deck/compare/v1.17.3...v1.18.0) - 2025-08-30
 ### New Features 🎉
 - feat: add --base flag to new subcommand by @Songmu in https://github.com/k1LoW/deck/pull/409
