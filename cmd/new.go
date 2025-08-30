@@ -24,6 +24,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/fatih/color"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/config"
 	"github.com/k1LoW/deck/md"
@@ -32,6 +33,7 @@ import (
 )
 
 var (
+	base     string
 	from     string
 	folderID string
 )
@@ -52,8 +54,13 @@ If the file doesn't exist, it will be created.`,
 		if err != nil {
 			return fmt.Errorf("failed to load config: %w", err)
 		}
-		if from == "" {
-			from = cfg.BasePresentationID
+		basePresentationID := cfg.BasePresentationID
+		if from != "" {
+			cmd.Println(color.YellowString("WARNING: --from is deprecated. Please use --base flag instead."))
+			basePresentationID = from
+		}
+		if base != "" {
+			basePresentationID = base
 		}
 		if folderID == "" {
 			folderID = cfg.FolderID
@@ -66,8 +73,8 @@ If the file doesn't exist, it will be created.`,
 			opts = append(opts, deck.WithFolderID(folderID))
 		}
 		d, err := func() (*deck.Deck, error) {
-			if from != "" {
-				return deck.CreateFrom(ctx, from, opts...)
+			if basePresentationID != "" {
+				return deck.CreateFrom(ctx, basePresentationID, opts...)
 			}
 			return deck.Create(ctx, opts...)
 		}()
@@ -102,6 +109,7 @@ If the file doesn't exist, it will be created.`,
 func init() {
 	rootCmd.AddCommand(newCmd)
 	newCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
-	newCmd.Flags().StringVarP(&from, "from", "f", "", "presentation id that uses the theme you want to use")
+	newCmd.Flags().StringVarP(&from, "base", "b", "", "base presentation id that uses the theme you want to use")
+	newCmd.Flags().StringVarP(&from, "from", "f", "", "(DEPRECATED, use --base/-b) presentation id that uses the theme you want to use")
 	newCmd.Flags().StringVarP(&folderID, "folder-id", "", "", "folder id to create the presentation in")
 }
