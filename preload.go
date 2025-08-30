@@ -12,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/slides/v1"
 )
 
 const maxPreloadWorkersNum = 4
@@ -29,6 +30,7 @@ type imageToPreload struct {
 	existingURL    string // URL of existing image
 	objectID       string // objectID of existing image
 	isFromMarkdown bool   // whether this image is from markdown
+	externalLink   string // external link associated with the image, if any
 }
 
 // imageResult holds the result of image processing.
@@ -61,6 +63,12 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 							existingURL:    element.Image.ContentUrl,
 							objectID:       element.ObjectId,
 							isFromMarkdown: element.Description == descriptionImageFromMarkdown,
+							externalLink: func(img *slides.Image) string {
+								if img.ImageProperties != nil && img.ImageProperties.Link != nil {
+									return img.ImageProperties.Link.Url
+								}
+								return ""
+							}(element.Image),
 						})
 						imageIndexInSlide++
 					}
@@ -99,7 +107,9 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 			if err != nil {
 				return fmt.Errorf("failed to preload image from URL %s: %w", imgToPreload.existingURL, err)
 			}
-
+			if imgToPreload.externalLink != "" {
+				image = image.CloneWithLink(imgToPreload.externalLink)
+			}
 			resultCh <- imageResult{
 				slideIndex: imgToPreload.slideIndex,
 				imageIndex: imgToPreload.imageIndex,
@@ -170,7 +180,7 @@ func (d *Deck) startUploadingImages(
 						return currentImage.Equivalent(image)
 					})
 				}
-				if !found && image.IsUploadNeeded() {
+				if !found && image.IsUploadNeeded() && !slices.Contains(imagesToUpload, image) {
 					imagesToUpload = append(imagesToUpload, image)
 				}
 			}

@@ -6,10 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"testing"
 
 	"github.com/tenntenn/golden"
 )
+
+var modtimeReg = regexp.MustCompile(`\n\s+"ModTime": ".*?",`)
 
 func TestParse(t *testing.T) {
 	tests := []struct {
@@ -58,6 +61,8 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			// Remove ModTime for stable result
+			got = modtimeReg.ReplaceAll(got, []byte(""))
 			if os.Getenv("UPDATE_GOLDEN") != "" {
 				golden.Update(t, "", tt.in, got)
 				return
