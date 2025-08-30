@@ -373,3 +373,58 @@ ref: [deck repo](https://github.com/k1LoW/deck)
 		_, _ = Parse(".", in, nil)
 	})
 }
+
+// TestCRLFSupport tests that CRLF line endings are handled correctly
+// by comparing the parse results of LF and CRLF versions of the same file.
+func TestCRLFSupport(t *testing.T) {
+	// Parse LF version
+	lfData, err := os.ReadFile("../testdata/slide.md")
+	if err != nil {
+		t.Fatalf("failed to read LF file: %v", err)
+	}
+	lfMD, err := Parse("../testdata", lfData, nil)
+	if err != nil {
+		t.Fatalf("failed to parse LF file: %v", err)
+	}
+
+	// Parse CRLF version
+	crlfData, err := os.ReadFile("../testdata/slide.crlf.md")
+	if err != nil {
+		t.Fatalf("failed to read CRLF file: %v", err)
+	}
+	crlfMD, err := Parse("../testdata", crlfData, nil)
+	if err != nil {
+		t.Fatalf("failed to parse CRLF file: %v", err)
+	}
+
+	// Convert both to JSON for comparison
+	lfJSON, err := json.MarshalIndent(lfMD.Contents, "", "  ")
+	if err != nil {
+		t.Fatalf("failed to marshal LF contents: %v", err)
+	}
+
+	crlfJSON, err := json.MarshalIndent(crlfMD.Contents, "", "  ")
+	if err != nil {
+		t.Fatalf("failed to marshal CRLF contents: %v", err)
+	}
+
+	// Compare the results
+	if string(lfJSON) != string(crlfJSON) {
+		t.Errorf("CRLF and LF versions produce different results.\nLF result:\n%s\n\nCRLF result:\n%s", string(lfJSON), string(crlfJSON))
+	}
+
+	// Also test ParseFile function for CRLF file
+	crlfMDFromFile, err := ParseFile("../testdata/slide.crlf.md", nil)
+	if err != nil {
+		t.Fatalf("failed to parse CRLF file using ParseFile: %v", err)
+	}
+
+	crlfFromFileJSON, err := json.MarshalIndent(crlfMDFromFile.Contents, "", "  ")
+	if err != nil {
+		t.Fatalf("failed to marshal CRLF contents from ParseFile: %v", err)
+	}
+
+	if string(lfJSON) != string(crlfFromFileJSON) {
+		t.Errorf("ParseFile with CRLF and Parse with LF produce different results.\nLF Parse result:\n%s\n\nCRLF ParseFile result:\n%s", string(lfJSON), string(crlfFromFileJSON))
+	}
+}

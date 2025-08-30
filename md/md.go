@@ -128,6 +128,13 @@ func Parse(baseDir string, b []byte, cfg *config.Config) (_ *MD, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
+
+	// Normalize line endings: CRLF -> LF, CR -> LF
+	if bytes.Contains(b, []byte("\r")) {
+		b = bytes.ReplaceAll(b, []byte("\r\n"), []byte("\n"))
+		b = bytes.ReplaceAll(b, []byte("\r"), []byte("\n"))
+	}
+
 	sep := []byte("---\n")
 
 	// Extract YAML frontmatter if present
