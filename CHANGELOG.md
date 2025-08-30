@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.19.0](https://github.com/k1LoW/deck/compare/v1.18.1...v1.19.0) - 2025-08-30
+### New Features 🎉
+- feat: support image link by @Songmu in https://github.com/k1LoW/deck/pull/414
+
 ## [v1.18.1](https://github.com/k1LoW/deck/compare/v1.18.0...v1.18.1) - 2025-08-30
 ### New Features 🎉
 - feat: add support for normalizing CRLF line endings by @k1LoW in https://github.com/k1LoW/deck/pull/413
