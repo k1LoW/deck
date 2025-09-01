@@ -279,6 +279,8 @@ func (i *Image) Bytes() []byte {
 	return i.b
 }
 
+// internalImage is a subset of `Image` that excludes state and other elements, containing the minimum
+// data required to reproduce the `Image`. It is used for `json.Marshal/Unmarshal` and caching purposes.
 type internalImage struct {
 	Data         string
 	URL          string
@@ -287,10 +289,8 @@ type internalImage struct {
 	Link         string
 }
 
+// MarshalJSON and UnmarshalJSON are defined for cloning data and for similarity comparisons of `slide` structures.
 func (i *Image) MarshalJSON() (_ []byte, err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
 	return json.Marshal(i.toInternal())
 }
 
