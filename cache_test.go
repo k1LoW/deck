@@ -17,7 +17,7 @@ func TestLoadImageCache(t *testing.T) {
 	defer clearCache() // don't use t.Cleanup here, want to clear before next test
 
 	buf := dummyPNG(t)
-	i, err := NewImageFromCodeBlock(buf)
+	i, err := newImageFromBuffer(buf)
 	if err != nil {
 		t.Fatalf("TestLoadImageCache setup failed: %v", err)
 	}
