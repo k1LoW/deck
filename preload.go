@@ -210,7 +210,7 @@ func (d *Deck) startUploadingImages(
 				if err := sem.Acquire(ctx, 1); err != nil {
 					// Context canceled, set upload error on remaining images
 					image.SetUploadResult("", err)
-					return nil
+					return err
 				}
 				defer sem.Release(1)
 
@@ -225,7 +225,7 @@ func (d *Deck) startUploadingImages(
 				uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).SupportsAllDrives(true).Do()
 				if err != nil {
 					image.SetUploadResult("", fmt.Errorf("failed to upload image: %w", err))
-					return nil
+					return err
 				}
 
 				// Set permission
@@ -240,7 +240,7 @@ func (d *Deck) startUploadingImages(
 							slog.Any("error", deleteErr))
 					}
 					image.SetUploadResult("", fmt.Errorf("failed to set permission for image: %w", err))
-					return nil
+					return err
 				}
 
 				// Get webContentLink
@@ -253,7 +253,7 @@ func (d *Deck) startUploadingImages(
 							slog.Any("error", deleteErr))
 					}
 					image.SetUploadResult("", fmt.Errorf("failed to get webContentLink for image: %w", err))
-					return nil
+					return err
 				}
 
 				if f.WebContentLink == "" {
@@ -264,7 +264,7 @@ func (d *Deck) startUploadingImages(
 							slog.Any("error", deleteErr))
 					}
 					image.SetUploadResult("", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
-					return nil
+					return err
 				}
 
 				// Set successful upload result
