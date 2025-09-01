@@ -107,9 +107,8 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 			if err != nil {
 				return fmt.Errorf("failed to preload image from URL %s: %w", imgToPreload.existingURL, err)
 			}
-			if imgToPreload.externalLink != "" {
-				image = image.CloneWithLink(imgToPreload.externalLink)
-			}
+			image.link = imgToPreload.externalLink
+
 			resultCh <- imageResult{
 				slideIndex: imgToPreload.slideIndex,
 				imageIndex: imgToPreload.imageIndex,

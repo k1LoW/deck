@@ -5,20 +5,24 @@ import (
 )
 
 var globalCache = &cache{
-	mu: sync.Mutex{},
-	m:  make(map[string]*Image),
+	mu: sync.RWMutex{},
+	m:  make(map[string]*internalImage),
 }
 
 type cache struct {
-	mu sync.Mutex
-	m  map[string]*Image
+	mu sync.RWMutex
+	m  map[string]*internalImage
 }
 
 func LoadImageCache(key string) (*Image, bool) {
-	globalCache.mu.Lock()
-	defer globalCache.mu.Unlock()
+	globalCache.mu.RLock()
+	defer globalCache.mu.RUnlock()
+
 	if v, ok := globalCache.m[key]; ok {
-		return v, true
+		var img Image
+		if err := v.toImage(&img); err == nil {
+			return &img, true
+		}
 	}
 	return nil, false
 }
@@ -26,26 +30,6 @@ func LoadImageCache(key string) (*Image, bool) {
 func StoreImageCache(key string, i *Image) {
 	globalCache.mu.Lock()
 	defer globalCache.mu.Unlock()
-	if i == nil {
-		return
-	}
-	// compact the cache
-	for k, v := range globalCache.m {
-		if v.Checksum() == i.Checksum() {
-			if globalCache.m[k].modTime.After(i.modTime) {
-				globalCache.m[key] = v
-				return
-			}
-			globalCache.m[k] = i
-		}
-	}
-	globalCache.m[key] = i
-}
 
-func ClearAllUploadStateFromCache() {
-	globalCache.mu.Lock()
-	defer globalCache.mu.Unlock()
-	for _, v := range globalCache.m {
-		v.ClearUploadState()
-	}
+	globalCache.m[key] = i.toInternal()
 }
