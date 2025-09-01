@@ -103,7 +103,6 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 				d.logger.Error("failed to cleanup uploaded images", slog.Any("error", cleanupErr))
 			}
 		}
-		ClearAllUploadStateFromCache()
 	}()
 
 	d.logger.Info("applying actions", slog.Any("actions", toActionLogs(actions)))

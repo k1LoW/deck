@@ -1,6 +1,12 @@
 package deck
 
-import "testing"
+import (
+	"bytes"
+	"image"
+	"image/color"
+	"image/png"
+	"testing"
+)
 
 func TestIsPulicURL(t *testing.T) {
 	tests := []struct {
@@ -30,5 +36,28 @@ func TestIsPulicURL(t *testing.T) {
 				t.Errorf("isPublicURL(%q) = %v, want %v", tt.url, got, tt.want)
 			}
 		})
+	}
+}
+
+func dummyPNG(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	// Create a 1x1 pixel stub PNG image
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	img.Set(0, 0, color.RGBA{255, 0, 0, 255}) // Red pixel
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatalf("failed to encode PNG: %v", err)
+	}
+	return &buf
+}
+
+func TestNewImageFromCodeBlock(t *testing.T) {
+	buf := dummyPNG(t)
+	i, err := NewImageFromCodeBlock(buf)
+	if err != nil {
+		t.Fatalf("TestNewImageFromCodeBlock failed: %v", err)
+	}
+	if got := i.codeBlock(); !got {
+		t.Errorf("Image.codeBlock() = %v, want true", got)
 	}
 }

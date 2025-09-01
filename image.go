@@ -42,7 +42,6 @@ type Image struct {
 	checksum     uint32                 // Checksum for the image data
 	pHash        *goimagehash.ImageHash // Perceptual hash for JPEG images
 	modTime      time.Time              // Modification time of the image file, if applicable
-	codeBlock    bool                   // Whether the image was created from a code block
 	link         string                 // External link associated with the image
 
 	// Upload state management
@@ -148,7 +147,6 @@ func NewImageFromCodeBlock(r io.Reader) (_ *Image, err error) {
 		return nil, fmt.Errorf("failed to create image from code block: %w", err)
 	}
 	i.fromMarkdown = true
-	i.codeBlock = true
 	return i, nil
 }
 
@@ -181,16 +179,8 @@ func newImageFromBuffer(r io.Reader) (_ *Image, err error) {
 	}, nil
 }
 
-// CloneWithLink creates a clone of the image with the specified link.
-func (i *Image) CloneWithLink(link string) *Image {
-	// We don't do 'clone := *i' here to avoid copying the mutex.
-
-	b, _ := json.Marshal(i)
-	var clone Image
-	_ = json.Unmarshal(b, &clone)
-	clone.link = link
-
-	return &clone
+func (i *Image) SetLink(link string) {
+	i.link = link
 }
 
 func (i *Image) Equivalent(ii *Image) bool {
@@ -293,7 +283,6 @@ type internalImage struct {
 	Data         string
 	URL          string
 	FromMarkdown bool
-	CodeBlock    bool
 	ModTime      time.Time
 	Link         string
 }
@@ -302,15 +291,7 @@ func (i *Image) MarshalJSON() (_ []byte, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
-	iimg := internalImage{
-		Data:         i.String(),
-		URL:          i.url,
-		FromMarkdown: i.fromMarkdown,
-		CodeBlock:    i.codeBlock,
-		ModTime:      i.modTime,
-		Link:         i.link,
-	}
-	return json.Marshal(iimg)
+	return json.Marshal(i.toInternal())
 }
 
 func (i *Image) UnmarshalJSON(data []byte) (err error) {
@@ -321,34 +302,7 @@ func (i *Image) UnmarshalJSON(data []byte) (err error) {
 	if err := json.Unmarshal(data, &iimg); err != nil {
 		return fmt.Errorf("failed to unmarshal image data: %w", err)
 	}
-	i.url = iimg.URL
-	i.fromMarkdown = iimg.FromMarkdown
-	i.codeBlock = iimg.CodeBlock
-	i.modTime = iimg.ModTime
-	i.link = iimg.Link
-
-	data = []byte(iimg.Data)
-	if !bytes.HasPrefix(data, []byte(`data:`)) {
-		return fmt.Errorf("invalid image data: %s", data)
-	}
-	splitted := bytes.Split(bytes.TrimPrefix(data, []byte(`data:`)), []byte(";base64,"))
-	if len(splitted) != 2 {
-		return fmt.Errorf("invalid image data: %s", data)
-	}
-	i.mimeType = MIMEType(splitted[0])
-	decoded, err := base64.StdEncoding.DecodeString(string(splitted[1]))
-	if err != nil {
-		return fmt.Errorf("failed to decode base64 image data: %w", err)
-	}
-	_, mimeType, err := image.DecodeConfig(bytes.NewReader(decoded))
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
-	}
-	if string(i.mimeType) != fmt.Sprintf("image/%s", mimeType) {
-		return fmt.Errorf("image MIME type mismatch: expected %s, got %s", i.mimeType, mimeType)
-	}
-	i.b = decoded
-	return nil
+	return iimg.toImage(i)
 }
 
 // StartUpload marks the image as upload in progress.
@@ -392,7 +346,7 @@ func (i *Image) UploadInfo(ctx context.Context) (*uploadInfo, error) {
 			return &uploadInfo{
 				url:       link,
 				link:      i.link,
-				codeBlock: i.codeBlock,
+				codeBlock: i.codeBlock(),
 			}, nil
 		case uploadStateFailed:
 			return nil, uploadErr
@@ -414,14 +368,48 @@ func (i *Image) IsUploadNeeded() bool {
 	return i.uploadState == uploadStateNotStarted && i.webContentLink == ""
 }
 
-func (i *Image) ClearUploadState() {
-	i.uploadMutex.Lock()
-	defer i.uploadMutex.Unlock()
-	if i.uploadState != uploadStateNotStarted {
-		i.uploadState = uploadStateNotStarted
-		i.webContentLink = ""
-		i.uploadError = nil
+func (i *Image) codeBlock() bool {
+	return i.url == "" && i.fromMarkdown
+}
+
+func (i *Image) toInternal() *internalImage {
+	return &internalImage{
+		Data:         i.String(),
+		URL:          i.url,
+		FromMarkdown: i.fromMarkdown,
+		ModTime:      i.modTime,
+		Link:         i.link,
 	}
+}
+
+func (iimg *internalImage) toImage(i *Image) error {
+	i.url = iimg.URL
+	i.fromMarkdown = iimg.FromMarkdown
+	i.modTime = iimg.ModTime
+	i.link = iimg.Link
+
+	data := []byte(iimg.Data)
+	if !bytes.HasPrefix(data, []byte(`data:`)) {
+		return fmt.Errorf("invalid image data: %s", data)
+	}
+	splitted := bytes.Split(bytes.TrimPrefix(data, []byte(`data:`)), []byte(";base64,"))
+	if len(splitted) != 2 {
+		return fmt.Errorf("invalid image data: %s", data)
+	}
+	i.mimeType = MIMEType(splitted[0])
+	decoded, err := base64.StdEncoding.DecodeString(string(splitted[1]))
+	if err != nil {
+		return fmt.Errorf("failed to decode base64 image data: %w", err)
+	}
+	_, mimeType, err := image.DecodeConfig(bytes.NewReader(decoded))
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
+	}
+	if string(i.mimeType) != fmt.Sprintf("image/%s", mimeType) {
+		return fmt.Errorf("image MIME type mismatch: expected %s, got %s", i.mimeType, mimeType)
+	}
+	i.b = decoded
+	return nil
 }
 
 // isPublicURL checks whether a URL string is OK for direct public access.
