@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.19.2](https://github.com/k1LoW/deck/compare/v1.19.1...v1.19.2) - 2025-09-01
+### Other Changes
+- chore: separate out func handleBlockquote by @Songmu in https://github.com/k1LoW/deck/pull/418
+- chore(deps): bump github.com/google/cel-go from 0.26.0 to 0.26.1 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/421
+- chore(deps): bump google-github-actions/auth from 2.1.12 to 3.0.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/420
+- refactoring: adjust Image cache mechanism by @Songmu in https://github.com/k1LoW/deck/pull/422
+- chore: return error in uploading images for failfast by @Songmu in https://github.com/k1LoW/deck/pull/423
+
 ## [v1.19.1](https://github.com/k1LoW/deck/compare/v1.19.0...v1.19.1) - 2025-08-31
 ### Other Changes
 - chore: define isPublicURL to determine whether the image is to be upload or not by @Songmu in https://github.com/k1LoW/deck/pull/416
