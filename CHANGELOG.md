@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.20.0](https://github.com/k1LoW/deck/compare/v1.19.2...v1.20.0) - 2025-09-02
+### New Features 🎉
+- feat: implement `deck doctor` command for environment verification by @Songmu in https://github.com/k1LoW/deck/pull/424
+
 ## [v1.19.2](https://github.com/k1LoW/deck/compare/v1.19.1...v1.19.2) - 2025-09-01
 ### Other Changes
 - chore: separate out func handleBlockquote by @Songmu in https://github.com/k1LoW/deck/pull/418
