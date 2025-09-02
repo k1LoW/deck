@@ -77,7 +77,7 @@ var exportCmd = &cobra.Command{
 		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
-			if errors.Is(err, deck.HttpClientError) {
+			if errors.Is(err, deck.HTTPClientError) {
 				cmd.Println(setupInstructionMessage)
 			}
 			return err

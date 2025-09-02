@@ -79,7 +79,7 @@ If the file doesn't exist, it will be created.`,
 			return deck.Create(ctx, opts...)
 		}()
 		if err != nil {
-			if errors.Is(err, deck.HttpClientError) {
+			if errors.Is(err, deck.HTTPClientError) {
 				cmd.Println(setupInstructionMessage)
 			}
 			return err
