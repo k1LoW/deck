@@ -187,6 +187,15 @@ func Delete(ctx context.Context, id string, opts ...Option) (err error) {
 	return nil
 }
 
+func Doctor(ctx context.Context, opts ...Option) error {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
+		return err
+	}
+	_, err = d.getDefaultHTTPClient(ctx)
+	return err
+}
+
 // ID returns the ID of the presentation.
 func (d *Deck) ID() string {
 	return d.id
@@ -401,7 +410,7 @@ func newDeck(ctx context.Context, opts ...Option) (*Deck, error) {
 	return d, err
 }
 
-var HttpClientError = errors.New("http client error")
+var HTTPClientError = errors.New("http client error")
 
 func (d *Deck) initialize(ctx context.Context) (err error) {
 	defer func() {
@@ -417,7 +426,7 @@ func (d *Deck) initialize(ctx context.Context) (err error) {
 	// Get client option (service account or OAuth2)
 	client, err := d.getHTTPClient(ctx)
 	if err != nil {
-		return errors.Join(err, HttpClientError)
+		return errors.Join(err, HTTPClientError)
 	}
 
 	srv, err := slides.NewService(ctx, option.WithHTTPClient(client))
