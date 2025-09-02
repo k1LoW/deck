@@ -94,6 +94,19 @@ The slide pages are separated by a line containing only three or more consecutiv
 >
 > Other horizontal rule elements (like `- - -`, `***`, `___`) are not treated as page separators but remain in the content as visual separators for multiple body placeholders.
 
+### Check your setup
+
+You can verify if deck is ready to use and diagnose any configuration issues:
+
+```console
+$ deck doctor
+```
+
+This command checks:
+- OAuth credentials file existence and format
+- Authentication with Google API
+- Configuration file validation (optional)
+
 ### Apply deck written in markdown to Google Slides presentation
 
 ```console

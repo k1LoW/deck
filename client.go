@@ -80,14 +80,19 @@ func (d *Deck) getHTTPClient(ctx context.Context) (*http.Client, error) {
 	return retryClient.StandardClient(), nil
 }
 
-func (d *Deck) getOAuthConfig() (*oauth2.Config, error) {
+func GetCredentialsPath(profile string) string {
 	creds := filepath.Join(config.DataHomePath(), "credentials.json")
-	if d.profile != "" {
-		p := filepath.Join(config.DataHomePath(), fmt.Sprintf("credentials-%s.json", d.profile))
+	if profile != "" {
+		p := filepath.Join(config.DataHomePath(), fmt.Sprintf("credentials-%s.json", profile))
 		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
 			creds = p
 		}
 	}
+	return creds
+}
+
+func (d *Deck) getOAuthConfig() (*oauth2.Config, error) {
+	creds := GetCredentialsPath(d.profile)
 	b, err := os.ReadFile(creds)
 	if err != nil {
 		return nil, err

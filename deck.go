@@ -187,6 +187,15 @@ func Delete(ctx context.Context, id string, opts ...Option) (err error) {
 	return nil
 }
 
+func Doctor(ctx context.Context, opts ...Option) error {
+	d, err := newDeck(ctx, opts...)
+	if err != nil {
+		return err
+	}
+	_, err = d.getDefaultHTTPClient(ctx)
+	return err
+}
+
 // ID returns the ID of the presentation.
 func (d *Deck) ID() string {
 	return d.id
