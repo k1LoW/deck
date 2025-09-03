@@ -30,9 +30,14 @@ import (
 const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 
 var allowedInlineHTMLElements = []string{
-	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd",
-	"mark", "q", "rp", "rt", "ruby", "s", "samp", "small", "span",
-	"strong", "sub", "sup", "time", "u", "var",
+	// Elements with text-level semantics and palpable content (without `bdi` and `bdo`).
+	// Ref.
+	// - https://html.spec.whatwg.org/multipage/text-level-semantics.html
+	// - https://html.spec.whatwg.org/dev/dom.html#palpable-content
+	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd", "mark", "q", "rp",
+	"rt", "ruby", "s", "samp", "small", "span", "strong", "sub", "sup", "time", "u", "var",
+	// Elements represent "Edits" to the document. Ref. https://html.spec.whatwg.org/multipage/edits.html
+	"ins", "del",
 }
 
 var allowdInlineElmReg *regexp.Regexp
