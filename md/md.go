@@ -248,7 +248,10 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 
 func newParser() goldmark.Markdown {
 	return goldmark.New(
-		goldmark.WithExtensions(extension.Table),
+		goldmark.WithExtensions(
+			extension.Table,
+			extension.Strikethrough,
+		),
 	)
 }
 
@@ -750,6 +753,22 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 					Italic:    children[0].Italic,
 					Code:      true,
 					StyleName: styleName,
+				}})
+			images = append(images, childImages...)
+		case *east.Strikethrough:
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
+			if err != nil {
+				return nil, nil, err
+			}
+			frags = append(frags, &fragment{
+				SoftLineBreak: children[0].SoftLineBreak,
+				Fragment: &deck.Fragment{
+					Value:     children[0].Value,
+					Link:      children[0].Link,
+					Bold:      children[0].Bold,
+					Italic:    children[0].Italic,
+					Code:      children[0].Code,
+					StyleName: "del",
 				}})
 			images = append(images, childImages...)
 		default:

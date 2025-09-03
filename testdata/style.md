@@ -7,6 +7,7 @@
 - `code` and **`code bold`**
 - Hello <span class="notice" >notice</span>
 - <span  class='unknown'>unknown</span> world
+- ~~Hello~~ Goodbye
 
 <span class=" unknown">unknown</span> world
 

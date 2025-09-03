@@ -17,6 +17,7 @@ const (
 	// ref. https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements
 	styleStrong           = "strong" // <strong> tag
 	styleEm               = "em"     // <em> tag
+	styleDel              = "del"    // <del> deleted text tag and `~~` in markdown
 	styleS                = "s"      // <s> strikethrough tag
 	styleU                = "u"      // <u> unarticulated annotation (underline) tag
 	styleSup              = "sup"    // <sup> superscript tag
@@ -52,6 +53,14 @@ var (
 			Fields: "fontFamily",
 		}
 	}
+	strikethroughStyleFunc = func() *slides.UpdateTextStyleRequest {
+		return &slides.UpdateTextStyleRequest{
+			Style: &slides.TextStyle{
+				Strikethrough: true,
+			},
+			Fields: "strikethrough",
+		}
+	}
 )
 
 var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
@@ -83,16 +92,10 @@ var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
 	},
 	styleBold:   boldStyleFunc,
 	styleItalic: italicStyleFunc,
+	styleDel:    strikethroughStyleFunc,
 	styleStrong: boldStyleFunc,
 	styleEm:     italicStyleFunc,
-	styleS: func() *slides.UpdateTextStyleRequest {
-		return &slides.UpdateTextStyleRequest{
-			Style: &slides.TextStyle{
-				Strikethrough: true,
-			},
-			Fields: "strikethrough",
-		}
-	},
+	styleS:      strikethroughStyleFunc,
 	styleU: func() *slides.UpdateTextStyleRequest {
 		return &slides.UpdateTextStyleRequest{
 			Style: &slides.TextStyle{
