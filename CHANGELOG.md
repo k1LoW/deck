@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.21.0](https://github.com/k1LoW/deck/compare/v1.20.0...v1.21.0) - 2025-09-03
+### New Features 🎉
+- feat: support strikethrough GFM syntax ('~~') by @Songmu in https://github.com/k1LoW/deck/pull/428
+### Other Changes
+- chore: use cmd.Print by @Songmu in https://github.com/k1LoW/deck/pull/426
+- doc: comprehensive documentation for supported markdown by @Songmu in https://github.com/k1LoW/deck/pull/429
+
 ## [v1.20.0](https://github.com/k1LoW/deck/compare/v1.19.2...v1.20.0) - 2025-09-02
 ### New Features 🎉
 - feat: implement `deck doctor` command for environment verification by @Songmu in https://github.com/k1LoW/deck/pull/424
