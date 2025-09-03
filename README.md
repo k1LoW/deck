@@ -266,8 +266,11 @@ The system continues to operate despite an arbitrary number of messages being dr
 
 ![img](img/result.png)
 
-### Support syntax in body
+### Supported Markdown syntax
 
+`deck` supports CommonMark and selected GitHub Flavored Markdown extensions. For comprehensive documentation, see [Markdown Support Documentation](docs/markdown.md).
+
+**Key supported features:**
 - Bold ( `**bold**` )
 - Italic ( `*italic*` `__italic__` )
 - Strikethrough ( `~~strikethrough~~` )
