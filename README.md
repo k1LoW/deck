@@ -55,9 +55,9 @@ This will create (or update) the specified markdown file with frontmatter contai
 
 To reuse the theme from an existing presentation, you have two options:
 
-**Option 1: Use the `--from` flag**
+**Option 1: Use the `--base` flag**
 ```console
-$ deck new deck.md --from yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
+$ deck new deck.md --base yyyyyyyYYYYyYYYYYYYyyyyyyyyy --title "Talk about deck"
 xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
@@ -68,7 +68,7 @@ xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 basePresentationID: "yyyyyyyYYYYyYYYYYYYyyyyyyyyy"
 ```
 
-With this configuration, you can reuse the theme from the base presentation without using the `--from` flag. If both the configuration and `--from` flag are present, the `--from` flag takes precedence.
+With this configuration, you can reuse the theme from the base presentation without using the `--base` flag. If both the configuration and `--base` flag are present, the `--base` flag takes precedence.
 
 #### When using an existing presentation
 
