@@ -30,9 +30,14 @@ import (
 const sentinelLevel = 7 // H6 is the deepest level in HTML spec, so we use 7 as a sentinel value
 
 var allowedInlineHTMLElements = []string{
-	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd",
-	"mark", "q", "rp", "rt", "ruby", "s", "samp", "small", "span",
-	"strong", "sub", "sup", "time", "u", "var",
+	// Elements with text-level semantics and palpable content (without `bdi` and `bdo`).
+	// Ref.
+	// - https://html.spec.whatwg.org/multipage/text-level-semantics.html
+	// - https://html.spec.whatwg.org/dev/dom.html#palpable-content
+	"a", "abbr", "b", "cite", "code", "data", "dfn", "em", "i", "kbd", "mark", "q", "rp",
+	"rt", "ruby", "s", "samp", "small", "span", "strong", "sub", "sup", "time", "u", "var",
+	// Elements represent "Edits" to the document. Ref. https://html.spec.whatwg.org/multipage/edits.html
+	"ins", "del",
 }
 
 var allowdInlineElmReg *regexp.Regexp
@@ -248,7 +253,10 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 
 func newParser() goldmark.Markdown {
 	return goldmark.New(
-		goldmark.WithExtensions(extension.Table),
+		goldmark.WithExtensions(
+			extension.Table,
+			extension.Strikethrough,
+		),
 	)
 }
 
@@ -736,19 +744,6 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 			} else {
 				styleName = stuffs[1] // Use the matched element name as style name
 			}
-		case *ast.String:
-			// For String nodes, try to get their content
-			if childNode.Value != nil {
-				frag := seedFragment
-				frag.Value = string(childNode.Value)
-				frag.StyleName = styleName
-				frags = append(frags, &fragment{Fragment: &frag})
-			} else {
-				// Fallback for empty strings
-				frags = append(frags, &fragment{Fragment: &deck.Fragment{
-					Value: "",
-				}})
-			}
 		case *ast.CodeSpan:
 			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
@@ -763,6 +758,26 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 					Italic:    children[0].Italic,
 					Code:      true,
 					StyleName: styleName,
+				}})
+			images = append(images, childImages...)
+		case *east.Strikethrough:
+			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
+			if err != nil {
+				return nil, nil, err
+			}
+			frags = append(frags, &fragment{
+				SoftLineBreak: children[0].SoftLineBreak,
+				// Previously, Bold, Italic, and Code were used as flags to control styles. However, to ensure
+				// consistency with raw HTML tags, we will now simply assign StyleName instead of adding new flag fields.
+				Fragment: &deck.Fragment{
+					Value:  children[0].Value,
+					Link:   children[0].Link,
+					Bold:   children[0].Bold,
+					Italic: children[0].Italic,
+					Code:   children[0].Code,
+					// The GFM specification states that Strikethrough corresponds to the `del` tag, not the `s` tag,
+					// and goldmark's implementation follows this. Therefore, the style name should also be `del`.
+					StyleName: deck.StyleDel,
 				}})
 			images = append(images, childImages...)
 		default:

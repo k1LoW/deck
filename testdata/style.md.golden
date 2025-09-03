@@ -82,6 +82,18 @@
           {
             "fragments": [
               {
+                "value": "Hello",
+                "style_name": "del"
+              },
+              {
+                "value": " Goodbye"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
                 "value": "unknown",
                 "style_name": "unknown"
               },
