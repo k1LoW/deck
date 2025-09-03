@@ -17,7 +17,7 @@ const (
 	// ref. https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements
 	styleStrong           = "strong" // <strong> tag
 	styleEm               = "em"     // <em> tag
-	styleDel              = "del"    // <del> deleted text tag and `~~` in markdown
+	StyleDel              = "del"    // <del> deleted text tag and `~~` in markdown
 	styleS                = "s"      // <s> strikethrough tag
 	styleU                = "u"      // <u> unarticulated annotation (underline) tag
 	styleSup              = "sup"    // <sup> superscript tag
@@ -92,7 +92,7 @@ var defaultStyles = map[string]func() *slides.UpdateTextStyleRequest{
 	},
 	styleBold:   boldStyleFunc,
 	styleItalic: italicStyleFunc,
-	styleDel:    strikethroughStyleFunc,
+	StyleDel:    strikethroughStyleFunc,
 	styleStrong: boldStyleFunc,
 	styleEm:     italicStyleFunc,
 	styleS:      strikethroughStyleFunc,

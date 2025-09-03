@@ -762,13 +762,17 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 			}
 			frags = append(frags, &fragment{
 				SoftLineBreak: children[0].SoftLineBreak,
+				// Previously, Bold, Italic, and Code were used as flags to control styles. However, to ensure
+				// consistency with raw HTML tags, we will now simply assign StyleName instead of adding new flag fields.
 				Fragment: &deck.Fragment{
-					Value:     children[0].Value,
-					Link:      children[0].Link,
-					Bold:      children[0].Bold,
-					Italic:    children[0].Italic,
-					Code:      children[0].Code,
-					StyleName: "del",
+					Value:  children[0].Value,
+					Link:   children[0].Link,
+					Bold:   children[0].Bold,
+					Italic: children[0].Italic,
+					Code:   children[0].Code,
+					// The GFM specification states that Strikethrough corresponds to the `del` tag, not the `s` tag,
+					// and goldmark's implementation follows this. Therefore, the style name should also be `del`.
+					StyleName: deck.StyleDel,
 				}})
 			images = append(images, childImages...)
 		default:
