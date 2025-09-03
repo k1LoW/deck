@@ -270,6 +270,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 
 - Bold ( `**bold**` )
 - Italic ( `*italic*` `__italic__` )
+- Strikethrough ( `~~strikethrough~~` )
 - List ( `-` `*` )
 - Ordered list ( `1.` `1)` )
 - Link ( `[Link](https://example.com)` )
@@ -279,7 +280,7 @@ The system continues to operate despite an arbitrary number of messages being dr
 - Image (`![Image](path/to/image.png)` )
 - Block quote ( `> block quote` )
 - Table (GitHub Flavored Markdown tables)
-- RAW inline HTML (e.g., `<mark>`, `<small>`, `<kbd>`, `<cite>`, `<q>`, `<span>`, `<u>`, `<s>`, `<sub>`, `<sup>`, `<var>`, `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`)
+- RAW inline HTML (e.g., `<mark>`, `<small>`, `<kbd>`, `<cite>`, `<q>`, `<span>`, `<u>`, `<s>`, `<del>`, `<ins>`, `<sub>`, `<sup>`, `<var>`, `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`)
 
 #### Line break handling
 
@@ -328,8 +329,9 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | `italic` | style for *italic*. |
 | `link` | style for [link](#). |
 | `code` | style for `code`. |
+| `del` | style for ~~strikethrough~~ (also applies to `<del>` tag). |
 | `blockquote` | style for block quote. |
-| HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, etc. ) |
+| HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, `<s>`, `<ins>`, etc. ) |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
 #### Code blocks to images
