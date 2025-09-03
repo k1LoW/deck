@@ -736,19 +736,6 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 			} else {
 				styleName = stuffs[1] // Use the matched element name as style name
 			}
-		case *ast.String:
-			// For String nodes, try to get their content
-			if childNode.Value != nil {
-				frag := seedFragment
-				frag.Value = string(childNode.Value)
-				frag.StyleName = styleName
-				frags = append(frags, &fragment{Fragment: &frag})
-			} else {
-				// Fallback for empty strings
-				frags = append(frags, &fragment{Fragment: &deck.Fragment{
-					Value: "",
-				}})
-			}
 		case *ast.CodeSpan:
 			children, childImages, err := toFragments(baseDir, b, childNode, seedFragment)
 			if err != nil {
