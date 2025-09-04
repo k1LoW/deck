@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.21.1](https://github.com/k1LoW/deck/compare/v1.21.0...v1.21.1) - 2025-09-04
+### Other Changes
+- docs: replace deprecated --from flag with --base flag in README by @7kaji in https://github.com/k1LoW/deck/pull/430
+- chore: move unused public methods from the deck command to export.go by @Songmu in https://github.com/k1LoW/deck/pull/432
+- chore: remove redundant checks by @Songmu in https://github.com/k1LoW/deck/pull/433
+- chore: enhance logs in applying by @Songmu in https://github.com/k1LoW/deck/pull/434
+
 ## [v1.21.0](https://github.com/k1LoW/deck/compare/v1.20.0...v1.21.0) - 2025-09-03
 ### New Features 🎉
 - feat: support strikethrough GFM syntax ('~~') by @Songmu in https://github.com/k1LoW/deck/pull/428
