@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -524,7 +525,38 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 	return nil
 }
 
-func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *CodeBlock) (*deck.Image, error) {
+var standaloneCommandReg = regexp.MustCompile(`^[-_.+a-zA-Z0-9]+$`)
+
+func buildCommand(c string) (string, []string, error) {
+	// If the string looks like a standalone command, we don't need to execute it via the shell.
+	if standaloneCommandReg.MatchString(c) {
+		return c, nil, nil
+	}
+	if runtime.GOOS == "windows" {
+		return "cmd", []string{"/c", c}, nil
+	}
+	sh, err := detectShell()
+	if err != nil {
+		return "", nil, err
+	}
+	return sh, []string{"-c", c}, nil
+}
+
+func detectShell() (string, error) {
+	if shell := os.Getenv("SHELL"); shell != "" {
+		return shell, nil
+	}
+	for _, sh := range []string{"bash", "sh"} {
+		if path, err := exec.LookPath(sh); err == nil {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("failed to detect shell")
+}
+
+func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *CodeBlock) (
+	*deck.Image, error) {
+
 	dir, err := os.MkdirTemp("", "deck")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temporary directory: %w", err)
@@ -549,7 +581,11 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 	if err != nil {
 		return nil, err
 	}
-	cmd := exec.CommandContext(ctx, "bash", "-c", replacedCmd)
+	c, args, err := buildCommand(replacedCmd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build command: %w", err)
+	}
+	cmd := exec.CommandContext(ctx, c, args...)
 	cmd.Dir = dir
 	cmd.Stdin = strings.NewReader(codeBlock.Content)
 	cmd.Env = os.Environ()
