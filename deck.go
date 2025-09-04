@@ -172,21 +172,6 @@ func CreateFrom(ctx context.Context, id string, opts ...Option) (_ *Deck, err er
 	return d, nil
 }
 
-// Delete deletes a Google Slides presentation by ID.
-func Delete(ctx context.Context, id string, opts ...Option) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d, err := newDeck(ctx, opts...)
-	if err != nil {
-		return err
-	}
-	if err := d.deleteOrTrashFile(ctx, id); err != nil {
-		return fmt.Errorf("failed to delete presentation: %w", err)
-	}
-	return nil
-}
-
 func Doctor(ctx context.Context, opts ...Option) error {
 	d, err := newDeck(ctx, opts...)
 	if err != nil {
@@ -285,32 +270,6 @@ func (d *Deck) DeletePageAfter(ctx context.Context, index int) (err error) {
 	return nil
 }
 
-func (d *Deck) AppendPage(ctx context.Context, slide *Slide) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d.logger.Info("appending new page")
-	index := len(d.presentation.Slides)
-	if err := d.createPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if reqs, err := d.prepareToApplyPage(ctx, index, slide, nil); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
-	} else if len(reqs) > 0 {
-		if err := d.batchUpdate(ctx, reqs); err != nil {
-			return err
-		}
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	d.logger.Info("appended page")
-	return nil
-}
-
 func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
@@ -320,79 +279,6 @@ func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err erro
 		return err
 	}
 	d.logger.Info("moved page", slog.Int("from_index", from_index), slog.Int("to_index", to_index))
-	return nil
-}
-
-func (d *Deck) InsertPage(ctx context.Context, index int, slide *Slide) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	d.logger.Info("inserting page", slog.Int("index", index))
-	if len(d.presentation.Slides) <= index {
-		return fmt.Errorf("index out of range: %d", index)
-	}
-	if err := d.createPage(ctx, index, slide); err != nil {
-		return fmt.Errorf("failed to create page: %w", err)
-	}
-	if index == 0 {
-		if err := d.movePage(ctx, 1, 0); err != nil {
-			return fmt.Errorf("failed to move page: %w", err)
-		}
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if reqs, err := d.prepareToApplyPage(ctx, index, slide, nil); err != nil {
-		return fmt.Errorf("failed to apply page: %w", err)
-	} else if len(reqs) > 0 {
-		if err := d.batchUpdate(ctx, reqs); err != nil {
-			return err
-		}
-	}
-	if err := d.refresh(ctx); err != nil {
-		return fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	d.logger.Info("inserted page", slog.Int("index", index))
-	return nil
-}
-
-func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if err := d.refresh(ctx); err != nil {
-		return nil, fmt.Errorf("failed to refresh presentation: %w", err)
-	}
-	if d.presentation == nil {
-		return nil, fmt.Errorf("presentation is not loaded")
-	}
-	layoutObjectIdMap := map[string]*slides.Page{}
-	for _, l := range d.presentation.Layouts {
-		layoutObjectIdMap[l.ObjectId] = l
-	}
-	slides := make(Slides, 0, len(d.presentation.Slides))
-	for _, p := range d.presentation.Slides {
-		slide := convertToSlide(p, layoutObjectIdMap)
-		slides = append(slides, slide)
-	}
-	return slides, nil
-}
-
-// AllowReadingByAnyone sets the permission of the presentation to allow anyone to read it.
-func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if d.id == "" {
-		return fmt.Errorf("presentation ID is not set")
-	}
-	permission := &drive.Permission{
-		Type: "anyone",
-		Role: "reader",
-	}
-	if _, err := d.driveSrv.Permissions.Create(d.id, permission).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
-		return fmt.Errorf("failed to set permission: %w", err)
-	}
 	return nil
 }
 
