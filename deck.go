@@ -397,6 +397,7 @@ func (d *Deck) preparePages(ctx context.Context, startIdx int, layoutIDs []strin
 	if err := d.batchUpdate(ctx, reqs); err != nil {
 		return err
 	}
+	d.logger.Debug("prepared pages", slog.Int("count", len(layoutIDs)), slog.Int("start_index", startIdx))
 	return d.refresh(ctx)
 }
 

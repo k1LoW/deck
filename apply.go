@@ -52,9 +52,13 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	for _, l := range d.presentation.Layouts {
 		layoutObjectIdMap[l.ObjectId] = l
 	}
+	beforeLen := len(d.presentation.Slides)
 
-	before := make(Slides, len(d.presentation.Slides))
-	after := make(Slides, len(d.presentation.Slides))
+	d.logger.Debug("starting to apply pages",
+		slog.Int("before_len", beforeLen), slog.Int("after_len", len(ss)), slog.Any("pages", pages))
+
+	before := make(Slides, beforeLen)
+	after := make(Slides, beforeLen)
 	for i, p := range d.presentation.Slides {
 		slide := convertToSlide(p, layoutObjectIdMap)
 		before[i] = slide
