@@ -22,7 +22,7 @@ func (s *Slide) Equal(other *Slide) bool {
 		slices.Equal(s.Titles, other.Titles) &&
 		slices.Equal(s.Subtitles, other.Subtitles) &&
 		bodiesEqual(s.Bodies, other.Bodies) &&
-		imagesEqual(s.Images, other.Images) &&
+		imagesEquivalent(s.Images, other.Images) &&
 		blockQuotesEqual(s.BlockQuotes, other.BlockQuotes) &&
 		tablesEqual(s.Tables, other.Tables) &&
 		s.SpeakerNote == other.SpeakerNote
@@ -30,17 +30,11 @@ func (s *Slide) Equal(other *Slide) bool {
 
 func bodiesEqual(bodies1, bodies2 []*Body) bool {
 	return slices.EqualFunc(bodies1, bodies2, func(a, b *Body) bool {
-		if a == nil || b == nil {
-			return a == b
-		}
 		return slices.EqualFunc(a.Paragraphs, b.Paragraphs, paragraphEqual)
 	})
 }
 
-func imagesEqual(images1, images2 []*Image) bool {
-	if len(images1) != len(images2) {
-		return false
-	}
+func imagesEquivalent(images1, images2 []*Image) bool {
 	sorted1 := make([]*Image, len(images1))
 	copy(sorted1, images1)
 	sorted2 := make([]*Image, len(images2))
@@ -62,24 +56,12 @@ func imagesEqual(images1, images2 []*Image) bool {
 }
 
 func blockQuotesEqual(bq1, bq2 []*BlockQuote) bool {
-	if len(bq1) != len(bq2) {
-		return false
-	}
 	f := func(a *BlockQuote, b *BlockQuote) int {
 		if a.Nesting != b.Nesting {
 			return a.Nesting - b.Nesting
 		}
-		if len(a.Paragraphs) != len(b.Paragraphs) {
-			return len(a.Paragraphs) - len(b.Paragraphs)
-		}
-		jsonA, err := json.Marshal(a.Paragraphs)
-		if err != nil {
-			return -1 // Error case, treat as unequal
-		}
-		jsonB, err := json.Marshal(b.Paragraphs)
-		if err != nil {
-			return 1 // Error case, treat as unequal
-		}
+		jsonA, _ := json.Marshal(a.Paragraphs)
+		jsonB, _ := json.Marshal(b.Paragraphs)
 		return bytes.Compare(jsonA, jsonB)
 	}
 	slices.SortFunc(bq1, f)
@@ -98,10 +80,7 @@ func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
 	if paragraph1 == nil || paragraph2 == nil {
 		return paragraph1 == paragraph2
 	}
-	if paragraph1.Bullet != paragraph2.Bullet {
-		return false
-	}
-	if paragraph1.Nesting != paragraph2.Nesting {
+	if paragraph1.Bullet != paragraph2.Bullet || paragraph1.Nesting != paragraph2.Nesting {
 		return false
 	}
 	merged1 := mergeFragments(paragraph1.Fragments)
@@ -147,10 +126,6 @@ func mergeFragments(in []*Fragment) []*Fragment {
 }
 
 func tablesEqual(tables1, tables2 []*Table) bool {
-	if len(tables1) != len(tables2) {
-		return false
-	}
-
 	return slices.EqualFunc(tables1, tables2, func(a, b *Table) bool {
 		if a == nil || b == nil {
 			return a == b
@@ -163,9 +138,6 @@ func tableRowEqual(row1, row2 *TableRow) bool {
 	if row1 == nil || row2 == nil {
 		return row1 == row2
 	}
-	if len(row1.Cells) != len(row2.Cells) {
-		return false
-	}
 	return slices.EqualFunc(row1.Cells, row2.Cells, tableCellEqual)
 }
 
@@ -173,13 +145,7 @@ func tableCellEqual(cell1, cell2 *TableCell) bool {
 	if cell1 == nil || cell2 == nil {
 		return cell1 == cell2
 	}
-	if cell1.Alignment != cell2.Alignment {
-		return false
-	}
-	if cell1.IsHeader != cell2.IsHeader {
-		return false
-	}
-	if len(cell1.Fragments) != len(cell2.Fragments) {
+	if cell1.Alignment != cell2.Alignment || cell1.IsHeader != cell2.IsHeader {
 		return false
 	}
 	return slices.EqualFunc(cell1.Fragments, cell2.Fragments, func(a, b *Fragment) bool {

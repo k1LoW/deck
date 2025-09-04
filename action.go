@@ -516,13 +516,11 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 	if beforeSlide == nil || afterSlide == nil {
 		return 0
 	}
-
 	if beforeSlide.Equal(afterSlide) {
 		return 500
 	}
 
 	score := 0
-
 	// Calculate score only when layouts match
 	if beforeSlide.Layout == afterSlide.Layout && beforeSlide.Layout != "" {
 		score += 50 // Increased layout base score from 10 to 50
@@ -530,28 +528,22 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		if len(beforeSlide.Titles) > 0 && slices.Equal(beforeSlide.Titles, afterSlide.Titles) {
 			score += 80
 		}
-
 		if len(beforeSlide.Subtitles) > 0 && slices.Equal(beforeSlide.Subtitles, afterSlide.Subtitles) {
 			score += 20
 		}
-
-		if len(beforeSlide.Bodies) > 0 && len(afterSlide.Bodies) > 0 && bodiesEqual(beforeSlide.Bodies, afterSlide.Bodies) {
+		if len(beforeSlide.Bodies) > 0 && bodiesEqual(beforeSlide.Bodies, afterSlide.Bodies) {
 			score += 160
 		}
-
-		if len(beforeSlide.Images) > 0 && len(afterSlide.Images) > 0 && imagesEqual(beforeSlide.Images, afterSlide.Images) {
+		if len(beforeSlide.Images) > 0 && imagesEquivalent(beforeSlide.Images, afterSlide.Images) {
 			score += 40
 		}
-
-		if len(beforeSlide.BlockQuotes) > 0 && len(afterSlide.BlockQuotes) > 0 && blockQuotesEqual(beforeSlide.BlockQuotes, afterSlide.BlockQuotes) {
+		if len(beforeSlide.BlockQuotes) > 0 && blockQuotesEqual(beforeSlide.BlockQuotes, afterSlide.BlockQuotes) {
 			score += 30
 		}
-
-		if len(beforeSlide.Tables) > 0 && len(afterSlide.Tables) > 0 && tablesEqual(beforeSlide.Tables, afterSlide.Tables) {
+		if len(beforeSlide.Tables) > 0 && tablesEqual(beforeSlide.Tables, afterSlide.Tables) {
 			score += 35
 		}
 	}
-
 	return score
 }
 
@@ -585,7 +577,6 @@ func getSimilarityForMapping(beforeSlide, afterSlide *Slide, beforeIndex, afterI
 			positionBonus = 0 // before is behind after
 		}
 	}
-
 	return baseScore + positionBonus
 }
 
@@ -617,7 +608,6 @@ func generateUpdateActions(before, after Slides, mapping map[int]int) []*action 
 			})
 		}
 	}
-
 	return actions
 }
 
@@ -636,7 +626,6 @@ func generateAppendActions(before Slides) []*action {
 			})
 		}
 	}
-
 	return actions
 }
 
@@ -649,7 +638,6 @@ func removeDeleteMarked(after Slides) Slides {
 			cleaned = append(cleaned, slide)
 		}
 	}
-
 	return cleaned
 }
 
@@ -676,7 +664,6 @@ func generateDeleteActions(before *Slides, mapping *map[int]int) []*action {
 			updateMappingAfterDeletion(mapping, i)
 		}
 	}
-
 	return actions
 }
 
@@ -694,7 +681,6 @@ func updateMappingAfterDeletion(mapping *map[int]int, deletedIndex int) {
 		}
 		// If beforeIdx == deletedIndex, remove (exclude from mapping)
 	}
-
 	*mapping = newMapping
 }
 
@@ -792,7 +778,8 @@ func generateMoveActions(before *Slides, after Slides, mapping *map[int]int) []*
 			if insertIndex >= len(workingSlides) {
 				workingSlides = append(workingSlides, slideToMove)
 			} else {
-				workingSlides = append(workingSlides[:insertIndex], append([]slideWithID{slideToMove}, workingSlides[insertIndex:]...)...)
+				workingSlides = append(workingSlides[:insertIndex],
+					append([]slideWithID{slideToMove}, workingSlides[insertIndex:]...)...)
 			}
 		}
 	}
