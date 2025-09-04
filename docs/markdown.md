@@ -4,7 +4,7 @@
 
 ## CommonMark Support
 
-`deck` fully supports the [CommonMark specification](https://spec.commonmark.org/) with the following clarifications and limitations:
+`deck` almost fully supports the [CommonMark specification](https://spec.commonmark.org/) with the following clarifications and limitations:
 
 ### Supported CommonMark Features
 
@@ -26,40 +26,27 @@
 - **Autolinks**: `<https://example.com>` and `<user@example.com>`
 - **Escape sequences**: Backslash escaping of special characters
 
-### Character References (Not Supported)
-
-`deck` does **not** support HTML character references, and there are no plans to add support:
-- **Numeric character references**: `&#60;`, `&#x3C;` (not supported)
-- **Named character references (HTML entities)**: `&lt;`, `&gt;`, `&amp;`, `&quot;`, `&nbsp;`, etc. (not supported)
-- **Behavior**: These references are treated as literal text and will appear as-is in the output
-
-This simplification is intentional as direct Unicode characters can be used in markdown files.
-
 ### Raw HTML Support
 
 #### Inline HTML Elements (Supported)
-
 `deck` supports raw inline HTML elements for text-level semantics and edits:
 
-**[Text-level semantics elements](https://html.spec.whatwg.org/multipage/text-level-semantics.html):**
-- `<a>`, `<abbr>`, `<b>`, `<cite>`, `<code>`, `<data>`, `<dfn>`, `<em>`, `<i>`, `<kbd>`, `<mark>`, `<q>`, `<rp>`, `<rt>`, `<ruby>`, `<s>`, `<samp>`, `<small>`, `<span>`, `<strong>`, `<sub>`, `<sup>`, `<time>`, `<u>`, `<var>`
-
-**[Edits elements](https://html.spec.whatwg.org/multipage/edits.html):**
-- `<ins>` - inserted text
-- `<del>` - deleted text
-
-**Not supported:**
-- `<wbr>`, `<bdi>`, `<bdo>` - These text-direction and line-breaking hints are not supported
+- **[Text-level semantics elements](https://html.spec.whatwg.org/multipage/text-level-semantics.html):**
+    - `<a>`, `<abbr>`, `<b>`, `<cite>`, `<code>`, `<data>`, `<dfn>`, `<em>`, `<i>`, `<kbd>`, `<mark>`, `<q>`, `<rp>`, `<rt>`, `<ruby>`, `<s>`, `<samp>`, `<small>`, `<span>`, `<strong>`, `<sub>`, `<sup>`, `<time>`, `<u>`, `<var>`
+- **[Edits elements](https://html.spec.whatwg.org/multipage/edits.html):**
+    - `<ins>`, `<del>`
+- **Not supported text-level semantics:**
+    - `<wbr>`, `<bdi>`, `<bdo>` - These text-direction and line-breaking hints are not supported
 
 #### Block HTML Elements (Not Supported)
-
 Raw HTML block elements are **not supported** and there are no plans to support them:
 - Examples: `<div>`, `<section>`, `<article>`, `<header>`, `<footer>`, `<nav>`, `<aside>`, `<table>`, etc.
 - **Behavior**: When block HTML elements are encountered, they are treated as plain text and will appear as literal tag strings in the output (no escaping is performed)
-- **Rationale**: Block-level HTML elements don't map well to slide presentation structures
+
+### Character References (Not Supported)
+HTML character references (`&#60;`, `&lt;`, etc.) are not supported (and won't be in the future) and appear as literal text. Use Unicode characters directly or backslash escaping instead.
 
 ## GitHub Flavored Markdown (GFM) Extensions
-
 `deck` selectively supports some [GFM (GitHub Flavored Markdown)](https://github.github.com/gfm/) extensions that are useful for presentations:
 
 ### Supported GFM Features
@@ -70,7 +57,7 @@ Raw HTML block elements are **not supported** and there are no plans to support 
 |----------|----------|
 | Cell 1   | Cell 2   |
 ```
-- Table headers are automatically styled with bold text
+- Table headers are automatically styled with bold text and a gray background
 - Cell content supports inline formatting (bold, italic, code, links, etc.)
 
 #### Strikethrough
@@ -85,11 +72,10 @@ Raw HTML block elements are **not supported** and there are no plans to support 
 The following GFM extensions are **not supported** as they are not relevant for presentations:
 
 - **Task lists**: Checkbox lists are not needed in presentations
-- **Autolinks without brackets**: It is sufficient to wrap URLs in angle brackets (`<URL>`), CommonMark autolink syntax
+- **Autolinks without brackets**: Use Markdown autolink syntax by wrapping URLs in angle brackets (`<URL>`) instead
 
 ## Horizontal Rules and Page Breaks
-
-Among all CommonMark horizontal rule (thematic break) syntaxes, `deck` treats them differently:
+Among all Markdown horizontal rule (thematic break) syntaxes, `deck` treats them differently:
 
 ### Page Separators (Slide Breaks)
 
@@ -103,7 +89,7 @@ Among all CommonMark horizontal rule (thematic break) syntaxes, `deck` treats th
 ```
 
 **Exceptions that do NOT create slide breaks:**
-- YAML frontmatter delimiter (`---` at file start when frontmatter is present)
+- YAML frontmatter delimiter
 - Files starting with `---` without frontmatter (simply ignored/removed)
 - Setext H2 headings (`text` underlined with `---`)
 - Hyphens inside code blocks
