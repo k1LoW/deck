@@ -70,7 +70,7 @@ Raw HTML block elements are **not supported** and there are no plans to support 
 |----------|----------|
 | Cell 1   | Cell 2   |
 ```
-- Table headers are automatically styled with bold text
+- Table headers are automatically styled with bold text and a gray background
 - Cell content supports inline formatting (bold, italic, code, links, etc.)
 
 #### Strikethrough

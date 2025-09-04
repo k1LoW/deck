@@ -15,6 +15,24 @@
 - **Separate content and design**
     - Markdown for content, Google Slides for design.
 
+## Installation
+
+**Homebrew:**
+
+```console
+$ brew install deck
+```
+
+**go install:**
+
+```console
+$ go install github.com/k1LoW/deck/cmd/deck@latest
+```
+
+**Manual installation:**
+
+Download the binary from the [releases page](https://github.com/k1LoW/deck/releases)
+
 ## Usage
 
 ### Setup
@@ -22,18 +40,27 @@
 #### Get and set your OAuth client credentials
 
 - Create (or reuse) a developer project at https://console.cloud.google.com.
-- Enable [`Google Slides API`](https://console.cloud.google.com/apis/library/slides.googleapis.com) and [`Google Drive API`](https://console.cloud.google.com/apis/library/drive.googleapis.com) at [`API & Services` page](https://console.cloud.google.com/apis/dashboard).
-- Go to [`Credentials` page](https://console.cloud.google.com/apis/credentials) and click [`+ CREATE CREDENTIALS`](https://console.cloud.google.com/auth/clients/create) at the top.
-- Create `OAuth client ID` type of credentials.
-- Choose type `Desktop app`.
+- Enable [`Google Slides API`](https://console.cloud.google.com/apis/library/slides.googleapis.com) and [`Google Drive API`](https://console.cloud.google.com/apis/library/drive.googleapis.com) at the [`API & Services` page](https://console.cloud.google.com/apis/dashboard).
+- Go to the [`Credentials` page](https://console.cloud.google.com/apis/credentials) and click [`+ CREATE CREDENTIALS`](https://console.cloud.google.com/auth/clients/create) at the top.
+- Create an `OAuth client ID` type of credentials.
+- Choose the type `Desktop app`.
     - Since there is no need to publish the app, add your email address as a test user from [Google Auth Platform / Audience](https://console.cloud.google.com/auth/audience).
-- Download credentials file to `${XDG_DATA_HOME:-~/.local/share}/deck/credentials.json`.
+- Download the credentials file to `${XDG_DATA_HOME:-~/.local/share}/deck/credentials.json`.
 
 #### For CI/CD automation (Service Account)
 
-If you're setting up deck for automated workflows (GitHub Actions, CI/CD pipelines), see [Service Account Setup Guide](docs/setup-service-account.md).
+If you're setting up `deck` for automated workflows (GitHub Actions, CI/CD pipelines), see [Service Account Setup Guide](docs/setup-service-account.md).
 
-### Prepare presentation ID and markdown file
+#### Check your setup with `deck doctor`
+
+You can verify if `deck` is ready to use and diagnose any configuration issues with the `deck doctor` command.
+
+This command checks:
+- OAuth credentials file existence and format
+- Authentication with Google API
+- Configuration file validation (optional)
+
+### Prepare presentation ID and markdown file with `deck new`
 
 `deck` requires two main components:
 - **Presentation ID**: A unique identifier for your Google Slides presentation (e.g., `xxxxxXXXXxxxxxXXXXxxxxxxxxxx` from the URL `https://docs.google.com/presentation/d/xxxxxXXXXxxxxxXXXXxxxxxxxxxx/edit`)
@@ -49,7 +76,7 @@ Applied frontmatter to deck.md
 xxxxxXXXXxxxxxXXXXxxxxxxxxxx
 ```
 
-This will create (or update) the specified markdown file with frontmatter containing the presentation ID and title.
+This will create (or update) the given markdown file with frontmatter containing the presentation ID and title.
 
 ##### Reusing theme from an existing presentation
 
@@ -72,7 +99,7 @@ With this configuration, you can reuse the theme from the base presentation with
 
 #### When using an existing presentation
 
-Get the presentation ID you want to operate. You can get a list with `deck ls`.
+Get the presentation ID you want to work with. You can list all presentations with `deck ls`.
 
 ```console
 $ deck ls
@@ -85,29 +112,11 @@ yyyyyYYYYyyyyyYYYYyyyyyyyyyy    Team Project Slides
 
 To use this presentation, specify it with the `--presentation-id` flag or add it to your markdown file's frontmatter as `presentationID`.
 
-### Write deck in markdown
+### Write your slides in markdown
 
-The slide pages are separated by a line containing only three or more consecutive hyphens (`---`, `----`, etc.) from the beginning to the end of the line.
+Edit your markdown file with your favorite editor. Among horizontal rule syntaxes, three or more consecutive hyphens at the beginning of a line (e.g. `---`) are treated as slide page separators. See [Markdown file format for `deck`](#markdown-file-format-for-deck) for details.
 
-> [!NOTE]
-> The `---` at the beginning of the markdown is ignored.
->
-> Other horizontal rule elements (like `- - -`, `***`, `___`) are not treated as page separators but remain in the content as visual separators for multiple body placeholders.
-
-### Check your setup
-
-You can verify if deck is ready to use and diagnose any configuration issues:
-
-```console
-$ deck doctor
-```
-
-This command checks:
-- OAuth credentials file existence and format
-- Authentication with Google API
-- Configuration file validation (optional)
-
-### Apply deck written in markdown to Google Slides presentation
+### Apply markdown content to Google Slides with `deck apply`
 
 ```console
 $ deck apply deck.md
@@ -126,15 +135,17 @@ This is useful during the content creation process as it allows you to see your 
 > [!NOTE]
 > The `--watch` flag cannot be used together with the `--page` flag.
 
-### Open presentation in browser
+### Open presentation in your browser with `deck open`
 
-You can quickly open your Google Slides presentation in your default web browser:
+You can open your Google Slides presentation in your default web browser:
 
 ```console
 $ deck open deck.md
 ```
 
-## Support markdown rules
+## Markdown file format for `deck`
+
+The Markdown used by `deck` consists of YAML frontmatter and a body section.
 
 ### YAML Frontmatter
 
@@ -160,83 +171,74 @@ The frontmatter must be:
 #### Available fields
 
 - `presentationID` (string): Google Slides presentation ID. When specified, you can use the simplified command syntax.
-- `title` (string): title of the presentation. When specified, you can use the simplified command syntax.
+- `title` (string): The title of the presentation. When specified, you can use the simplified command syntax.
 - `breaks` (boolean): Control how line breaks are rendered. Default (`false` or omitted) renders line breaks as spaces. When `true`, line breaks in markdown are rendered as actual line breaks in slides. Can also be configured globally in `config.yml`.
 - `codeBlockToImageCommand` (string): Command to convert code blocks to images. When specified, code blocks in the presentation will be converted to images using this command. Can also be configured globally in `config.yml`.
 - `defaults` (array): Define conditional actions using CEL (Common Expression Language) expressions. Actions are automatically applied to pages based on page structure and content. Only applies to pages without explicit page configuration. Can also be configured globally in `config.yml`.
 
-#### Configuration File
 
-`deck` supports global configuration files that provide default settings for all presentations. Configuration files are loaded in the following priority order:
+### Supported Markdown syntax
 
-1. `${XDG_CONFIG_HOME:-~/.config}/deck/config-{profile}.yml` (when using `--profile` option)
-2. `${XDG_CONFIG_HOME:-~/.config}/deck/config.yml` (default config file)
+`deck` supports CommonMark and selected GitHub Flavored Markdown extensions. For comprehensive documentation, see [Markdown Support Documentation](docs/markdown.md).
 
-The configuration file uses YAML format and supports the same fields as frontmatter. Settings in frontmatter take precedence over configuration file settings, which in turn take precedence over built-in defaults.
+**Key supported features:**
+- Bold ( `**bold**` )
+- Italic ( `*italic*` `__italic__` )
+- Strikethrough ( `~~strikethrough~~` )
+- List ( `-` `*` )
+- Ordered list ( `1.` `1)` )
+- Link ( `[Link](https://example.com)` )
+- Angle bracket autolinks ( `<https://example.com>` )
+- Code ( <code>\`code\`</code> )
+- `<br>` (for newline)
+- Image (`![Image](path/to/image.png)` )
+- Block quote ( `> block quote` )
+- Table (GitHub Flavored Markdown tables)
+- RAW inline HTML (e.g., `<mark>`, `<small>`, `<kbd>`, `<cite>`, `<q>`, `<span>`, `<u>`, `<s>`, `<del>`, `<ins>`, `<sub>`, `<sup>`, `<var>`, `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`)
 
-##### Configuration file example
+#### Line break handling
 
-```yaml
-# Global configuration for deck
-basePresentationID: "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
+`deck` provides configurable line break behavior through the `breaks` setting:
+
+- **Default (`breaks: false`)**: Single line breaks become spaces (per CommonMark/GFM specs)
+- **With `breaks: true`**: Line breaks are preserved (GitHub-style rendering)
+- **For explicit breaks**: Use hard line break syntax (two spaces at line end per CommonMark standard) or `<br>` tag
+
+Example with `breaks: true`:
+```markdown
+---
 breaks: true
-codeBlockToImageCommand: "go run testdata/txt2img/main.go"
-folderID: "1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
-
-defaults:
-  # First page should always use title layout
-  - if: page == 1
-    layout: title
-  # Pages with only one title and one H2 heading use section layout
-  - if: titles.size() == 1 && headings[2].size() == 1
-    layout: section-purple
-  # Skip pages with TODO in speaker notes
-  - if: speakerNote.contains("TODO")
-    skip: true
-  # Default layout for all other pages
-  - if: true
-    layout: title-and-body
+---
+Text with
+line breaks
+preserved
 ```
 
-##### Available configuration fields
+#### Comments
 
-- **`basePresentationID`** (string): Base presentation ID to use as a template when creating new presentations
-- **`breaks`** (boolean): Global line break rendering behavior
-- **`codeBlockToImageCommand`** (string): Global command to convert code blocks to images
-- **`folderID`** (string): Default folder ID to create presentations and upload temporary images to
-- **`defaults`** (array): A series of conditions and actions written in CEL expressions for default page configs
+HTML comments `<!--` `-->` are used for speaker notes or [page configuration](#page-configuration).
 
-##### Configuration precedence
-
-Settings are applied in the following order (highest to lowest priority):
-
-1. **Frontmatter settings** - Takes highest precedence
-2. **Configuration file settings** - Applied when frontmatter doesn't specify the setting
-3. **Built-in defaults** - Used when neither frontmatter nor config file specify the setting
-
-This allows you to set organization-wide or project-wide defaults while still maintaining the flexibility to override them on a per-file basis using frontmatter.
-
-### Insertion rule
+## How markdown maps to slide placeholders
 
 `deck` inserts values according to the following rules regardless of the slide layout.
 
 - The shallowest heading level within each slide content is treated as the title and inserted into the title placeholder ( `CENTERED_TITLE` or `TITLE` ) in order.
   - In most cases, this will be H1 (`#`), which is the standard for slide titles
 - The next heading level (minimum level + 1) is treated as the subtitle and inserted into the subtitle placeholder ( `SUBTITLE` ) in order.
-  - When H1 is used for titles, H2 (`##`) becomes the subtitle
+  - When H1 is used as the title, H2 (`##`) becomes the subtitle
 - All other items are inserted into the body placeholder ( `BODY` ) in order.
     - The remaining contents are divided into one or more bodies by headings corresponding to the title or subtitle in the slide.
 
 For example:
-- **Standard case**: If a slide contains `#` (H1), then `#` becomes title and `##` becomes subtitle
-- **Alternative case**: If a slide only contains `##` (H2) or deeper, then `##` becomes title and `###` becomes subtitle
+- **Standard case**: If a slide contains `#` (H1), then `#` becomes the title and `##` becomes the subtitle
+- **Alternative case**: If a slide only contains `##` (H2) or deeper, then `##` becomes the title and `###` becomes the subtitle
 
 > [!NOTE]
-> They are inserted in the order they appear in the markdown document, **from the placeholder at the top of the slide** (or from the placeholder on the left if the slides are the same height).
+> They are inserted in the order they appear in the markdown document, **from the placeholder at the top of the slide** (or from the placeholder on the left if placeholders are at the same height).
 >
 > Also, if there are not enough placeholders, the remaining contents will not be rendered.
 
-#### Example
+### Example
 
 **Input markdown document:**
 
@@ -266,63 +268,60 @@ The system continues to operate despite an arbitrary number of messages being dr
 
 ![img](img/result.png)
 
-### Supported Markdown syntax
+## Configuration File
+`deck` supports global configuration files that provide default settings for all presentations. Configuration files are loaded in the following order:
 
-`deck` supports CommonMark and selected GitHub Flavored Markdown extensions. For comprehensive documentation, see [Markdown Support Documentation](docs/markdown.md).
+1. `${XDG_CONFIG_HOME:-~/.config}/deck/config-{profile}.yml` (when using `--profile` option)
+2. `${XDG_CONFIG_HOME:-~/.config}/deck/config.yml` (default config file)
 
-**Key supported features:**
-- Bold ( `**bold**` )
-- Italic ( `*italic*` `__italic__` )
-- Strikethrough ( `~~strikethrough~~` )
-- List ( `-` `*` )
-- Ordered list ( `1.` `1)` )
-- Link ( `[Link](https://example.com)` )
-- Angle bracket autolinks ( `<https://example.com>` )
-- Code ( <code>\`code\`</code> )
-- `<br>` (for newline)
-- Image (`![Image](path/to/image.png)` )
-- Block quote ( `> block quote` )
-- Table (GitHub Flavored Markdown tables)
-- RAW inline HTML (e.g., `<mark>`, `<small>`, `<kbd>`, `<cite>`, `<q>`, `<span>`, `<u>`, `<s>`, `<del>`, `<ins>`, `<sub>`, `<sup>`, `<var>`, `<samp>`, `<data>`, `<dfn>`, `<time>`, `<abbr>`)
+The configuration file uses YAML format and supports the same fields as frontmatter. Settings in frontmatter take precedence over configuration file settings, which in turn take precedence over built-in defaults.
 
-#### Line break handling
+### Configuration file example
 
-By default, single line breaks in markdown are rendered as spaces in the slides, following the original Markdown and CommonMark specifications. You can change this behavior by setting `breaks: true` in the frontmatter:
-
-```markdown
----
+```yaml
+# Global configuration for deck
+basePresentationID: "1wIik04tlp1U4SBHTLrSu20dPFlAGTbRHxnqdRFF9nPo"
 breaks: true
----
+codeBlockToImageCommand: "go run testdata/txt2img/main.go"
+folderID: "1aBcDeFgHiJkLmNoPqRsTuVwXyZ"
 
-This text has a
-line break that will
-render as an actual line break.
+defaults:
+  # First page should always use title layout
+  - if: page == 1
+    layout: title
+  # Pages with only one title and one H2 heading use section layout
+  - if: titles.size() == 1 && headings[2].size() == 1
+    layout: section-purple
+  # Skip pages with TODO in speaker notes
+  - if: speakerNote.contains("TODO")
+    skip: true
+  # Default layout for all other pages
+  - if: true
+    layout: title-and-body
 ```
 
-When `breaks: true` is set, line breaks in the markdown source are preserved as line breaks in the rendered slides, similar to how GitHub renders markdown on their website.
+### Available configuration fields
+- **`basePresentationID`** (string): Base presentation ID to use as a template when creating new presentations
+- **`breaks`** (boolean): Global line break rendering behavior
+- **`codeBlockToImageCommand`** (string): Global command to convert code blocks to images
+- **`folderID`** (string): Default folder ID to create presentations and upload temporary images to
+- **`defaults`** (array): A series of conditions and actions written in CEL expressions for default page configs
 
-When `breaks: false` (default), you can still create line breaks by using:
-- Hard line breaks: add two spaces at the end of a line (standard Markdown/CommonMark syntax)
-- HTML: use `<br>` tags
+### Configuration precedence
+Settings are applied in the following order (highest to lowest priority):
 
-#### Tables
+1. **Command-line options** - Takes highest precedence when available
+2. **Frontmatter settings** - Takes precedence over config file
+3. **Configuration file settings** - Applied when neither command-line nor frontmatter specify the setting
+4. **Built-in defaults** - Used when no other source specifies a setting
 
-`deck` supports GitHub Flavored Markdown (GFM) table syntax:
+This allows you to set organization-wide or project-wide defaults while still maintaining the flexibility to override them on a per-file basis using frontmatter or command-line options.
 
-```markdown
-| Header 1 | Header 2 | Header 3 |
-|----------|----------|----------|
-| Cell 1   | **Bold** | `code`   |
-| Cell 2   | *Italic* | Normal   |
-```
+## Advanced features
 
-- Table headers are automatically styled with bold text and a gray background
-- Cell content supports inline formatting (bold, italic, code, links, etc.)
-- Tables created manually in Google Slides are preserved and not overwritten
+### Style for syntax
 
-#### Style for syntax
-
-Create a layout named `style` and add a `Text box` to enter specific word. The styles (`bold`, `italic`, `underline`, `backgroundColor`, `foregroundColor`, `fontFamily`) will be applied as the style for each Markdown syntax.
+Create a layout named `style` and add a `Text box` to enter specific words. The styles (`bold`, `italic`, `underline`, `backgroundColor`, `foregroundColor`, `fontFamily`) will be applied as the style for each Markdown syntax.
 
 ![img](img/style.png)
 
@@ -337,38 +336,21 @@ Create a layout named `style` and add a `Text box` to enter specific word. The s
 | HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, `<s>`, `<ins>`, etc. ) |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
-#### Code blocks to images
+### Code blocks to images
 
-By using the `--code-block-to-image-command (-c)` option, you can convert [Markdown code blocks](testdata/codeblock.md) to images. The specified command is executed for each code block, and its standard output is treated as an image.
+You can convert [Markdown code blocks](testdata/codeblock.md) to images by specifying a command that outputs image data (PNG, JPEG, GIF) to standard output or to a file by using the `{{output}}` placeholder for the output file path.
 
 ```console
 $ deck apply --code-block-to-image-command "some-command" -i xxxxxXXXXxxxxxXXXXxxxxxxxxxx deck.md
 ```
 
-Alternatively, you can set the command globally in your configuration file or per-presentation in the frontmatter:
-
-**Configuration file example:**
+Alternatively, you can configure it in `config.yml` or frontmatter:
 ```yaml
-# config.yml
 codeBlockToImageCommand: "some-command"
 ```
 
-**Frontmatter example:**
-```yaml
----
-codeBlockToImageCommand: "some-command"
----
-```
 
-When both are specified, the priority order is:
-1. Command-line option (`--code-block-to-image-command`)
-2. Frontmatter setting (`codeBlockToImageCommand`)
-3. Configuration file setting (`codeBlockToImageCommand`)
-
-The command is executed with `bash -c`.
-The command must output image data (PNG, JPEG, GIF) to standard output.
-
-##### How to receive values
+#### How to receive values
 
 From code blocks like the following, you can obtain the optional language identifier `go` and the content within the code block.
 
@@ -408,9 +390,9 @@ There are three ways to receive code block information within the command:
 These methods can be used in combination, and you can choose the appropriate method according to the command requirements.
 
 > [!NOTE]
-> When `{{output}}` is not specified, deck reads the image data from the command's stdout. When `{{output}}` is specified, the command should write the image to that file path, and deck will read the image data from that file.
+> When `{{output}}` is not specified, `deck` reads the image data from the command's stdout. When `{{output}}` is specified, the command should write the image to that file path, and `deck` will read the image data from that file.
 
-##### Examples
+#### Examples
 
 ```console
 # Convert Mermaid diagrams to images
@@ -430,13 +412,9 @@ $ deck apply -c 'if [ {{lang}} = "mermaid" ]; then mmdc -i - -o {{output}} --qui
 $ deck apply -c 'laminate' deck.md
 ```
 
-### Comment
+## Page configuration
 
-The comments `<!--` `-->` are used as a speaker notes or page config.
-
-## Page config
-
-If the comment `<!--` `-->` can be JSON-encoded, it will be processed as page config.
+If the comment `<!--` `-->` can be JSON-encoded, it will be processed as page configuration.
 
 ```markdown
 <!-- {"layout": "title-and-body"} -->
@@ -444,9 +422,9 @@ If the comment `<!--` `-->` can be JSON-encoded, it will be processed as page co
 
 ### `"layout":`
 
-It is possible to specify the page layout.
+Specifies the page layout.
 
-The layout name (e.g. `title-and-body`) is specified.
+Use layout names like `title-and-body`, `section`, etc.
 
 ```markdown
 <!-- {"layout": "title-and-body"} -->
@@ -455,7 +433,7 @@ The layout name (e.g. `title-and-body`) is specified.
 ![img](img/layout_name.png)
 
 > [!TIP]
-> With `deck ls-layouts` it is possible to obtain a list of the layout names for a specific presentation.
+> `deck ls-layouts` lists the available layout names for a specific presentation.
 >
 > ```console
 > $ deck ls-layouts deck.md
@@ -470,10 +448,10 @@ The layout name (e.g. `title-and-body`) is specified.
 
 ### `"freeze":`
 
-It is possible to skip the operation of the target page.
+Prevents `deck` from modifying the specified page.
 
 > [!TIP]
-> If you set it to a page that has been completed with layout and design, the page will not be modified unnecessarily by deck.
+> If you set it to a page that has been completed with layout and design, the page will not be modified unnecessarily by `deck`.
 
 ```markdown
 <!-- {"freeze": true} -->
@@ -481,7 +459,7 @@ It is possible to skip the operation of the target page.
 
 ### `"ignore":`
 
-It is possible to exclude the target page from slide generation.
+Excludes the page from slide generation.
 
 > [!TIP]
 > Use this for draft pages, notes, or content that you don't want to include in the presentation.
@@ -492,20 +470,20 @@ It is possible to exclude the target page from slide generation.
 
 ### `"skip":`
 
-It is possible to skip the target page during presentation.
+Skips the page during presentation playback.
 
 > [!TIP]
-> The slide will be created in Google Slides, but during presentation it will not be displayed and automatically advance to the next slide. Use this for slides that are temporarily unused or planned for future use.
+> The slide will be created in Google Slides, but during presentation it will not be displayed and will automatically advance to the next slide. Use this for slides that are temporarily unused or planned for future use.
 
 ```markdown
 <!-- {"skip": true} -->
 ```
 
-### Default page configs with CEL expressions
+## Default page configs with CEL expressions
 
 The `defaults` field in Frontmatter or configuration file allows you to define default page configs using CEL (Common Expression Language) expressions. This feature automatically sets layouts and controls page behavior based on their structure and content, eliminating the need for manual configuration on each page.
 
-#### Available actions
+### Available actions
 
 The following actions can be applied to pages through the `defaults` configuration:
 
@@ -532,7 +510,7 @@ defaults:
 ---
 ```
 
-#### Available CEL variables
+### Available CEL variables
 
 | Variable | Type | Description |
 |----------|------|-------------|
@@ -549,7 +527,7 @@ defaults:
 | `speakerNote` | `string` | Speaker note |
 | `topHeadingLevel` | `int` | The highest heading level in the content |
 
-#### CEL condition examples
+### CEL condition examples
 
 - `page == 1` - First page only
 - `titles.size() == 0` - Pages without titles
@@ -559,7 +537,7 @@ defaults:
 - `page > pageTotal - 3` - Last 3 pages
 - `images.size() >= 2` - Pages with 2 or more images
 
-#### Important notes
+### Important notes
 
 - **Evaluation order**: Conditions are evaluated in order, and the first matching condition's action is applied
 - **Priority**: Default actions only apply to pages without explicit page configuration (via JSON comments like `<!-- {"layout": "title"} -->`)
@@ -588,21 +566,21 @@ When using profiles, authentication files are managed as follows:
 Error: failed to apply page: failed to upload image: failed to set permission for image: googleapi: Error 403: The user does not have sufficient permissions for this file., insufficientFilePermissions
 ```
 
-Please verify whether you can grant reader permissions to anyone for files within Google Drive. Organizational policies may prevent this. If it is not possible, create a folder where this permission setting is allowed and specify that folder's ID using the `--folder-id` flag during `deck apply`.
+Please verify that you can grant public read access to files in Google Drive. Organizational policies may prevent this. If restricted, create a folder with appropriate permissions and specify its ID using the `--folder-id` flag during `deck apply`.
 
-To insert images into slides, Deck temporarily uploads image files to Google Drive, obtains a publicly accessible URL from there, and specifies it to the API. Therefore, you must be able to grant reader permissions to anyone for image files on Google Drive
+To insert images into slides, `deck` temporarily uploads image files to Google Drive, obtains a publicly accessible URL from there, and passes it to the API. Therefore, you must be able to grant reader permissions to anyone for image files on Google Drive.
 
 ## Integration
 
-- [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Creating deck using Markdown and Google Slides.
-- [Songmu/laminate](https://github.com/Songmu/laminate) ... A tool for selecting image generation commands corresponding to the specified language from a configuration file. Useful for converting code blocks.
+- [zonuexe/deck-slides.el](https://github.com/zonuexe/deck-slides.el) ... Emacs integration for creating presentations using Markdown and Google Slides
+- [Songmu/laminate](https://github.com/Songmu/laminate) ... Selects image generation commands based on code block language. Useful for converting code blocks to images
 
 ## With AI agent
 
 By collaborating with AI agents to create Markdown-formatted slides, you may be able to create effective presentations.
 
 <details>
-<summary>It is a good idea to provide the following rules for creating deck slides in the prompt. (Click to expand)</summary>
+<summary>It is a good idea to provide the following rules for creating presentations with `deck` in the prompt. (Click to expand)</summary>
 
     Create a presentation in Markdown according to the following rules.
 
@@ -704,31 +682,13 @@ By collaborating with AI agents to create Markdown-formatted slides, you may be 
 
 </details>
 
-## Install
-
-**Homebrew:**
-
-```console
-$ brew install deck
-```
-
-**go install:**
-
-```console
-$ go install github.com/k1LoW/deck/cmd/deck@latest
-```
-
-**manually:**
-
-Download binary from [releases page](https://github.com/k1LoW/deck/releases)
-
 ## Alternatives
 
-- [googleworkspace/md2googleslides](https://github.com/googleworkspace/md2googleslides): Generate Google Slides from markdown
+- [googleworkspace/md2googleslides](https://github.com/googleworkspace/md2googleslides): Generates Google Slides from markdown
 
 ## License
 
 - [MIT License](LICENSE)
     - Include logo as well as source code.
     - Only logo license can be selected [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-    - Also, if there is no alteration to the logo and it is used for technical information about deck, I would not say anything if the copyright notice is omitted.
+    - Also, if there is no alteration to the logo and it is used for technical information about `deck`, I would not say anything if the copyright notice is omitted.
