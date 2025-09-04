@@ -282,6 +282,21 @@ func (d *Deck) MovePage(ctx context.Context, from_index, to_index int) (err erro
 	return nil
 }
 
+// AllowReadingByAnyone sets the permission of the object to allow anyone to read it.
+func (d *Deck) AllowReadingByAnyone(ctx context.Context, objectID string) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	permission := &drive.Permission{
+		Type: "anyone",
+		Role: "reader",
+	}
+	if _, err := d.driveSrv.Permissions.Create(objectID, permission).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
+		return fmt.Errorf("failed to set permission: %w", err)
+	}
+	return nil
+}
+
 func newDeck(ctx context.Context, opts ...Option) (*Deck, error) {
 	d := &Deck{
 		styles: map[string]*slides.TextStyle{},

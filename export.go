@@ -6,7 +6,6 @@ import (
 	"log/slog"
 
 	"github.com/k1LoW/errors"
-	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/slides/v1"
 )
 
@@ -115,22 +114,4 @@ func (d *Deck) DumpSlides(ctx context.Context) (_ Slides, err error) {
 		slides = append(slides, slide)
 	}
 	return slides, nil
-}
-
-// AllowReadingByAnyone sets the permission of the presentation to allow anyone to read it.
-func (d *Deck) AllowReadingByAnyone(ctx context.Context) (err error) {
-	defer func() {
-		err = errors.WithStack(err)
-	}()
-	if d.id == "" {
-		return fmt.Errorf("presentation ID is not set")
-	}
-	permission := &drive.Permission{
-		Type: "anyone",
-		Role: "reader",
-	}
-	if _, err := d.driveSrv.Permissions.Create(d.id, permission).SupportsAllDrives(true).Context(ctx).Do(); err != nil {
-		return fmt.Errorf("failed to set permission: %w", err)
-	}
-	return nil
 }

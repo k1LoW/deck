@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/k1LoW/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 	"google.golang.org/api/drive/v3"
@@ -227,18 +228,18 @@ func (d *Deck) startUploadingImages(
 					image.SetUploadResult("", fmt.Errorf("failed to upload image: %w", err))
 					return err
 				}
-
-				// Set permission
-				if _, err := d.driveSrv.Permissions.Create(uploaded.Id, &drive.Permission{
-					Type: "anyone",
-					Role: "reader",
-				}).SupportsAllDrives(true).Do(); err != nil {
-					// Clean up uploaded file on permission error
-					if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
-						d.logger.Error("failed to delete uploaded file after permission error",
-							slog.String("id", uploaded.Id),
-							slog.Any("error", deleteErr))
+				defer func() {
+					if err != nil {
+						// Clean up uploaded file on error
+						if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
+							err = errors.Join(err, deleteErr)
+						}
 					}
+				}()
+
+				// To specify a URL for CreateImageRequest, we must make the webContentURL readable to anyone
+				// and configure the necessary permissions for this purpose.
+				if err := d.AllowReadingByAnyone(ctx, uploaded.Id); err != nil {
 					image.SetUploadResult("", fmt.Errorf("failed to set permission for image: %w", err))
 					return err
 				}
@@ -246,23 +247,11 @@ func (d *Deck) startUploadingImages(
 				// Get webContentLink
 				f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").SupportsAllDrives(true).Do()
 				if err != nil {
-					// Clean up uploaded file on error
-					if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
-						d.logger.Error("failed to delete uploaded file after webContentLink fetch error",
-							slog.String("id", uploaded.Id),
-							slog.Any("error", deleteErr))
-					}
 					image.SetUploadResult("", fmt.Errorf("failed to get webContentLink for image: %w", err))
 					return err
 				}
 
 				if f.WebContentLink == "" {
-					// Clean up uploaded file on error
-					if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
-						d.logger.Error("failed to delete uploaded file after empty webContentLink",
-							slog.String("id", uploaded.Id),
-							slog.Any("error", deleteErr))
-					}
 					image.SetUploadResult("", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
 					return err
 				}
