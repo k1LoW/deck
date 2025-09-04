@@ -65,10 +65,10 @@ func initPresentationPool(ctx context.Context) ([]string, error) {
 			}
 
 			presentationID := d.ID()
-			if err := d.AllowReadingByAnyone(egCtx); err != nil {
+			// For snapshot tests with chromedp, we need to make the presentation readable by anyone.
+			if err := d.AllowReadingByAnyone(egCtx, presentationID); err != nil {
 				return fmt.Errorf("failed to allow reading for presentation %d: %w", i, err)
 			}
-
 			mu.Lock()
 			created = append(created, presentationID)
 			mu.Unlock()
