@@ -55,11 +55,6 @@ If you're setting up `deck` for automated workflows (GitHub Actions, CI/CD pipel
 
 You can verify if `deck` is ready to use and diagnose any configuration issues with the `deck doctor` command.
 
-This command checks:
-- OAuth credentials file existence and format
-- Authentication with Google API
-- Configuration file validation (optional)
-
 ### Prepare presentation ID and markdown file with `deck new`
 
 `deck` requires two main components:
@@ -414,27 +409,35 @@ $ deck apply -c 'laminate' deck.md
 
 ## Page configuration
 
-If the comment `<!--` `-->` can be JSON-encoded, it will be processed as page configuration.
+You can configure individual pages using JSON comments. Available settings:
+
+- **`"layout"`**: Specifies which slide layout to use from your presentation template. Different layouts have different placeholder arrangements (title, subtitle, body, etc.)
+- **`"freeze"`**: Prevents `deck` from modifying the page (useful for slides with completed designs)
+- **`"ignore"`**: Excludes the page from slide generation (for drafts, notes, or unused content)
+- **`"skip"`**: Creates the slide but skips it during presentation playback (automatically advances to next slide)
 
 ```markdown
 <!-- {"layout": "title-and-body"} -->
+# Your slide content
+
+---
+
+<!-- {"freeze": true} -->
+# This slide won't be modified
+
+---
+
+<!-- {"ignore": true} -->
+# This content won't appear in slides
+
+---
+
+<!-- {"skip": true} -->
+# This slide will be skipped during presentation
 ```
-
-### `"layout":`
-
-Specifies the page layout.
-
-Use layout names like `title-and-body`, `section`, etc.
-
-```markdown
-<!-- {"layout": "title-and-body"} -->
-```
-
-![img](img/layout_name.png)
 
 > [!TIP]
-> `deck ls-layouts` lists the available layout names for a specific presentation.
->
+> Use `deck ls-layouts` to see all available layout names for your presentation:
 > ```console
 > $ deck ls-layouts deck.md
 > title
@@ -446,38 +449,7 @@ Use layout names like `title-and-body`, `section`, etc.
 > title-and-body-3col
 > ```
 
-### `"freeze":`
-
-Prevents `deck` from modifying the specified page.
-
-> [!TIP]
-> If you set it to a page that has been completed with layout and design, the page will not be modified unnecessarily by `deck`.
-
-```markdown
-<!-- {"freeze": true} -->
-```
-
-### `"ignore":`
-
-Excludes the page from slide generation.
-
-> [!TIP]
-> Use this for draft pages, notes, or content that you don't want to include in the presentation.
-
-```markdown
-<!-- {"ignore": true} -->
-```
-
-### `"skip":`
-
-Skips the page during presentation playback.
-
-> [!TIP]
-> The slide will be created in Google Slides, but during presentation it will not be displayed and will automatically advance to the next slide. Use this for slides that are temporarily unused or planned for future use.
-
-```markdown
-<!-- {"skip": true} -->
-```
+![img](img/layout_name.png)
 
 ## Default page configs with CEL expressions
 
