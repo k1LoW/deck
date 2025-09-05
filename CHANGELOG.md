@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.21.2](https://github.com/k1LoW/deck/compare/v1.21.1...v1.21.2) - 2025-09-05
+### Other Changes
+- doc: refine README.md by @Songmu in https://github.com/k1LoW/deck/pull/435
+- feat: stop forcing command execution through bash by @Songmu in https://github.com/k1LoW/deck/pull/437
+- ci: use use_existing_draft instead of replace_existing_draft by @Songmu in https://github.com/k1LoW/deck/pull/438
+
 ## [v1.21.1](https://github.com/k1LoW/deck/compare/v1.21.0...v1.21.1) - 2025-09-04
 ### Other Changes
 - docs: replace deprecated --from flag with --base flag in README by @7kaji in https://github.com/k1LoW/deck/pull/430
