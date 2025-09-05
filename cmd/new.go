@@ -109,7 +109,7 @@ If the file doesn't exist, it will be created.`,
 func init() {
 	rootCmd.AddCommand(newCmd)
 	newCmd.Flags().StringVarP(&title, "title", "t", "", "title of the presentation")
-	newCmd.Flags().StringVarP(&from, "base", "b", "", "base presentation id that uses the theme you want to use")
+	newCmd.Flags().StringVarP(&base, "base", "b", "", "base presentation id that uses the theme you want to use")
 	newCmd.Flags().StringVarP(&from, "from", "f", "", "(DEPRECATED, use --base/-b) presentation id that uses the theme you want to use")
 	newCmd.Flags().StringVarP(&folderID, "folder-id", "", "", "folder id to create the presentation in")
 }
