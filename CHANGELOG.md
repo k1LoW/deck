@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.21.3](https://github.com/k1LoW/deck/compare/v1.21.2...v1.21.3) - 2025-09-05
+### Fix bug 🐛
+- hide deprecation warning when using `--base` by @yukukotani in https://github.com/k1LoW/deck/pull/439
+
 ## [v1.21.2](https://github.com/k1LoW/deck/compare/v1.21.1...v1.21.2) - 2025-09-05
 ### Other Changes
 - doc: refine README.md by @Songmu in https://github.com/k1LoW/deck/pull/435
