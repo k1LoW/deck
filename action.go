@@ -59,6 +59,13 @@ func generateActions(before, after Slides) (_ []*action, err error) {
 		return nil, fmt.Errorf("failed to adjust slide count: %w", err)
 	}
 
+	// Prevent actions from being generated from indexes that should be frozen.
+	for i, afterSlide := range adjustedAfter {
+		if afterSlide.Freeze {
+			adjustedBefore[i] = copySlide(afterSlide)
+		}
+	}
+
 	// Map slides algorithm
 	mapping, err := mapSlides(adjustedBefore, adjustedAfter)
 	if err != nil {
@@ -78,7 +85,7 @@ func generateActions(before, after Slides) (_ []*action, err error) {
 	updateActions := generateUpdateActions(adjustedBefore, adjustedAfter, mapping)
 	actions = append(actions, updateActions...)
 
-	// Remove .delete slides from after
+	// Remove delete slides from after
 	cleanedAfter := removeDeleteMarked(adjustedAfter)
 
 	// Generate delete actions
