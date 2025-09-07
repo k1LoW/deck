@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.21.4](https://github.com/k1LoW/deck/compare/v1.21.3...v1.21.4) - 2025-09-07
+### Fix bug 🐛
+- fix: when slide pages are added or moved, the freeze option does not behave correctly. by @k1LoW in https://github.com/k1LoW/deck/pull/442
+
 ## [v1.21.3](https://github.com/k1LoW/deck/compare/v1.21.2...v1.21.3) - 2025-09-05
 ### Fix bug 🐛
 - hide deprecation warning when using `--base` by @yukukotani in https://github.com/k1LoW/deck/pull/439
