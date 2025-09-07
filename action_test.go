@@ -1717,12 +1717,12 @@ func TestGenerateActions(t *testing.T) {
 			got := actionsEmulator(t, tt.before, actions)
 
 			// Use tt.want if provided, otherwise fallback to tt.after
-			expected := tt.after
+			want := tt.after
 			if tt.want != nil {
-				expected = tt.want
+				want = tt.want
 			}
 
-			if diff := cmp.Diff(got, expected, cmpopts...); diff != "" {
+			if diff := cmp.Diff(got, want, cmpopts...); diff != "" {
 				t.Error(diff)
 			}
 		})
