@@ -29,6 +29,7 @@ var tests = []struct {
 	name   string
 	before Slides
 	after  Slides
+	want   Slides // Expected result when freeze functionality is properly implemented
 }{
 	{
 		name:   "empty slides",
@@ -1608,6 +1609,96 @@ var tests = []struct {
 			},
 		},
 	},
+	{
+		name: "freeze slide moved",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide A"},
+				TitleBodies: toBodies([]string{"Slide A"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide B"},
+				TitleBodies: toBodies([]string{"Slide B"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide C"},
+				TitleBodies: toBodies([]string{"Slide C"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide A"},
+				TitleBodies: toBodies([]string{"Slide A"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide C"},
+				TitleBodies: toBodies([]string{"Slide C"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide B"},
+				TitleBodies: toBodies([]string{"Slide B"}),
+				Freeze:      true,
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide A"},
+				TitleBodies: toBodies([]string{"Slide A"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide C"},
+				TitleBodies: toBodies([]string{"Slide C"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide C"},
+				TitleBodies: toBodies([]string{"Slide C"}),
+			},
+		},
+	},
+	{
+		name: "freeze slide with append",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide A'"},
+				TitleBodies: toBodies([]string{"Slide A'"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide A"},
+				TitleBodies: toBodies([]string{"Slide A"}),
+				Freeze:      true,
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide B"},
+				TitleBodies: toBodies([]string{"Slide B"}),
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide A'"},
+				TitleBodies: toBodies([]string{"Slide A'"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide B"},
+				TitleBodies: toBodies([]string{"Slide B"}),
+			},
+		},
+	},
 }
 
 func TestGenerateActions(t *testing.T) {
@@ -1624,7 +1715,14 @@ func TestGenerateActions(t *testing.T) {
 				t.Fatal(err)
 			}
 			got := actionsEmulator(t, tt.before, actions)
-			if diff := cmp.Diff(got, tt.after, cmpopts...); diff != "" {
+
+			// Use tt.want if provided, otherwise fallback to tt.after
+			want := tt.after
+			if tt.want != nil {
+				want = tt.want
+			}
+
+			if diff := cmp.Diff(got, want, cmpopts...); diff != "" {
 				t.Error(diff)
 			}
 		})

@@ -56,7 +56,14 @@ func TestApply(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(after, tt.after, cmpopts...); diff != "" {
+
+			// Use tt.want if provided, otherwise fallback to tt.after
+			want := tt.after
+			if tt.want != nil {
+				want = tt.want
+			}
+
+			if diff := cmp.Diff(after, want, cmpopts...); diff != "" {
 				t.Error(diff)
 			}
 		})
