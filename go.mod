@@ -20,13 +20,13 @@ require (
 	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/mattn/go-colorable v0.1.14
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
-	github.com/samber/slog-multi v1.4.1
-	github.com/spf13/cobra v1.9.1
+	github.com/samber/slog-multi v1.5.0
+	github.com/spf13/cobra v1.10.1
 	github.com/tenntenn/golden v0.5.5
 	github.com/yuin/goldmark v1.7.13
 	golang.org/x/net v0.43.0
-	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.16.0
+	golang.org/x/oauth2 v0.31.0
+	golang.org/x/sync v0.17.0
 	google.golang.org/api v0.248.0
 )
 
@@ -57,7 +57,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/samber/lo v1.51.0 // indirect
 	github.com/samber/slog-common v0.19.0 // indirect
-	github.com/spf13/pflag v1.0.6 // indirect
+	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.61.0 // indirect
