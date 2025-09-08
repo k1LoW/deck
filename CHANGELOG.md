@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.21.5](https://github.com/k1LoW/deck/compare/v1.21.4...v1.21.5) - 2025-09-08
+### Other Changes
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/445
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/444
+- ci: set persist-credentials false by @Songmu in https://github.com/k1LoW/deck/pull/447
+
 ## [v1.21.4](https://github.com/k1LoW/deck/compare/v1.21.3...v1.21.4) - 2025-09-07
 ### Fix bug 🐛
 - fix: when slide pages are added or moved, the freeze option does not behave correctly. by @k1LoW in https://github.com/k1LoW/deck/pull/442
