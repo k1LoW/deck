@@ -37,21 +37,21 @@
             "fragments": [
               {
                 "value": "normal text ",
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": "bold_",
                 "bold": true,
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": "text",
                 "bold": true,
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": " more text",
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               }
             ],
             "bullet": "-"
@@ -61,30 +61,30 @@
               {
                 "value": "bold_",
                 "bold": true,
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": "start",
                 "bold": true,
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": " normal_",
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": "middle ",
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": "bold_",
                 "bold": true,
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               },
               {
                 "value": "end",
                 "bold": true,
-                "link": "https://example.com"
+                "link": "https://github.com/k1LoW/deck"
               }
             ],
             "bullet": "-"
