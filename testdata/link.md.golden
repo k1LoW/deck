@@ -19,8 +19,72 @@
           {
             "fragments": [
               {
-                "value": "link_with_underscore",
+                "value": "link_",
                 "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "with_",
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "underscore",
+                "link": "https://github.com/k1LoW/deck"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "normal text ",
+                "link": "https://example.com"
+              },
+              {
+                "value": "bold_",
+                "bold": true,
+                "link": "https://example.com"
+              },
+              {
+                "value": "text",
+                "bold": true,
+                "link": "https://example.com"
+              },
+              {
+                "value": " more text",
+                "link": "https://example.com"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "bold_",
+                "bold": true,
+                "link": "https://example.com"
+              },
+              {
+                "value": "start",
+                "bold": true,
+                "link": "https://example.com"
+              },
+              {
+                "value": " normal_",
+                "link": "https://example.com"
+              },
+              {
+                "value": "middle ",
+                "link": "https://example.com"
+              },
+              {
+                "value": "bold_",
+                "bold": true,
+                "link": "https://example.com"
+              },
+              {
+                "value": "end",
+                "bold": true,
+                "link": "https://example.com"
               }
             ],
             "bullet": "-"

@@ -682,21 +682,18 @@ func toFragments(baseDir string, b []byte, n ast.Node, seedFragment deck.Fragmen
 				}
 				continue
 			}
-			// Concatenate all children values for links
-			var linkText string
 			for _, child := range children {
-				linkText += child.Value
+				frags = append(frags, &fragment{
+					SoftLineBreak: child.SoftLineBreak,
+					Fragment: &deck.Fragment{
+						Value:     child.Value,
+						Link:      string(childNode.Destination),
+						Bold:      child.Bold,
+						Italic:    child.Italic,
+						Code:      child.Code,
+						StyleName: styleName,
+					}})
 			}
-			frags = append(frags, &fragment{
-				SoftLineBreak: children[0].SoftLineBreak,
-				Fragment: &deck.Fragment{
-					Value:     linkText,
-					Link:      string(childNode.Destination),
-					Bold:      children[0].Bold,
-					Italic:    children[0].Italic,
-					Code:      children[0].Code,
-					StyleName: styleName,
-				}})
 			images = append(images, childImages...)
 		case *ast.AutoLink:
 			url := string(childNode.URL(b))
