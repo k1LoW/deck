@@ -1,0 +1,101 @@
+[
+  {
+    "layout": "title-and-body",
+    "titles": [
+      "Link"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "sample for using image",
+                "link": "https://github.com/k1LoW/deck/blob/main/testdata/images.md"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "link_",
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "with_",
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "underscore",
+                "link": "https://github.com/k1LoW/deck"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "normal text ",
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "bold_",
+                "bold": true,
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "text",
+                "bold": true,
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": " more text",
+                "link": "https://github.com/k1LoW/deck"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "bold_",
+                "bold": true,
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "start",
+                "bold": true,
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": " normal_",
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "middle ",
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "bold_",
+                "bold": true,
+                "link": "https://github.com/k1LoW/deck"
+              },
+              {
+                "value": "end",
+                "bold": true,
+                "link": "https://github.com/k1LoW/deck"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "1": [
+        "Link"
+      ]
+    }
+  }
+]

@@ -53,6 +53,7 @@ func TestApplyMarkdown(t *testing.T) {
 		{"testdata/style.md"},
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
+		{"testdata/link.md"},
 		{"testdata/single_list.md"},
 		{"testdata/nested_list.md"},
 		{"testdata/images.md"},
@@ -180,6 +181,7 @@ func TestRoundTripSlidesToGoogleSlidesPresentationAndBack(t *testing.T) {
 		//{"testdata/style.md"},  // FIXME: class is not supported yet
 		{"testdata/empty_list.md"},
 		{"testdata/empty_link.md"},
+		{"testdata/link.md"},
 		{"testdata/nested_list.md"},
 		{"testdata/images.md"},
 		//{"testdata/blockquote.md"},
