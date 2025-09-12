@@ -1,0 +1,37 @@
+[
+  {
+    "layout": "title-and-body",
+    "titles": [
+      "Link"
+    ],
+    "bodies": [
+      {
+        "paragraphs": [
+          {
+            "fragments": [
+              {
+                "value": "sample for using image",
+                "link": "https://github.com/k1LoW/deck/blob/main/testdata/images.md"
+              }
+            ],
+            "bullet": "-"
+          },
+          {
+            "fragments": [
+              {
+                "value": "link_with_underscore",
+                "link": "https://github.com/k1LoW/deck"
+              }
+            ],
+            "bullet": "-"
+          }
+        ]
+      }
+    ],
+    "headings": {
+      "1": [
+        "Link"
+      ]
+    }
+  }
+]
