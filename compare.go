@@ -88,10 +88,7 @@ func paragraphEqual(paragraph1, paragraph2 *Paragraph) bool {
 
 	return slices.EqualFunc(merged1, merged2, func(a, b *Fragment) bool {
 		return strings.TrimRight(a.Value, "\n") == strings.TrimRight(b.Value, "\n") &&
-			a.Bold == b.Bold &&
-			a.Italic == b.Italic &&
-			a.Link == b.Link &&
-			a.Code == b.Code
+			a.StylesEqual(b)
 	})
 }
 
@@ -104,11 +101,7 @@ func mergeFragments(in []*Fragment) []*Fragment {
 		value := in[i].Value
 		if i > 0 {
 			// Merge with previous fragment if possible
-			if in[i-1].Bold == in[i].Bold &&
-				in[i-1].Italic == in[i].Italic &&
-				in[i-1].Link == in[i].Link &&
-				in[i-1].Code == in[i].Code &&
-				in[i-1].StyleName == in[i].StyleName {
+			if in[i-1].StylesEqual(in[i]) {
 				merged[len(merged)-1].Value += value
 				continue
 			}
@@ -150,9 +143,6 @@ func tableCellEqual(cell1, cell2 *TableCell) bool {
 	}
 	return slices.EqualFunc(cell1.Fragments, cell2.Fragments, func(a, b *Fragment) bool {
 		return strings.TrimRight(a.Value, "\n") == strings.TrimRight(b.Value, "\n") &&
-			a.Bold == b.Bold &&
-			a.Italic == b.Italic &&
-			a.Link == b.Link &&
-			a.Code == b.Code
+			a.StylesEqual(b)
 	})
 }

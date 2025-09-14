@@ -10,13 +10,7 @@
           {
             "fragments": [
               {
-                "value": "This is a test "
-              },
-              {
-                "value": "with soft line break "
-              },
-              {
-                "value": "that should NOT render as breaks by default."
+                "value": "This is a test with soft line break that should NOT render as breaks by default."
               }
             ]
           }
@@ -40,10 +34,7 @@
           {
             "fragments": [
               {
-                "value": "First item with "
-              },
-              {
-                "value": "soft break"
+                "value": "First item with soft break"
               }
             ],
             "bullet": "-"
@@ -51,10 +42,7 @@
           {
             "fragments": [
               {
-                "value": "Second item with "
-              },
-              {
-                "value": "another soft break"
+                "value": "Second item with another soft break"
               }
             ],
             "bullet": "-"
@@ -79,13 +67,7 @@
           {
             "fragments": [
               {
-                "value": "This is a quote "
-              },
-              {
-                "value": "with soft line breaks "
-              },
-              {
-                "value": "in multiple places."
+                "value": "This is a quote with soft line breaks in multiple places."
               }
             ]
           }

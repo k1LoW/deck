@@ -10,13 +10,7 @@
           {
             "fragments": [
               {
-                "value": "Hello"
-              },
-              {
-                "value": "\n"
-              },
-              {
-                "value": "World"
+                "value": "Hello\nWorld"
               }
             ]
           },
@@ -58,10 +52,7 @@
           {
             "fragments": [
               {
-                "value": "\n"
-              },
-              {
-                "value": "\n"
+                "value": "\n\n"
               }
             ]
           },
