@@ -619,7 +619,7 @@ type fragment struct {
 }
 
 func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
-	deckFrags := make([]*deck.Fragment, len(frags))
+	deckFrags := make([]*deck.Fragment, 0, len(frags))
 	for i, frag := range frags {
 		f := frag.Fragment
 		if frag.SoftLineBreak && i < len(frags)-1 {
@@ -632,7 +632,14 @@ func toDeckFragments(frags []*fragment, breaks bool) []*deck.Fragment {
 			}
 			f.Value += breakChar
 		}
-		deckFrags[i] = f
+		if len(deckFrags) > 0 {
+			prev := deckFrags[len(deckFrags)-1]
+			if prev.StylesEqual(f) {
+				prev.Value += f.Value
+				continue
+			}
+		}
+		deckFrags = append(deckFrags, f)
 	}
 	return deckFrags
 }

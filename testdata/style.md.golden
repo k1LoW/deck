@@ -171,10 +171,7 @@
                 "style_name": "sub"
               },
               {
-                "value": ", also known as "
-              },
-              {
-                "value": "\"caffeine.\""
+                "value": ", also known as \"caffeine.\""
               }
             ]
           },
@@ -188,11 +185,7 @@
                 "value": "="
               },
               {
-                "value": "m",
-                "style_name": "var"
-              },
-              {
-                "value": "c",
+                "value": "mc",
                 "style_name": "var"
               },
               {

@@ -139,3 +139,14 @@ func (b *BlockQuote) String() string {
 	}
 	return result.String()
 }
+
+func (f *Fragment) StylesEqual(other *Fragment) bool {
+	if f == nil || other == nil {
+		return f == other
+	}
+	return f.Bold == other.Bold &&
+		f.Italic == other.Italic &&
+		f.Link == other.Link &&
+		f.Code == other.Code &&
+		f.StyleName == other.StyleName
+}

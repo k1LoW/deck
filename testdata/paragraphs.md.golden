@@ -17,10 +17,7 @@
           {
             "fragments": [
               {
-                "value": "Paragraph2\n"
-              },
-              {
-                "value": "inline line break"
+                "value": "Paragraph2\ninline line break"
               }
             ]
           },

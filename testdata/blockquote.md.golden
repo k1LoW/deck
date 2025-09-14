@@ -23,13 +23,7 @@
           {
             "fragments": [
               {
-                "value": "NOTICE"
-              },
-              {
-                "value": "!\n"
-              },
-              {
-                "value": "Hello "
+                "value": "NOTICE!\nHello "
               },
               {
                 "value": "World!",
@@ -44,13 +38,7 @@
           {
             "fragments": [
               {
-                "value": "WARNING"
-              },
-              {
-                "value": "!\n"
-              },
-              {
-                "value": "Hello "
+                "value": "WARNING!\nHello "
               },
               {
                 "value": "Space!",
@@ -65,13 +53,7 @@
           {
             "fragments": [
               {
-                "value": "NESTED"
-              },
-              {
-                "value": "!\n"
-              },
-              {
-                "value": "But flatten"
+                "value": "NESTED!\nBut flatten"
               }
             ]
           }
@@ -83,13 +65,7 @@
           {
             "fragments": [
               {
-                "value": "NESTED NESTED"
-              },
-              {
-                "value": "!\n"
-              },
-              {
-                "value": "But flatten"
+                "value": "NESTED NESTED!\nBut flatten"
               }
             ]
           }

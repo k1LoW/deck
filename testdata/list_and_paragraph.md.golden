@@ -26,10 +26,7 @@
           {
             "fragments": [
               {
-                "value": "\n"
-              },
-              {
-                "value": "\n"
+                "value": "\n\n"
               }
             ]
           },
@@ -40,13 +37,7 @@
                 "bold": true
               },
               {
-                "value": "D "
-              },
-              {
-                "value": "E"
-              },
-              {
-                "value": "\n"
+                "value": "D E\n"
               },
               {
                 "value": "F",
