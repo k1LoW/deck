@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.21.5](https://github.com/k1LoW/deck/compare/v1.21.4...v1.21.5) - 2025-09-15
+### Fix bug 🐛
+- [k1LoW/deck#448] fix link text including underscore is partially missing by @takaidohigasi in https://github.com/k1LoW/deck/pull/449
+### Other Changes
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/445
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/444
+- ci: set persist-credentials false by @Songmu in https://github.com/k1LoW/deck/pull/447
+- chore: add testdata/link.md-1.golden.png by @Songmu in https://github.com/k1LoW/deck/pull/451
+- refactoring: merge fragments in md package by @Songmu in https://github.com/k1LoW/deck/pull/452
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/454
+- chore(deps): bump Songmu/tagpr from 1.8.0 to 1.9.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/453
+
 ## [v1.21.4](https://github.com/k1LoW/deck/compare/v1.21.3...v1.21.4) - 2025-09-07
 ### Fix bug 🐛
 - fix: when slide pages are added or moved, the freeze option does not behave correctly. by @k1LoW in https://github.com/k1LoW/deck/pull/442
