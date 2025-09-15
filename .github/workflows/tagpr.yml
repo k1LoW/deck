@@ -30,7 +30,7 @@ jobs:
 
       - id: run-tagpr
         name: Run tagpr
-        uses: Songmu/tagpr@163cd45f79765d46a829a18dd20df2df58ead690 # v1.8.0
+        uses: Songmu/tagpr@7191605433b03e11b313dbbc0efb80185170de4b # v1.9.0
 
   assets:
     needs: tagpr
