@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.21.6](https://github.com/k1LoW/deck/compare/v1.21.5...v1.21.6) - 2025-10-22
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.249.0 to 0.250.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/455
+- chore: setup tagpr labels by @k1LoW in https://github.com/k1LoW/deck/pull/459
+- chore(deps): bump the dependencies group across 1 directory with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/458
+
 ## [v1.21.5](https://github.com/k1LoW/deck/compare/v1.21.4...v1.21.5) - 2025-09-15
 ### Fix bug 🐛
 - [k1LoW/deck#448] fix link text including underscore is partially missing by @takaidohigasi in https://github.com/k1LoW/deck/pull/449
