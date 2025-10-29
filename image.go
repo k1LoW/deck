@@ -196,24 +196,23 @@ func (i *Image) Equivalent(ii *Image) bool {
 	if i.Checksum() == ii.Checksum() {
 		return true
 	}
-	if i.mimeType == MIMETypeImageJPEG {
-		// Only JPEG images are compressed on the Google Slides side,
-		// so we use Perceptual Hashing for comparison
-		aHash, err := i.PHash()
-		if err != nil {
-			return false
-		}
-		bHash, err := ii.PHash()
-		if err != nil {
-			return false
-		}
-		distance, err := aHash.Distance(bHash)
-		if err != nil {
-			return false
-		}
-		if distance < 5 { // threshold for similarity
-			return true
-		}
+
+	// Images are compressed on the Google Slides side (especially JPEG, large images),
+	// so we use Perceptual Hashing for comparison
+	aHash, err := i.PHash()
+	if err != nil {
+		return false
+	}
+	bHash, err := ii.PHash()
+	if err != nil {
+		return false
+	}
+	distance, err := aHash.Distance(bHash)
+	if err != nil {
+		return false
+	}
+	if distance < 5 { // threshold for similarity
+		return true
 	}
 	return false
 }
