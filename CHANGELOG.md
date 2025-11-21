@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.21.7](https://github.com/k1LoW/deck/compare/v1.21.6...v1.21.7) - 2025-11-21
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.253.0 to 0.254.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/462
+- chore(deps): bump golang.org/x/crypto from 0.43.0 to 0.45.0 by @dependabot[bot] in https://github.com/k1LoW/deck/pull/466
+- chore(deps): bump the dependencies group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/467
+
 ## [v1.21.6](https://github.com/k1LoW/deck/compare/v1.21.5...v1.21.6) - 2025-10-29
 ### New Features 🎉
 - fix: simplify image comparison logic by removing MIME type check by @k1LoW in https://github.com/k1LoW/deck/pull/461
