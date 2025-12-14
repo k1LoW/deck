@@ -72,9 +72,6 @@ func parseTableCell(cellNode *east.TableCell, baseDir string, b []byte, breaks, 
 	}
 
 	seedFragment := deck.Fragment{}
-	if isHeader {
-		seedFragment.Bold = true
-	}
 	// Parse cell content to fragments
 	frags, _, err := toFragments(baseDir, b, cellNode, seedFragment)
 	if err != nil {

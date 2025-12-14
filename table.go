@@ -420,6 +420,27 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 				},
 			})
 
+			// Apply base text style from tableStyle (before fragment styles)
+			textLength := int64(countString(text))
+			if cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx); cellStyle != nil && cellStyle.TextStyle != nil && textLength > 0 {
+				req := buildTableCellTextStyleRequest(cellStyle.TextStyle)
+				if req != nil {
+					requests = append(requests, &slides.Request{
+						UpdateTextStyle: &slides.UpdateTextStyleRequest{
+							ObjectId:     tableObjectID,
+							CellLocation: cellLocation,
+							Style:        req.Style,
+							TextRange: &slides.Range{
+								Type:       "FIXED_RANGE",
+								StartIndex: ptrInt64(0),
+								EndIndex:   ptrInt64(textLength),
+							},
+							Fields: req.Fields,
+						},
+					})
+				}
+			}
+
 			// Apply formatting if needed
 			if len(cell.Fragments) > 0 {
 				startIndex := int64(0)
@@ -468,38 +489,63 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 		}
 	}
 
-	if len(table.Rows) > 0 && len(table.Rows[0].Cells) > 0 {
-		columnSpan := int64(len(table.Rows[0].Cells))
-		requests = append(requests, &slides.Request{
-			UpdateTableCellProperties: &slides.UpdateTableCellPropertiesRequest{
-				ObjectId: tableObjectID,
-				TableRange: &slides.TableRange{
-					Location: &slides.TableCellLocation{
-						RowIndex:    0,
-						ColumnIndex: 0,
-					},
-					RowSpan:    1,
-					ColumnSpan: columnSpan,
-				},
-				TableCellProperties: &slides.TableCellProperties{
-					TableCellBackgroundFill: &slides.TableCellBackgroundFill{
-						SolidFill: &slides.SolidFill{
-							Color: &slides.OpaqueColor{
-								RgbColor: &slides.RgbColor{
-									Red:   0.95,
-									Green: 0.95,
-									Blue:  0.95,
-								},
-							},
-						},
-					},
-				},
-				Fields: "tableCellBackgroundFill.solidFill.color",
-			},
-		})
-	}
+	// Apply cell styles from tableStyle
+	requests = append(requests, d.applyTableCellStyles(tableObjectID, table)...)
 
 	return requests, nil
+}
+
+// applyTableCellStyles applies cell styles from d.tableStyle.
+func (d *Deck) applyTableCellStyles(tableObjectID string, table *Table) []*slides.Request {
+	var requests []*slides.Request
+
+	rows := len(table.Rows)
+	if rows == 0 {
+		return nil
+	}
+
+	cols := 0
+	for _, row := range table.Rows {
+		if len(row.Cells) > cols {
+			cols = len(row.Cells)
+		}
+	}
+
+	if cols == 0 {
+		return nil
+	}
+
+	for rowIdx := 0; rowIdx < rows; rowIdx++ {
+		for colIdx := 0; colIdx < cols; colIdx++ {
+			cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx)
+			if cellStyle == nil {
+				continue
+			}
+
+			// Apply background color
+			if cellStyle.BackgroundFill != nil {
+				requests = append(requests, &slides.Request{
+					UpdateTableCellProperties: &slides.UpdateTableCellPropertiesRequest{
+						ObjectId: tableObjectID,
+						TableRange: &slides.TableRange{
+							Location: &slides.TableCellLocation{
+								RowIndex:    int64(rowIdx),
+								ColumnIndex: int64(colIdx),
+							},
+							RowSpan:    1,
+							ColumnSpan: 1,
+						},
+						TableCellProperties: &slides.TableCellProperties{
+							TableCellBackgroundFill: cellStyle.BackgroundFill,
+						},
+						Fields: "tableCellBackgroundFill",
+					},
+				})
+			}
+		}
+	}
+
+	return requests
 }
 
 // hasTableContent checks if a Google Slides table has any text content.
