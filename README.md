@@ -331,6 +331,24 @@ Create a layout named `style` and add a `Text box` to enter specific words. The 
 | HTML element names | style for content of inline HTML elements ( e.g. `<cite>`, `<q>`, `<s>`, `<ins>`, etc. ) |
 | (other word) | style for content of inline HTML elements with matching class name ( e.g. `<span class="notice">THIS IS NOTICE</span>` ) |
 
+#### Table style
+
+You can also customize table styles by adding a **2x2 table** to the `style` layout. Each cell in the 2x2 table defines styles for different regions of tables generated from Markdown:
+
+![table](img/table.png)
+
+The following properties are extracted from each cell:
+- **Background color**
+- **Text style** (bold, italic, font, color, etc.)
+- **Border style** (color, weight, dash style, transparent)
+
+Border mapping:
+- Cell `[0,0]` Top/Left borders → Outer borders of the entire table
+- Cell `[0,0]` Right/Bottom borders → Header row, 1st column inner borders
+- Cell `[0,1]` Right/Bottom borders → Header row, 2nd+ columns inner borders
+- Cell `[1,0]` Right/Bottom borders → Data rows, 1st column inner borders
+- Cell `[1,1]` Right/Bottom borders → Data rows, 2nd+ columns inner borders
+
 ### Code blocks to images
 
 You can convert [Markdown code blocks](testdata/codeblock.md) to images by specifying a command that outputs image data (PNG, JPEG, GIF) to standard output or to a file by using the `{{output}}` placeholder for the output file path.

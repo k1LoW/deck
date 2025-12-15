@@ -119,8 +119,8 @@ func extractTableStyleFromLayout(table *slides.Table) *TableStyle {
 
 // extractBorderStyle extracts border styles from a 2x2 table.
 // The 2x2 table has:
-// - HorizontalBorderRows: 3 rows × 2 cols (top of row0, between row0/row1, bottom of row1)
-// - VerticalBorderRows: 2 rows × 3 cols (left of col0, between col0/col1, right of col1)
+// - HorizontalBorderRows: 3 rows × 2 cols (top of row0, between row0/row1, bottom of row1).
+// - VerticalBorderRows: 2 rows × 3 cols (left of col0, between col0/col1, right of col1).
 func extractBorderStyle(table *slides.Table) *TableBorderStyle {
 	bs := &TableBorderStyle{}
 
