@@ -340,6 +340,7 @@ You can also customize table styles by adding a **2x2 table** to the `style` lay
 The following properties are extracted from each cell:
 - **Background color**
 - **Text style** (bold, italic, font, color, etc.)
+- **Text alignment** (horizontal: left/center/right, vertical: top/middle/bottom)
 - **Border style** (color, weight, dash style, transparent)
 
 Border mapping:

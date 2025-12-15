@@ -18,8 +18,10 @@ type TableStyle struct {
 
 // TableCellStyle holds style information for a single table cell.
 type TableCellStyle struct {
-	BackgroundFill *slides.TableCellBackgroundFill
-	TextStyle      *slides.TextStyle
+	BackgroundFill   *slides.TableCellBackgroundFill
+	TextStyle        *slides.TextStyle
+	ContentAlignment string              // Vertical alignment: TOP, MIDDLE, BOTTOM
+	ParagraphStyle   *slides.ParagraphStyle // Horizontal alignment, etc.
 }
 
 // TableBorderStyle holds border style information extracted from 2x2 table.
@@ -204,16 +206,23 @@ func extractBorderStyle(table *slides.Table) *TableBorderStyle {
 func extractCellStyle(cell *slides.TableCell) *TableCellStyle {
 	style := &TableCellStyle{}
 
-	// Extract background color
+	// Extract background color and content alignment
 	if cell.TableCellProperties != nil {
 		style.BackgroundFill = cell.TableCellProperties.TableCellBackgroundFill
+		style.ContentAlignment = cell.TableCellProperties.ContentAlignment
 	}
 
-	// Extract text style (from first TextRun)
+	// Extract text style and paragraph style (from first TextRun/ParagraphMarker)
 	if cell.Text != nil {
 		for _, te := range cell.Text.TextElements {
-			if te.TextRun != nil && te.TextRun.Style != nil {
+			if te.TextRun != nil && te.TextRun.Style != nil && style.TextStyle == nil {
 				style.TextStyle = te.TextRun.Style
+			}
+			if te.ParagraphMarker != nil && te.ParagraphMarker.Style != nil && style.ParagraphStyle == nil {
+				style.ParagraphStyle = te.ParagraphMarker.Style
+			}
+			// Break if both are found
+			if style.TextStyle != nil && style.ParagraphStyle != nil {
 				break
 			}
 		}

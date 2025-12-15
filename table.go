@@ -525,23 +525,55 @@ func (d *Deck) applyTableCellStyles(tableObjectID string, table *Table) []*slide
 				continue
 			}
 
-			// Apply background color
-			if cellStyle.BackgroundFill != nil {
+			tableRange := &slides.TableRange{
+				Location: &slides.TableCellLocation{
+					RowIndex:    int64(rowIdx),
+					ColumnIndex: int64(colIdx),
+				},
+				RowSpan:    1,
+				ColumnSpan: 1,
+			}
+
+			// Apply background color and content alignment
+			if cellStyle.BackgroundFill != nil || cellStyle.ContentAlignment != "" {
+				props := &slides.TableCellProperties{}
+				var fields []string
+
+				if cellStyle.BackgroundFill != nil {
+					props.TableCellBackgroundFill = cellStyle.BackgroundFill
+					fields = append(fields, "tableCellBackgroundFill")
+				}
+				if cellStyle.ContentAlignment != "" {
+					props.ContentAlignment = cellStyle.ContentAlignment
+					fields = append(fields, "contentAlignment")
+				}
+
 				requests = append(requests, &slides.Request{
 					UpdateTableCellProperties: &slides.UpdateTableCellPropertiesRequest{
+						ObjectId:            tableObjectID,
+						TableRange:          tableRange,
+						TableCellProperties: props,
+						Fields:              strings.Join(fields, ","),
+					},
+				})
+			}
+
+			// Apply paragraph style (horizontal alignment)
+			if cellStyle.ParagraphStyle != nil && cellStyle.ParagraphStyle.Alignment != "" {
+				requests = append(requests, &slides.Request{
+					UpdateParagraphStyle: &slides.UpdateParagraphStyleRequest{
 						ObjectId: tableObjectID,
-						TableRange: &slides.TableRange{
-							Location: &slides.TableCellLocation{
-								RowIndex:    int64(rowIdx),
-								ColumnIndex: int64(colIdx),
-							},
-							RowSpan:    1,
-							ColumnSpan: 1,
+						CellLocation: &slides.TableCellLocation{
+							RowIndex:    int64(rowIdx),
+							ColumnIndex: int64(colIdx),
 						},
-						TableCellProperties: &slides.TableCellProperties{
-							TableCellBackgroundFill: cellStyle.BackgroundFill,
+						Style: &slides.ParagraphStyle{
+							Alignment: cellStyle.ParagraphStyle.Alignment,
 						},
-						Fields: "tableCellBackgroundFill",
+						Fields: "alignment",
+						TextRange: &slides.Range{
+							Type: "ALL",
+						},
 					},
 				})
 			}
