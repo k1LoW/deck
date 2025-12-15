@@ -492,6 +492,9 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 	// Apply cell styles from tableStyle
 	requests = append(requests, d.applyTableCellStyles(tableObjectID, table)...)
 
+	// Apply border styles from tableStyle
+	requests = append(requests, d.applyTableBorderStyles(tableObjectID, table)...)
+
 	return requests, nil
 }
 
@@ -546,6 +549,211 @@ func (d *Deck) applyTableCellStyles(tableObjectID string, table *Table) []*slide
 	}
 
 	return requests
+}
+
+// applyTableBorderStyles applies border styles from d.tableStyle.BorderStyle.
+func (d *Deck) applyTableBorderStyles(tableObjectID string, table *Table) []*slides.Request {
+	if d.tableStyle == nil || d.tableStyle.BorderStyle == nil {
+		return nil
+	}
+
+	var requests []*slides.Request
+	bs := d.tableStyle.BorderStyle
+
+	rows := len(table.Rows)
+	if rows == 0 {
+		return nil
+	}
+
+	cols := 0
+	for _, row := range table.Rows {
+		if len(row.Cells) > cols {
+			cols = len(row.Cells)
+		}
+	}
+
+	if cols == 0 {
+		return nil
+	}
+
+	// Apply outer borders (top/bottom from OuterHorizontal, left/right from OuterVertical)
+	if bs.OuterHorizontal != nil {
+		outerH := prepareBorderProperties(bs.OuterHorizontal)
+		// Top border of entire table
+		requests = append(requests, &slides.Request{
+			UpdateTableBorderProperties: &slides.UpdateTableBorderPropertiesRequest{
+				ObjectId:              tableObjectID,
+				BorderPosition:        "TOP",
+				TableBorderProperties: outerH,
+				Fields:                buildBorderFields(outerH),
+			},
+		})
+		// Bottom border of entire table
+		requests = append(requests, &slides.Request{
+			UpdateTableBorderProperties: &slides.UpdateTableBorderPropertiesRequest{
+				ObjectId:              tableObjectID,
+				BorderPosition:        "BOTTOM",
+				TableBorderProperties: outerH,
+				Fields:                buildBorderFields(outerH),
+			},
+		})
+	}
+
+	if bs.OuterVertical != nil {
+		outerV := prepareBorderProperties(bs.OuterVertical)
+		// Left border of entire table
+		requests = append(requests, &slides.Request{
+			UpdateTableBorderProperties: &slides.UpdateTableBorderPropertiesRequest{
+				ObjectId:              tableObjectID,
+				BorderPosition:        "LEFT",
+				TableBorderProperties: outerV,
+				Fields:                buildBorderFields(outerV),
+			},
+		})
+		// Right border of entire table
+		requests = append(requests, &slides.Request{
+			UpdateTableBorderProperties: &slides.UpdateTableBorderPropertiesRequest{
+				ObjectId:              tableObjectID,
+				BorderPosition:        "RIGHT",
+				TableBorderProperties: outerV,
+				Fields:                buildBorderFields(outerV),
+			},
+		})
+	}
+
+	// Apply inner borders per cell based on position
+	for rowIdx := 0; rowIdx < rows; rowIdx++ {
+		for colIdx := 0; colIdx < cols; colIdx++ {
+			isHeaderRow := rowIdx == 0
+			isFirstCol := colIdx == 0
+			isLastRow := rowIdx == rows-1
+			isLastCol := colIdx == cols-1
+
+			tableRange := &slides.TableRange{
+				Location: &slides.TableCellLocation{
+					RowIndex:    int64(rowIdx),
+					ColumnIndex: int64(colIdx),
+				},
+				RowSpan:    1,
+				ColumnSpan: 1,
+			}
+
+			// Apply right border (skip outer right border)
+			if !isLastCol {
+				var srcProps *slides.TableBorderProperties
+				if isHeaderRow {
+					if isFirstCol {
+						srcProps = bs.HeaderFirstColRight
+					} else {
+						srcProps = bs.HeaderOtherColRight
+					}
+				} else {
+					if isFirstCol {
+						srcProps = bs.DataFirstColRight
+					} else {
+						srcProps = bs.DataOtherColRight
+					}
+				}
+
+				if srcProps != nil {
+					borderProps := prepareBorderProperties(srcProps)
+					requests = append(requests, &slides.Request{
+						UpdateTableBorderProperties: &slides.UpdateTableBorderPropertiesRequest{
+							ObjectId:              tableObjectID,
+							TableRange:            tableRange,
+							BorderPosition:        "RIGHT",
+							TableBorderProperties: borderProps,
+							Fields:                buildBorderFields(borderProps),
+						},
+					})
+				}
+			}
+
+			// Apply bottom border (skip outer bottom border)
+			if !isLastRow {
+				var srcProps *slides.TableBorderProperties
+				if isHeaderRow {
+					if isFirstCol {
+						srcProps = bs.HeaderFirstColBottom
+					} else {
+						srcProps = bs.HeaderOtherColBottom
+					}
+				} else {
+					if isFirstCol {
+						srcProps = bs.DataFirstColBottom
+					} else {
+						srcProps = bs.DataOtherColBottom
+					}
+				}
+
+				if srcProps != nil {
+					borderProps := prepareBorderProperties(srcProps)
+					requests = append(requests, &slides.Request{
+						UpdateTableBorderProperties: &slides.UpdateTableBorderPropertiesRequest{
+							ObjectId:              tableObjectID,
+							TableRange:            tableRange,
+							BorderPosition:        "BOTTOM",
+							TableBorderProperties: borderProps,
+							Fields:                buildBorderFields(borderProps),
+						},
+					})
+				}
+			}
+		}
+	}
+
+	return requests
+}
+
+// buildBorderFields builds the fields string for UpdateTableBorderPropertiesRequest.
+func buildBorderFields(props *slides.TableBorderProperties) string {
+	if props == nil {
+		return ""
+	}
+
+	var fields []string
+	if props.TableBorderFill != nil {
+		fields = append(fields, "tableBorderFill")
+	}
+	if props.Weight != nil {
+		fields = append(fields, "weight")
+	}
+	if props.DashStyle != "" {
+		fields = append(fields, "dashStyle")
+	}
+
+	if len(fields) == 0 {
+		return "*"
+	}
+	return strings.Join(fields, ",")
+}
+
+// prepareBorderProperties creates a copy of TableBorderProperties with ForceSendFields
+// set to ensure Alpha=0 (transparent) is properly sent to the API.
+func prepareBorderProperties(props *slides.TableBorderProperties) *slides.TableBorderProperties {
+	if props == nil {
+		return nil
+	}
+
+	// Create a shallow copy
+	result := &slides.TableBorderProperties{
+		DashStyle: props.DashStyle,
+		Weight:    props.Weight,
+	}
+
+	// Copy TableBorderFill with ForceSendFields for Alpha
+	if props.TableBorderFill != nil && props.TableBorderFill.SolidFill != nil {
+		sf := props.TableBorderFill.SolidFill
+		result.TableBorderFill = &slides.TableBorderFill{
+			SolidFill: &slides.SolidFill{
+				Alpha:           sf.Alpha,
+				Color:           sf.Color,
+				ForceSendFields: []string{"Alpha"},
+			},
+		}
+	}
+
+	return result
 }
 
 // hasTableContent checks if a Google Slides table has any text content.

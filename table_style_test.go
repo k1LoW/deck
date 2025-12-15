@@ -204,6 +204,7 @@ func TestExtractTableStyleFromLayout_Valid2x2(t *testing.T) {
 				},
 			},
 		},
+		BorderStyle: &TableBorderStyle{}, // Empty because table has no border data
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -530,6 +531,186 @@ func TestExtractCellStyle(t *testing.T) {
 		}
 		if style.TextStyle.Italic {
 			t.Error("TextStyle.Italic should be false (second TextRun should be ignored)")
+		}
+	})
+}
+
+func TestExtractBorderStyle(t *testing.T) {
+	t.Parallel()
+
+	// Create border properties for testing
+	redBorder := &slides.TableBorderProperties{
+		TableBorderFill: &slides.TableBorderFill{
+			SolidFill: &slides.SolidFill{
+				Color: &slides.OpaqueColor{
+					RgbColor: &slides.RgbColor{Red: 1.0},
+				},
+			},
+		},
+		Weight: &slides.Dimension{Magnitude: 2, Unit: "PT"},
+	}
+	blueBorder := &slides.TableBorderProperties{
+		TableBorderFill: &slides.TableBorderFill{
+			SolidFill: &slides.SolidFill{
+				Color: &slides.OpaqueColor{
+					RgbColor: &slides.RgbColor{Blue: 1.0},
+				},
+			},
+		},
+		Weight: &slides.Dimension{Magnitude: 1, Unit: "PT"},
+	}
+
+	t.Run("2x2 table with borders", func(t *testing.T) {
+		t.Parallel()
+		// 2x2 table has:
+		// - HorizontalBorderRows: 3 rows × 2 cols
+		// - VerticalBorderRows: 2 rows × 3 cols
+		table := &slides.Table{
+			TableRows: []*slides.TableRow{
+				{TableCells: []*slides.TableCell{{}, {}}},
+				{TableCells: []*slides.TableCell{{}, {}}},
+			},
+			HorizontalBorderRows: []*slides.TableBorderRow{
+				// Row 0: top border
+				{TableBorderCells: []*slides.TableBorderCell{
+					{Location: &slides.TableCellLocation{RowIndex: 0, ColumnIndex: 0}, TableBorderProperties: redBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 0, ColumnIndex: 1}, TableBorderProperties: redBorder},
+				}},
+				// Row 1: between row 0 and row 1
+				{TableBorderCells: []*slides.TableBorderCell{
+					{Location: &slides.TableCellLocation{RowIndex: 1, ColumnIndex: 0}, TableBorderProperties: blueBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 1, ColumnIndex: 1}, TableBorderProperties: blueBorder},
+				}},
+				// Row 2: bottom border
+				{TableBorderCells: []*slides.TableBorderCell{
+					{Location: &slides.TableCellLocation{RowIndex: 2, ColumnIndex: 0}, TableBorderProperties: redBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 2, ColumnIndex: 1}, TableBorderProperties: redBorder},
+				}},
+			},
+			VerticalBorderRows: []*slides.TableBorderRow{
+				// Row 0: vertical borders for row 0
+				{TableBorderCells: []*slides.TableBorderCell{
+					{Location: &slides.TableCellLocation{RowIndex: 0, ColumnIndex: 0}, TableBorderProperties: redBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 0, ColumnIndex: 1}, TableBorderProperties: blueBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 0, ColumnIndex: 2}, TableBorderProperties: redBorder},
+				}},
+				// Row 1: vertical borders for row 1
+				{TableBorderCells: []*slides.TableBorderCell{
+					{Location: &slides.TableCellLocation{RowIndex: 1, ColumnIndex: 0}, TableBorderProperties: redBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 1, ColumnIndex: 1}, TableBorderProperties: blueBorder},
+					{Location: &slides.TableCellLocation{RowIndex: 1, ColumnIndex: 2}, TableBorderProperties: redBorder},
+				}},
+			},
+		}
+
+		bs := extractBorderStyle(table)
+		if bs == nil {
+			t.Fatal("extractBorderStyle returned nil")
+		}
+
+		// Check outer borders
+		if bs.OuterHorizontal != redBorder {
+			t.Error("OuterHorizontal should be redBorder")
+		}
+		if bs.OuterVertical != redBorder {
+			t.Error("OuterVertical should be redBorder")
+		}
+
+		// Check header borders
+		if bs.HeaderFirstColRight != blueBorder {
+			t.Error("HeaderFirstColRight should be blueBorder")
+		}
+		if bs.HeaderFirstColBottom != blueBorder {
+			t.Error("HeaderFirstColBottom should be blueBorder")
+		}
+		if bs.HeaderOtherColRight != redBorder {
+			t.Error("HeaderOtherColRight should be redBorder")
+		}
+		if bs.HeaderOtherColBottom != blueBorder {
+			t.Error("HeaderOtherColBottom should be blueBorder")
+		}
+
+		// Check data borders
+		if bs.DataFirstColRight != blueBorder {
+			t.Error("DataFirstColRight should be blueBorder")
+		}
+		if bs.DataFirstColBottom != redBorder {
+			t.Error("DataFirstColBottom should be redBorder")
+		}
+		if bs.DataOtherColRight != redBorder {
+			t.Error("DataOtherColRight should be redBorder")
+		}
+		if bs.DataOtherColBottom != redBorder {
+			t.Error("DataOtherColBottom should be redBorder")
+		}
+	})
+
+	t.Run("table without borders", func(t *testing.T) {
+		t.Parallel()
+		table := &slides.Table{
+			TableRows: []*slides.TableRow{
+				{TableCells: []*slides.TableCell{{}, {}}},
+				{TableCells: []*slides.TableCell{{}, {}}},
+			},
+		}
+
+		bs := extractBorderStyle(table)
+		if bs == nil {
+			t.Fatal("extractBorderStyle returned nil")
+		}
+
+		// All borders should be nil
+		if bs.OuterHorizontal != nil {
+			t.Error("OuterHorizontal should be nil")
+		}
+		if bs.OuterVertical != nil {
+			t.Error("OuterVertical should be nil")
+		}
+	})
+}
+
+func TestBuildBorderFields(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil properties", func(t *testing.T) {
+		t.Parallel()
+		fields := buildBorderFields(nil)
+		if fields != "" {
+			t.Errorf("expected empty string, got %q", fields)
+		}
+	})
+
+	t.Run("empty properties", func(t *testing.T) {
+		t.Parallel()
+		fields := buildBorderFields(&slides.TableBorderProperties{})
+		if fields != "*" {
+			t.Errorf("expected *, got %q", fields)
+		}
+	})
+
+	t.Run("with fill only", func(t *testing.T) {
+		t.Parallel()
+		props := &slides.TableBorderProperties{
+			TableBorderFill: &slides.TableBorderFill{
+				SolidFill: &slides.SolidFill{},
+			},
+		}
+		fields := buildBorderFields(props)
+		if fields != "tableBorderFill" {
+			t.Errorf("expected tableBorderFill, got %q", fields)
+		}
+	})
+
+	t.Run("with all properties", func(t *testing.T) {
+		t.Parallel()
+		props := &slides.TableBorderProperties{
+			TableBorderFill: &slides.TableBorderFill{SolidFill: &slides.SolidFill{}},
+			Weight:          &slides.Dimension{Magnitude: 1, Unit: "PT"},
+			DashStyle:       "SOLID",
+		}
+		fields := buildBorderFields(props)
+		if fields != "tableBorderFill,weight,dashStyle" {
+			t.Errorf("expected tableBorderFill,weight,dashStyle, got %q", fields)
 		}
 	})
 }

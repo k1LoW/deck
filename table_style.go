@@ -8,18 +8,38 @@ import (
 
 // TableStyle holds the style information for table cells.
 type TableStyle struct {
-	// Header row styles
 	HeaderFirstCol  *TableCellStyle // Style for header row, first column
 	HeaderOtherCols *TableCellStyle // Style for header row, other columns
-	// Data row styles
-	DataFirstCol  *TableCellStyle // Style for data rows, first column
-	DataOtherCols *TableCellStyle // Style for data rows, other columns
+	DataFirstCol    *TableCellStyle // Style for data rows, first column
+	DataOtherCols   *TableCellStyle // Style for data rows, other columns
+	// Border styles
+	BorderStyle *TableBorderStyle
 }
 
 // TableCellStyle holds style information for a single table cell.
 type TableCellStyle struct {
 	BackgroundFill *slides.TableCellBackgroundFill
 	TextStyle      *slides.TextStyle
+}
+
+// TableBorderStyle holds border style information extracted from 2x2 table.
+// Each field corresponds to a specific border position in the style template.
+type TableBorderStyle struct {
+	// Outer borders (from cell [0,0])
+	OuterHorizontal *slides.TableBorderProperties // [0,0] Top -> outer top/bottom
+	OuterVertical   *slides.TableBorderProperties // [0,0] Left -> outer left/right
+
+	// Header row borders
+	HeaderFirstColRight  *slides.TableBorderProperties // [0,0] Right -> header row, col 0 right
+	HeaderFirstColBottom *slides.TableBorderProperties // [0,0] Bottom -> header row, col 0 bottom
+	HeaderOtherColRight  *slides.TableBorderProperties // [0,1] Right -> header row, col 1+ right (except outer)
+	HeaderOtherColBottom *slides.TableBorderProperties // [0,1] Bottom -> header row, col 1+ bottom
+
+	// Data row borders
+	DataFirstColRight  *slides.TableBorderProperties // [1,0] Right -> data rows, col 0 right
+	DataFirstColBottom *slides.TableBorderProperties // [1,0] Bottom -> data rows, col 0 bottom (except outer)
+	DataOtherColRight  *slides.TableBorderProperties // [1,1] Right -> data rows, col 1+ right (except outer)
+	DataOtherColBottom *slides.TableBorderProperties // [1,1] Bottom -> data rows, col 1+ bottom (except outer)
 }
 
 // cellStyle returns the appropriate cell style based on row and column index.
@@ -84,12 +104,100 @@ func extractTableStyleFromLayout(table *slides.Table) *TableStyle {
 	}
 
 	// Extract styles from each cell
-	return &TableStyle{
+	ts := &TableStyle{
 		HeaderFirstCol:  extractCellStyle(table.TableRows[0].TableCells[0]),
 		HeaderOtherCols: extractCellStyle(table.TableRows[0].TableCells[1]),
 		DataFirstCol:    extractCellStyle(table.TableRows[1].TableCells[0]),
 		DataOtherCols:   extractCellStyle(table.TableRows[1].TableCells[1]),
 	}
+
+	// Extract border styles
+	ts.BorderStyle = extractBorderStyle(table)
+
+	return ts
+}
+
+// extractBorderStyle extracts border styles from a 2x2 table.
+// The 2x2 table has:
+// - HorizontalBorderRows: 3 rows × 2 cols (top of row0, between row0/row1, bottom of row1)
+// - VerticalBorderRows: 2 rows × 3 cols (left of col0, between col0/col1, right of col1)
+func extractBorderStyle(table *slides.Table) *TableBorderStyle {
+	bs := &TableBorderStyle{}
+
+	// Extract horizontal borders
+	// HorizontalBorderRows[0] = top border of row 0
+	// HorizontalBorderRows[1] = bottom border of row 0 (= top border of row 1)
+	// HorizontalBorderRows[2] = bottom border of row 1
+	if len(table.HorizontalBorderRows) >= 3 {
+		// [0,0] Top -> OuterHorizontal (for outer top/bottom)
+		if row := table.HorizontalBorderRows[0]; row != nil && len(row.TableBorderCells) > 0 {
+			if cell := row.TableBorderCells[0]; cell != nil {
+				bs.OuterHorizontal = cell.TableBorderProperties
+			}
+		}
+		// [0,0] Bottom -> HeaderFirstColBottom
+		if row := table.HorizontalBorderRows[1]; row != nil && len(row.TableBorderCells) > 0 {
+			if cell := row.TableBorderCells[0]; cell != nil {
+				bs.HeaderFirstColBottom = cell.TableBorderProperties
+			}
+		}
+		// [0,1] Bottom -> HeaderOtherColBottom
+		if row := table.HorizontalBorderRows[1]; row != nil && len(row.TableBorderCells) > 1 {
+			if cell := row.TableBorderCells[1]; cell != nil {
+				bs.HeaderOtherColBottom = cell.TableBorderProperties
+			}
+		}
+		// [1,0] Bottom -> DataFirstColBottom
+		if row := table.HorizontalBorderRows[2]; row != nil && len(row.TableBorderCells) > 0 {
+			if cell := row.TableBorderCells[0]; cell != nil {
+				bs.DataFirstColBottom = cell.TableBorderProperties
+			}
+		}
+		// [1,1] Bottom -> DataOtherColBottom
+		if row := table.HorizontalBorderRows[2]; row != nil && len(row.TableBorderCells) > 1 {
+			if cell := row.TableBorderCells[1]; cell != nil {
+				bs.DataOtherColBottom = cell.TableBorderProperties
+			}
+		}
+	}
+
+	// Extract vertical borders
+	// VerticalBorderRows[0] = borders for row 0 (left of col0, between col0/col1, right of col1)
+	// VerticalBorderRows[1] = borders for row 1
+	if len(table.VerticalBorderRows) >= 2 {
+		// [0,0] Left -> OuterVertical (for outer left/right)
+		if row := table.VerticalBorderRows[0]; row != nil && len(row.TableBorderCells) > 0 {
+			if cell := row.TableBorderCells[0]; cell != nil {
+				bs.OuterVertical = cell.TableBorderProperties
+			}
+		}
+		// [0,0] Right -> HeaderFirstColRight
+		if row := table.VerticalBorderRows[0]; row != nil && len(row.TableBorderCells) > 1 {
+			if cell := row.TableBorderCells[1]; cell != nil {
+				bs.HeaderFirstColRight = cell.TableBorderProperties
+			}
+		}
+		// [0,1] Right -> HeaderOtherColRight
+		if row := table.VerticalBorderRows[0]; row != nil && len(row.TableBorderCells) > 2 {
+			if cell := row.TableBorderCells[2]; cell != nil {
+				bs.HeaderOtherColRight = cell.TableBorderProperties
+			}
+		}
+		// [1,0] Right -> DataFirstColRight
+		if row := table.VerticalBorderRows[1]; row != nil && len(row.TableBorderCells) > 1 {
+			if cell := row.TableBorderCells[1]; cell != nil {
+				bs.DataFirstColRight = cell.TableBorderProperties
+			}
+		}
+		// [1,1] Right -> DataOtherColRight
+		if row := table.VerticalBorderRows[1]; row != nil && len(row.TableBorderCells) > 2 {
+			if cell := row.TableBorderCells[2]; cell != nil {
+				bs.DataOtherColRight = cell.TableBorderProperties
+			}
+		}
+	}
+
+	return bs
 }
 
 // extractCellStyle extracts style from a table cell.
