@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.22.0](https://github.com/k1LoW/deck/compare/v1.21.6...v1.22.0) - 2025-12-17
+### New Features 🎉
+- feat: support custom table styles from style layout by @k1LoW in https://github.com/k1LoW/deck/pull/472
+### Other Changes
+- chore(deps): bump google.golang.org/api from 0.253.0 to 0.254.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/462
+- chore(deps): bump golang.org/x/crypto from 0.43.0 to 0.45.0 by @dependabot[bot] in https://github.com/k1LoW/deck/pull/466
+- chore(deps): bump the dependencies group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/467
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/468
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/469
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/471
+- chore(deps): bump actions/checkout from 6.0.0 to 6.0.1 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/470
+- chore(deps): bump Songmu/tagpr from 1.9.0 to 1.10.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/474
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/473
+
 ## [v1.21.6](https://github.com/k1LoW/deck/compare/v1.21.5...v1.21.6) - 2025-10-29
 ### New Features 🎉
 - fix: simplify image comparison logic by removing MIME type check by @k1LoW in https://github.com/k1LoW/deck/pull/461
