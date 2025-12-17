@@ -25,8 +25,7 @@
               {
                 "content": [
                   {
-                    "value": "Name",
-                    "bold": true
+                    "value": "Name"
                   }
                 ],
                 "alignment": "START",
@@ -35,8 +34,7 @@
               {
                 "content": [
                   {
-                    "value": "Age",
-                    "bold": true
+                    "value": "Age"
                   }
                 ],
                 "alignment": "CENTER",
@@ -45,8 +43,7 @@
               {
                 "content": [
                   {
-                    "value": "City",
-                    "bold": true
+                    "value": "City"
                   }
                 ],
                 "alignment": "END",
@@ -152,8 +149,7 @@
               {
                 "content": [
                   {
-                    "value": "Item",
-                    "bold": true
+                    "value": "Item"
                   }
                 ],
                 "alignment": "START",
@@ -162,8 +158,7 @@
               {
                 "content": [
                   {
-                    "value": "Price",
-                    "bold": true
+                    "value": "Price"
                   }
                 ],
                 "alignment": "START",
@@ -220,8 +215,7 @@
               {
                 "content": [
                   {
-                    "value": "Language",
-                    "bold": true
+                    "value": "Language"
                   }
                 ],
                 "alignment": "START",
@@ -230,8 +224,7 @@
               {
                 "content": [
                   {
-                    "value": "Year",
-                    "bold": true
+                    "value": "Year"
                   }
                 ],
                 "alignment": "START",
@@ -301,8 +294,7 @@
               {
                 "content": [
                   {
-                    "value": "Feature",
-                    "bold": true
+                    "value": "Feature"
                   }
                 ],
                 "alignment": "START",
@@ -322,7 +314,6 @@
                 "content": [
                   {
                     "value": "Italic",
-                    "bold": true,
                     "italic": true
                   }
                 ],
@@ -333,7 +324,6 @@
                 "content": [
                   {
                     "value": "Code",
-                    "bold": true,
                     "code": true
                   }
                 ],

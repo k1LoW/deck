@@ -31,6 +31,7 @@ type Deck struct {
 	defaultLayout      string
 	styles             map[string]*slides.TextStyle
 	shapes             map[string]*slides.ShapeProperties
+	tableStyle         *TableStyle
 	logger             *slog.Logger
 	fresh              bool
 }
@@ -299,8 +300,9 @@ func (d *Deck) AllowReadingByAnyone(ctx context.Context, objectID string) (err e
 
 func newDeck(ctx context.Context, opts ...Option) (*Deck, error) {
 	d := &Deck{
-		styles: map[string]*slides.TextStyle{},
-		shapes: map[string]*slides.ShapeProperties{},
+		styles:     map[string]*slides.TextStyle{},
+		shapes:     map[string]*slides.ShapeProperties{},
+		tableStyle: defaultTableStyle(),
 	}
 	for _, opt := range opts {
 		if err := opt(d); err != nil {
@@ -468,19 +470,26 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 
 		if l.LayoutProperties.DisplayName == layoutNameForStyle {
 			for _, e := range l.PageElements {
-				if e.Shape == nil || e.Shape.Text == nil {
-					continue
+				// Extract text styles from shapes
+				if e.Shape != nil && e.Shape.Text != nil {
+					for _, t := range e.Shape.Text.TextElements {
+						if t.TextRun == nil {
+							continue
+						}
+						styleName := strings.Trim(t.TextRun.Content, " \n")
+						if styleName == "" {
+							continue
+						}
+						d.styles[styleName] = t.TextRun.Style
+						d.shapes[styleName] = e.Shape.ShapeProperties
+					}
 				}
-				for _, t := range e.Shape.Text.TextElements {
-					if t.TextRun == nil {
-						continue
+
+				// Extract table style from 2x2 table
+				if e.Table != nil {
+					if ts := extractTableStyleFromLayout(e.Table); ts != nil {
+						d.tableStyle = ts
 					}
-					styleName := strings.Trim(t.TextRun.Content, " \n")
-					if styleName == "" {
-						continue
-					}
-					d.styles[styleName] = t.TextRun.Style
-					d.shapes[styleName] = e.Shape.ShapeProperties
 				}
 			}
 		}
