@@ -1,7 +1,10 @@
 package deck
 
 import (
+	"strings"
 	"testing"
+
+	"google.golang.org/api/slides/v1"
 )
 
 func TestCountString(t *testing.T) {
@@ -166,6 +169,137 @@ func TestWithProfile(t *testing.T) {
 					if deck.profile != tt.profile {
 						t.Errorf("WithProfile(%q) profile not set correctly: got %q, want %q", tt.profile, deck.profile, tt.profile)
 					}
+				}
+			}
+		})
+	}
+}
+
+func TestValidateLayouts(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name               string
+		slides             Slides
+		availableLayouts   []string
+		defaultTitleLayout string
+		defaultLayout      string
+		wantErr            bool
+		wantErrContains    []string
+	}{
+		{
+			name:               "empty slides",
+			slides:             Slides{},
+			availableLayouts:   []string{"Title Slide", "Title and Content"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Title and Content",
+			wantErr:            false,
+		},
+		{
+			name: "valid layout",
+			slides: Slides{
+				{Layout: "Title Slide"},
+				{Layout: "Title and Content"},
+			},
+			availableLayouts:   []string{"Title Slide", "Title and Content", "Section Header"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Title and Content",
+			wantErr:            false,
+		},
+		{
+			name: "invalid layout",
+			slides: Slides{
+				{Layout: "Title Slide"},
+				{Layout: "section"}, // typo: should be "Section Header"
+			},
+			availableLayouts:   []string{"Title Slide", "Title and Content", "Section Header"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Title and Content",
+			wantErr:            true,
+			wantErrContains:    []string{"section"},
+		},
+		{
+			name: "empty layout uses default",
+			slides: Slides{
+				{Layout: ""}, // should use defaultTitleLayout
+				{Layout: ""}, // should use defaultLayout
+			},
+			availableLayouts:   []string{"Title Slide", "Title and Content"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Title and Content",
+			wantErr:            false,
+		},
+		{
+			name: "multiple invalid layouts",
+			slides: Slides{
+				{Layout: "invalid1"},
+				{Layout: "invalid2"},
+			},
+			availableLayouts:   []string{"Title Slide", "Title and Content"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Title and Content",
+			wantErr:            true,
+			wantErrContains:    []string{"invalid1", "invalid2"},
+		},
+		{
+			name: "invalid default title layout",
+			slides: Slides{
+				{Layout: ""}, // uses defaultTitleLayout which doesn't exist
+			},
+			availableLayouts:   []string{"Title and Content"},
+			defaultTitleLayout: "Non-existent Title Layout",
+			defaultLayout:      "Title and Content",
+			wantErr:            true,
+			wantErrContains:    []string{"Non-existent Title Layout"},
+		},
+		{
+			name: "invalid default layout",
+			slides: Slides{
+				{Layout: "Title Slide"},
+				{Layout: ""}, // uses defaultLayout which doesn't exist
+			},
+			availableLayouts:   []string{"Title Slide"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Non-existent Layout",
+			wantErr:            true,
+			wantErrContains:    []string{"Non-existent Layout"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			// Create a Deck with mock presentation layouts
+			layouts := make([]*slides.Page, len(tt.availableLayouts))
+			for i, name := range tt.availableLayouts {
+				layouts[i] = &slides.Page{
+					LayoutProperties: &slides.LayoutProperties{
+						DisplayName: name,
+					},
+				}
+			}
+			d := &Deck{
+				presentation: &slides.Presentation{
+					Layouts: layouts,
+				},
+				defaultTitleLayout: tt.defaultTitleLayout,
+				defaultLayout:      tt.defaultLayout,
+			}
+
+			err := d.validateLayouts(tt.slides)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("validateLayouts() expected error but got none")
+					return
+				}
+				for _, want := range tt.wantErrContains {
+					if !strings.Contains(err.Error(), want) {
+						t.Errorf("validateLayouts() error = %v, want error containing %q", err, want)
+					}
+				}
+			} else {
+				if err != nil {
+					t.Errorf("validateLayouts() unexpected error: %v", err)
 				}
 			}
 		})
