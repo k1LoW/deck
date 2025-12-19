@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/k1LoW/deck/config"
@@ -449,20 +450,28 @@ func (d *Deck) validateLayouts(ss Slides) (err error) {
 	}()
 	layoutMap := d.layoutMap()
 	var notFound []string
-	for _, slide := range ss {
+	for i, slide := range ss {
 		layout := slide.Layout
 		if layout == "" {
-			continue
+			// Use default layout if not specified
+			if i == 0 {
+				layout = d.defaultTitleLayout
+			} else {
+				layout = d.defaultLayout
+			}
 		}
 		if _, ok := layoutMap[layout]; !ok {
 			notFound = append(notFound, layout)
 		}
 	}
 	if len(notFound) > 0 {
+		slices.Sort(notFound)
+		notFound = slices.Compact(notFound)
 		var available []string
 		for name := range layoutMap {
 			available = append(available, name)
 		}
+		slices.Sort(available)
 		return fmt.Errorf("layout not found: %q\navailable layouts: %v", notFound, available)
 	}
 	return nil

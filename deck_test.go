@@ -184,8 +184,16 @@ func TestValidateLayouts(t *testing.T) {
 		defaultTitleLayout string
 		defaultLayout      string
 		wantErr            bool
-		wantErrContains    string
+		wantErrContains    []string
 	}{
+		{
+			name:               "empty slides",
+			slides:             Slides{},
+			availableLayouts:   []string{"Title Slide", "Title and Content"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Title and Content",
+			wantErr:            false,
+		},
 		{
 			name: "valid layout",
 			slides: Slides{
@@ -207,7 +215,7 @@ func TestValidateLayouts(t *testing.T) {
 			defaultTitleLayout: "Title Slide",
 			defaultLayout:      "Title and Content",
 			wantErr:            true,
-			wantErrContains:    "section",
+			wantErrContains:    []string{"section"},
 		},
 		{
 			name: "empty layout uses default",
@@ -230,7 +238,30 @@ func TestValidateLayouts(t *testing.T) {
 			defaultTitleLayout: "Title Slide",
 			defaultLayout:      "Title and Content",
 			wantErr:            true,
-			wantErrContains:    "invalid1",
+			wantErrContains:    []string{"invalid1", "invalid2"},
+		},
+		{
+			name: "invalid default title layout",
+			slides: Slides{
+				{Layout: ""}, // uses defaultTitleLayout which doesn't exist
+			},
+			availableLayouts:   []string{"Title and Content"},
+			defaultTitleLayout: "Non-existent Title Layout",
+			defaultLayout:      "Title and Content",
+			wantErr:            true,
+			wantErrContains:    []string{"Non-existent Title Layout"},
+		},
+		{
+			name: "invalid default layout",
+			slides: Slides{
+				{Layout: "Title Slide"},
+				{Layout: ""}, // uses defaultLayout which doesn't exist
+			},
+			availableLayouts:   []string{"Title Slide"},
+			defaultTitleLayout: "Title Slide",
+			defaultLayout:      "Non-existent Layout",
+			wantErr:            true,
+			wantErrContains:    []string{"Non-existent Layout"},
 		},
 	}
 
@@ -261,8 +292,10 @@ func TestValidateLayouts(t *testing.T) {
 					t.Errorf("validateLayouts() expected error but got none")
 					return
 				}
-				if tt.wantErrContains != "" && !strings.Contains(err.Error(), tt.wantErrContains) {
-					t.Errorf("validateLayouts() error = %v, want error containing %q", err, tt.wantErrContains)
+				for _, want := range tt.wantErrContains {
+					if !strings.Contains(err.Error(), want) {
+						t.Errorf("validateLayouts() error = %v, want error containing %q", err, want)
+					}
 				}
 			} else {
 				if err != nil {
