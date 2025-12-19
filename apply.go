@@ -48,6 +48,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
+
+	// Validate layouts before processing
+	if err := d.validateLayouts(ss); err != nil {
+		return fmt.Errorf("layout validation failed: %w", err)
+	}
+
 	layoutObjectIdMap := map[string]*slides.Page{}
 	for _, l := range d.presentation.Layouts {
 		layoutObjectIdMap[l.ObjectId] = l

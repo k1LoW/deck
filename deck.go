@@ -441,6 +441,33 @@ func (d *Deck) layoutMap() map[string]*slides.Page {
 	return layoutMap
 }
 
+// validateLayouts validates that all layouts used in slides exist in the presentation.
+// It returns an error if any layout is not found, with available layouts listed in the error message.
+func (d *Deck) validateLayouts(ss Slides) (err error) {
+	defer func() {
+		err = errors.WithStack(err)
+	}()
+	layoutMap := d.layoutMap()
+	var notFound []string
+	for _, slide := range ss {
+		layout := slide.Layout
+		if layout == "" {
+			continue
+		}
+		if _, ok := layoutMap[layout]; !ok {
+			notFound = append(notFound, layout)
+		}
+	}
+	if len(notFound) > 0 {
+		var available []string
+		for name := range layoutMap {
+			available = append(available, name)
+		}
+		return fmt.Errorf("layout not found: %q\navailable layouts: %v", notFound, available)
+	}
+	return nil
+}
+
 func (d *Deck) refresh(ctx context.Context) (err error) {
 	defer func() {
 		err = errors.WithStack(err)
