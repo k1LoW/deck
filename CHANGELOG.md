@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.22.1](https://github.com/k1LoW/deck/compare/v1.22.0...v1.22.1) - 2025-12-20
+### Other Changes
+- feat: validate layouts before applying slides by @k1LoW in https://github.com/k1LoW/deck/pull/475
+- chore: update pkgs by @k1LoW in https://github.com/k1LoW/deck/pull/477
+
 ## [v1.22.0](https://github.com/k1LoW/deck/compare/v1.21.6...v1.22.0) - 2025-12-17
 ### New Features 🎉
 - feat: support custom table styles from style layout by @k1LoW in https://github.com/k1LoW/deck/pull/472
