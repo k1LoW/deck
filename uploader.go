@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/k1LoW/deck/template"
 	"github.com/k1LoW/exec"
 )
 
@@ -35,9 +36,28 @@ func newExternalUploader(uploadCmd, deleteCmd string) *externalUploader {
 
 // Upload uploads an image using the external upload command.
 // It passes image data via stdin and sets environment variables DECK_UPLOAD_MIME and DECK_UPLOAD_FILENAME.
+// The command also supports template variables: {{mime}}, {{filename}}, and {{env.XXX}}.
 // The command should output the public URL on the first line and resource ID on the second line.
 func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, filename string) (publicURL, resourceID string, err error) {
-	c, args, err := buildCommand(u.uploadCmd)
+	// Prepare environment variables
+	env := template.EnvironToMap()
+	env[EnvUploadMIME] = mimeType
+	env[EnvUploadFilename] = filename
+
+	// Prepare template store
+	store := map[string]any{
+		"mime":     mimeType,
+		"filename": filename,
+		"env":      env,
+	}
+
+	// Expand template in command
+	expandedCmd, err := template.Expand(u.uploadCmd, store)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to expand upload command template: %w", err)
+	}
+
+	c, args, err := buildCommand(expandedCmd)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to build upload command: %w", err)
 	}
@@ -80,13 +100,30 @@ func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, fi
 
 // Delete deletes an uploaded image using the external delete command.
 // It sets the environment variable DECK_DELETE_ID with the resource ID.
+// The command also supports template variables: {{id}} and {{env.XXX}}.
 func (u *externalUploader) Delete(ctx context.Context, resourceID string) error {
 	if u.deleteCmd == "" {
 		// No delete command configured, skip deletion
 		return nil
 	}
 
-	c, args, err := buildCommand(u.deleteCmd)
+	// Prepare environment variables
+	env := template.EnvironToMap()
+	env[EnvDeleteID] = resourceID
+
+	// Prepare template store
+	store := map[string]any{
+		"id":  resourceID,
+		"env": env,
+	}
+
+	// Expand template in command
+	expandedCmd, err := template.Expand(u.deleteCmd, store)
+	if err != nil {
+		return fmt.Errorf("failed to expand delete command template: %w", err)
+	}
+
+	c, args, err := buildCommand(expandedCmd)
 	if err != nil {
 		return fmt.Errorf("failed to build delete command: %w", err)
 	}
