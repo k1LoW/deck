@@ -35,6 +35,8 @@ type Deck struct {
 	tableStyle         *TableStyle
 	logger             *slog.Logger
 	fresh              bool
+	imageUploadCmd     string
+	imageDeleteCmd     string
 }
 
 type Option func(*Deck) error
@@ -66,6 +68,25 @@ func WithProfile(profile string) Option {
 func WithFolderID(folderID string) Option {
 	return func(d *Deck) error {
 		d.folderID = folderID
+		return nil
+	}
+}
+
+// WithImageUploadCmd sets the command to upload images to external storage.
+// The command receives image data via stdin and environment variables DECK_UPLOAD_MIME and DECK_UPLOAD_FILENAME.
+// It should output the public URL on the first line and resource ID on the second line of stdout.
+func WithImageUploadCmd(cmd string) Option {
+	return func(d *Deck) error {
+		d.imageUploadCmd = cmd
+		return nil
+	}
+}
+
+// WithImageDeleteCmd sets the command to delete uploaded images from external storage.
+// The command receives the resource ID via environment variable DECK_DELETE_ID.
+func WithImageDeleteCmd(cmd string) Option {
+	return func(d *Deck) error {
+		d.imageDeleteCmd = cmd
 		return nil
 	}
 }
