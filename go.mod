@@ -15,7 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/k1LoW/errors v1.1.1
-	github.com/k1LoW/exec v0.4.0
+	github.com/k1LoW/exec v0.5.0
 	github.com/k1LoW/tail v0.1.0
 	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/mattn/go-colorable v0.1.14
