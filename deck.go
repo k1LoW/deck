@@ -73,7 +73,7 @@ func WithFolderID(folderID string) Option {
 }
 
 // WithImageUploadCmd sets the command to upload images to external storage.
-// The command receives image data via stdin and environment variables DECK_UPLOAD_MIME and DECK_UPLOAD_FILENAME.
+// The command receives image data via stdin and the environment variable DECK_UPLOAD_MIME.
 // It should output the public URL on the first line and resource ID on the second line of stdout.
 func WithImageUploadCmd(cmd string) Option {
 	return func(d *Deck) error {

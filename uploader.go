@@ -15,9 +15,8 @@ import (
 
 // Environment variable names for external uploader CLI.
 const (
-	EnvUploadMIME     = "DECK_UPLOAD_MIME"
-	EnvUploadFilename = "DECK_UPLOAD_FILENAME"
-	EnvDeleteID       = "DECK_DELETE_ID"
+	EnvUploadMIME = "DECK_UPLOAD_MIME"
+	EnvDeleteID   = "DECK_DELETE_ID"
 )
 
 // externalUploader implements image upload/delete using external CLI commands.
@@ -35,20 +34,18 @@ func newExternalUploader(uploadCmd, deleteCmd string) *externalUploader {
 }
 
 // Upload uploads an image using the external upload command.
-// It passes image data via stdin and sets environment variables DECK_UPLOAD_MIME and DECK_UPLOAD_FILENAME.
-// The command also supports template variables: {{mime}}, {{filename}}, and {{env.XXX}}.
+// It passes image data via stdin and sets the environment variable DECK_UPLOAD_MIME.
+// The command also supports template variables: {{mime}} and {{env.XXX}}.
 // The command should output the public URL on the first line and resource ID on the second line.
 func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, filename string) (publicURL, resourceID string, err error) {
 	// Prepare environment variables
 	env := template.EnvironToMap()
 	env[EnvUploadMIME] = mimeType
-	env[EnvUploadFilename] = filename
 
 	// Prepare template store
 	store := map[string]any{
-		"mime":     mimeType,
-		"filename": filename,
-		"env":      env,
+		"mime": mimeType,
+		"env":  env,
 	}
 
 	// Expand template in command
@@ -66,7 +63,6 @@ func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, fi
 	cmd.Stdin = bytes.NewReader(data)
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", EnvUploadMIME, mimeType))
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", EnvUploadFilename, filename))
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
