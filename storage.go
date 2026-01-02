@@ -17,8 +17,8 @@ import (
 
 // Storage is the interface for image upload/delete operations.
 type Storage interface {
-	Upload(ctx context.Context, data []byte, mimeType string) (publicURL, resourceID string, err error)
-	Delete(ctx context.Context, resourceID string) error
+	Upload(ctx context.Context, data []byte, mimeType string) (publicURL, uploadedID string, err error)
+	Delete(ctx context.Context, uploadedID string) error
 }
 
 // googleDriveStorage implements Storage using Google Drive.
@@ -45,7 +45,7 @@ func newGoogleDriveStorage(
 }
 
 // Upload uploads an image to Google Drive.
-func (u *googleDriveStorage) Upload(ctx context.Context, data []byte, mimeType string) (publicURL, resourceID string, err error) {
+func (u *googleDriveStorage) Upload(ctx context.Context, data []byte, mimeType string) (publicURL, uploadedID string, err error) {
 	df := &drive.File{
 		Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
 		MimeType: mimeType,
@@ -58,7 +58,7 @@ func (u *googleDriveStorage) Upload(ctx context.Context, data []byte, mimeType s
 	if err != nil {
 		return "", "", fmt.Errorf("failed to upload image: %w", err)
 	}
-	resourceID = uploaded.Id
+	uploadedID = uploaded.Id
 
 	defer func() {
 		if err != nil {
@@ -86,12 +86,12 @@ func (u *googleDriveStorage) Upload(ctx context.Context, data []byte, mimeType s
 	}
 	publicURL = f.WebContentLink
 
-	return publicURL, resourceID, nil
+	return publicURL, uploadedID, nil
 }
 
 // Delete deletes an uploaded image from Google Drive.
-func (u *googleDriveStorage) Delete(ctx context.Context, resourceID string) error {
-	return u.deleteOrTrash(ctx, resourceID)
+func (u *googleDriveStorage) Delete(ctx context.Context, uploadedID string) error {
+	return u.deleteOrTrash(ctx, uploadedID)
 }
 
 // externalStorage implements Storage using external CLI commands.
@@ -111,8 +111,8 @@ func newExternalStorage(uploadCmd, deleteCmd string) *externalStorage {
 // Upload uploads an image using the external upload command.
 // It passes image data via stdin and sets the environment variable DECK_UPLOAD_MIME.
 // The command also supports template variables: {{mime}} and {{env.XXX}}.
-// The command should output the public URL on the first line and resource ID on the second line.
-func (u *externalStorage) Upload(ctx context.Context, data []byte, mimeType string) (publicURL, resourceID string, err error) {
+// The command should output the public URL on the first line and uploaded ID on the second line.
+func (u *externalStorage) Upload(ctx context.Context, data []byte, mimeType string) (publicURL, uploadedID string, err error) {
 	const envUploadMIME = "DECK_UPLOAD_MIME"
 
 	// Prepare environment variables
@@ -157,24 +157,24 @@ func (u *externalStorage) Upload(ctx context.Context, data []byte, mimeType stri
 	publicURL = strings.TrimSpace(scanner.Text())
 
 	if !scanner.Scan() {
-		return "", "", fmt.Errorf("upload command did not output resource ID")
+		return "", "", fmt.Errorf("upload command did not output uploaded ID")
 	}
-	resourceID = strings.TrimSpace(scanner.Text())
+	uploadedID = strings.TrimSpace(scanner.Text())
 
 	if publicURL == "" {
 		return "", "", fmt.Errorf("upload command returned empty public URL")
 	}
-	if resourceID == "" {
-		return "", "", fmt.Errorf("upload command returned empty resource ID")
+	if uploadedID == "" {
+		return "", "", fmt.Errorf("upload command returned empty uploaded ID")
 	}
 
-	return publicURL, resourceID, nil
+	return publicURL, uploadedID, nil
 }
 
 // Delete deletes an uploaded image using the external delete command.
-// It sets the environment variable DECK_DELETE_ID with the resource ID.
+// It sets the environment variable DECK_DELETE_ID with the uploaded ID.
 // The command also supports template variables: {{id}} and {{env.XXX}}.
-func (u *externalStorage) Delete(ctx context.Context, resourceID string) error {
+func (u *externalStorage) Delete(ctx context.Context, uploadedID string) error {
 	const envDeleteID = "DECK_DELETE_ID"
 
 	if u.deleteCmd == "" {
@@ -184,11 +184,11 @@ func (u *externalStorage) Delete(ctx context.Context, resourceID string) error {
 
 	// Prepare environment variables
 	env := template.EnvironToMap()
-	env[envDeleteID] = resourceID
+	env[envDeleteID] = uploadedID
 
 	// Prepare template store
 	store := map[string]any{
-		"id":  resourceID,
+		"id":  uploadedID,
 		"env": env,
 	}
 
@@ -205,7 +205,7 @@ func (u *externalStorage) Delete(ctx context.Context, resourceID string) error {
 
 	cmd := exec.CommandContext(ctx, c, args...)
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, envDeleteID+"="+resourceID)
+	cmd.Env = append(cmd.Env, envDeleteID+"="+uploadedID)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
