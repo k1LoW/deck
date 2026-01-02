@@ -10,24 +10,99 @@ import (
 	"time"
 
 	"github.com/k1LoW/deck/template"
+	"github.com/k1LoW/errors"
 	"github.com/k1LoW/exec"
+	"google.golang.org/api/drive/v3"
 )
 
-// Environment variable names for external uploader CLI.
-const (
-	EnvUploadMIME = "DECK_UPLOAD_MIME"
-	EnvDeleteID   = "DECK_DELETE_ID"
-)
+// Storage is the interface for image upload/delete operations.
+type Storage interface {
+	Upload(ctx context.Context, data []byte, mimeType string) (publicURL, resourceID string, err error)
+	Delete(ctx context.Context, resourceID string) error
+}
 
-// externalUploader implements image upload/delete using external CLI commands.
-type externalUploader struct {
+// googleDriveStorage implements Storage using Google Drive.
+type googleDriveStorage struct {
+	driveSrv             *drive.Service
+	folderID             string
+	allowReadingByAnyone func(ctx context.Context, fileID string) error
+	deleteOrTrash        func(ctx context.Context, fileID string) error
+}
+
+// newGoogleDriveStorage creates a new googleDriveStorage.
+func newGoogleDriveStorage(
+	driveSrv *drive.Service,
+	folderID string,
+	allowReadingByAnyone func(ctx context.Context, fileID string) error,
+	deleteOrTrash func(ctx context.Context, fileID string) error,
+) *googleDriveStorage {
+	return &googleDriveStorage{
+		driveSrv:             driveSrv,
+		folderID:             folderID,
+		allowReadingByAnyone: allowReadingByAnyone,
+		deleteOrTrash:        deleteOrTrash,
+	}
+}
+
+// Upload uploads an image to Google Drive.
+func (u *googleDriveStorage) Upload(ctx context.Context, data []byte, mimeType string) (publicURL, resourceID string, err error) {
+	df := &drive.File{
+		Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
+		MimeType: mimeType,
+	}
+	if u.folderID != "" {
+		df.Parents = []string{u.folderID}
+	}
+
+	uploaded, err := u.driveSrv.Files.Create(df).Media(bytes.NewBuffer(data)).SupportsAllDrives(true).Do()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to upload image: %w", err)
+	}
+	resourceID = uploaded.Id
+
+	defer func() {
+		if err != nil {
+			// Clean up uploaded file on error
+			if deleteErr := u.deleteOrTrash(ctx, uploaded.Id); deleteErr != nil {
+				err = errors.Join(err, deleteErr)
+			}
+		}
+	}()
+
+	// To specify a URL for CreateImageRequest, we must make the webContentURL readable to anyone
+	// and configure the necessary permissions for this purpose.
+	if err = u.allowReadingByAnyone(ctx, uploaded.Id); err != nil {
+		return "", "", fmt.Errorf("failed to set permission for image: %w", err)
+	}
+
+	// Get webContentLink
+	f, err := u.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").SupportsAllDrives(true).Do()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get webContentLink for image: %w", err)
+	}
+
+	if f.WebContentLink == "" {
+		return "", "", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
+	}
+	publicURL = f.WebContentLink
+
+	return publicURL, resourceID, nil
+}
+
+// Delete deletes an uploaded image from Google Drive.
+func (u *googleDriveStorage) Delete(ctx context.Context, resourceID string) error {
+	return u.deleteOrTrash(ctx, resourceID)
+}
+
+// externalStorage implements Storage using external CLI commands.
+type externalStorage struct {
 	uploadCmd string
 	deleteCmd string
 }
 
-// newExternalUploader creates a new externalUploader.
-func newExternalUploader(uploadCmd, deleteCmd string) *externalUploader {
-	return &externalUploader{
+// newExternalStorage creates a new externalStorage.
+func newExternalStorage(uploadCmd, deleteCmd string) *externalStorage {
+	return &externalStorage{
 		uploadCmd: uploadCmd,
 		deleteCmd: deleteCmd,
 	}
@@ -37,10 +112,12 @@ func newExternalUploader(uploadCmd, deleteCmd string) *externalUploader {
 // It passes image data via stdin and sets the environment variable DECK_UPLOAD_MIME.
 // The command also supports template variables: {{mime}} and {{env.XXX}}.
 // The command should output the public URL on the first line and resource ID on the second line.
-func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, filename string) (publicURL, resourceID string, err error) {
+func (u *externalStorage) Upload(ctx context.Context, data []byte, mimeType string) (publicURL, resourceID string, err error) {
+	const envUploadMIME = "DECK_UPLOAD_MIME"
+
 	// Prepare environment variables
 	env := template.EnvironToMap()
-	env[EnvUploadMIME] = mimeType
+	env[envUploadMIME] = mimeType
 
 	// Prepare template store
 	store := map[string]any{
@@ -62,7 +139,7 @@ func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, fi
 	cmd := exec.CommandContext(ctx, c, args...)
 	cmd.Stdin = bytes.NewReader(data)
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", EnvUploadMIME, mimeType))
+	cmd.Env = append(cmd.Env, envUploadMIME+"="+mimeType)
 
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -97,7 +174,9 @@ func (u *externalUploader) Upload(ctx context.Context, data []byte, mimeType, fi
 // Delete deletes an uploaded image using the external delete command.
 // It sets the environment variable DECK_DELETE_ID with the resource ID.
 // The command also supports template variables: {{id}} and {{env.XXX}}.
-func (u *externalUploader) Delete(ctx context.Context, resourceID string) error {
+func (u *externalStorage) Delete(ctx context.Context, resourceID string) error {
+	const envDeleteID = "DECK_DELETE_ID"
+
 	if u.deleteCmd == "" {
 		// No delete command configured, skip deletion
 		return nil
@@ -105,7 +184,7 @@ func (u *externalUploader) Delete(ctx context.Context, resourceID string) error 
 
 	// Prepare environment variables
 	env := template.EnvironToMap()
-	env[EnvDeleteID] = resourceID
+	env[envDeleteID] = resourceID
 
 	// Prepare template store
 	store := map[string]any{
@@ -126,7 +205,7 @@ func (u *externalUploader) Delete(ctx context.Context, resourceID string) error 
 
 	cmd := exec.CommandContext(ctx, c, args...)
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", EnvDeleteID, resourceID))
+	cmd.Env = append(cmd.Env, envDeleteID+"="+resourceID)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -139,7 +218,6 @@ func (u *externalUploader) Delete(ctx context.Context, resourceID string) error 
 }
 
 // buildCommand parses a command string and returns the command and arguments.
-// This is similar to the implementation in md/md.go.
 func buildCommand(cmdStr string) (string, []string, error) {
 	shell, err := detectShell()
 	if err != nil {
@@ -164,9 +242,4 @@ func detectShell() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("failed to detect shell")
-}
-
-// generateTempFilename generates a temporary filename for uploaded images.
-func generateTempFilename() string {
-	return fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339))
 }

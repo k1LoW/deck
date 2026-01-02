@@ -1,17 +1,14 @@
 package deck
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"slices"
 	"sync"
 
-	"github.com/k1LoW/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
-	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/slides/v1"
 )
 
@@ -199,6 +196,9 @@ func (d *Deck) startUploadingImages(
 		image.StartUpload()
 	}
 
+	// Get storage instance
+	storage := d.getStorage()
+
 	// Start uploading images asynchronously
 	go func() {
 		// Process images in parallel
@@ -214,66 +214,11 @@ func (d *Deck) startUploadingImages(
 				}
 				defer sem.Release(1)
 
-				filename := generateTempFilename()
 				mimeType := string(image.mimeType)
-
-				var publicURL, uploadedID string
-				var err error
-
-				if d.imageUploadCmd != "" {
-					// Use external uploader CLI
-					uploader := newExternalUploader(d.imageUploadCmd, d.imageDeleteCmd)
-					publicURL, uploadedID, err = uploader.Upload(ctx, image.Bytes(), mimeType, filename)
-					if err != nil {
-						image.SetUploadResult("", fmt.Errorf("failed to upload image via external command: %w", err))
-						return err
-					}
-				} else {
-					// Use Google Drive (default)
-					df := &drive.File{
-						Name:     filename,
-						MimeType: mimeType,
-					}
-					if d.folderID != "" {
-						df.Parents = []string{d.folderID}
-					}
-					uploaded, uploadErr := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).SupportsAllDrives(true).Do()
-					if uploadErr != nil {
-						image.SetUploadResult("", fmt.Errorf("failed to upload image: %w", uploadErr))
-						return uploadErr
-					}
-					uploadedID = uploaded.Id
-
-					defer func() {
-						if err != nil {
-							// Clean up uploaded file on error
-							if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
-								err = errors.Join(err, deleteErr)
-							}
-						}
-					}()
-
-					// To specify a URL for CreateImageRequest, we must make the webContentURL readable to anyone
-					// and configure the necessary permissions for this purpose.
-					if err = d.AllowReadingByAnyone(ctx, uploaded.Id); err != nil {
-						image.SetUploadResult("", fmt.Errorf("failed to set permission for image: %w", err))
-						return err
-					}
-
-					// Get webContentLink
-					f, getErr := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").SupportsAllDrives(true).Do()
-					if getErr != nil {
-						err = getErr
-						image.SetUploadResult("", fmt.Errorf("failed to get webContentLink for image: %w", getErr))
-						return getErr
-					}
-
-					if f.WebContentLink == "" {
-						err = fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id)
-						image.SetUploadResult("", err)
-						return err
-					}
-					publicURL = f.WebContentLink
+				publicURL, uploadedID, err := storage.Upload(ctx, image.Bytes(), mimeType)
+				if err != nil {
+					image.SetUploadResult("", fmt.Errorf("failed to upload image: %w", err))
+					return err
 				}
 
 				// Set successful upload result
@@ -300,6 +245,9 @@ func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uplo
 	sem := semaphore.NewWeighted(maxPreloadWorkersNum)
 	var wg sync.WaitGroup
 
+	// Get storage instance
+	storage := d.getStorage()
+
 	for {
 		select {
 		case info, ok := <-uploadedCh:
@@ -324,16 +272,7 @@ func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uplo
 				// Note: We only log errors here instead of returning them to ensure
 				// all images are attempted to be deleted. A single deletion failure
 				// should not prevent cleanup of other successfully uploaded images.
-				var err error
-				if d.imageUploadCmd != "" {
-					// Use external uploader CLI for deletion
-					uploader := newExternalUploader(d.imageUploadCmd, d.imageDeleteCmd)
-					err = uploader.Delete(ctx, info.uploadedID)
-				} else {
-					// Use Google Drive (default)
-					err = d.deleteOrTrashFile(ctx, info.uploadedID)
-				}
-				if err != nil {
+				if err := storage.Delete(ctx, info.uploadedID); err != nil {
 					d.logger.Error("failed to delete uploaded image",
 						slog.String("id", info.uploadedID),
 						slog.Any("error", err))

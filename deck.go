@@ -593,3 +593,11 @@ func (d *Deck) deleteOrTrashFile(ctx context.Context, id string) error {
 	}
 	return fmt.Errorf("file cannot be deleted or trashed (file ID: %s)", id)
 }
+
+// getStorage returns the appropriate Storage based on configuration.
+func (d *Deck) getStorage() Storage {
+	if d.imageUploadCmd != "" {
+		return newExternalStorage(d.imageUploadCmd, d.imageDeleteCmd)
+	}
+	return newGoogleDriveStorage(d.driveSrv, d.folderID, d.AllowReadingByAnyone, d.deleteOrTrashFile)
+}
