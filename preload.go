@@ -151,7 +151,7 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 
 // uploadedImageInfo holds information about uploaded images for cleanup.
 type uploadedImageInfo struct {
-	uploadedID string // Google Drive file ID or external uploader resource ID
+	uploadedID string // Google Drive file ID or external storage uploaded ID
 	image      *Image
 }
 

@@ -83,7 +83,7 @@ func WithImageUploadCmd(cmd string) Option {
 }
 
 // WithImageDeleteCmd sets the command to delete uploaded images from external storage.
-// The command receives the resource ID via environment variable DECK_DELETE_ID.
+// The command receives the uploaded ID via environment variable DECK_DELETE_ID.
 func WithImageDeleteCmd(cmd string) Option {
 	return func(d *Deck) error {
 		d.imageDeleteCmd = cmd
