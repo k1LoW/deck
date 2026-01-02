@@ -149,7 +149,7 @@ func (u *externalStorage) Upload(ctx context.Context, data []byte, mimeType stri
 		return "", "", fmt.Errorf("failed to run upload command: %w\nstderr: %s", err, stderr.String())
 	}
 
-	// Parse stdout: first line is public URL, second line is resource ID
+	// Parse stdout: first line is public URL, second line is uploaded ID
 	scanner := bufio.NewScanner(&stdout)
 	if !scanner.Scan() {
 		return "", "", fmt.Errorf("upload command did not output public URL")
