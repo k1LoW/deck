@@ -15,7 +15,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/k1LoW/errors v1.1.1
-	github.com/k1LoW/exec v0.4.0
+	github.com/k1LoW/exec v0.5.0
 	github.com/k1LoW/tail v0.1.0
 	github.com/lestrrat-go/backoff/v2 v2.0.8
 	github.com/mattn/go-colorable v0.1.14
@@ -23,7 +23,7 @@ require (
 	github.com/samber/slog-multi v1.6.0
 	github.com/spf13/cobra v1.10.2
 	github.com/tenntenn/golden v0.5.5
-	github.com/yuin/goldmark v1.7.13
+	github.com/yuin/goldmark v1.7.14
 	golang.org/x/net v0.48.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
