@@ -75,8 +75,8 @@ github.com/josharian/txtarfs v0.0.0-20240408113805-5dc76b8fe6bf h1:ZWuoyLMwZvLJ6
 github.com/josharian/txtarfs v0.0.0-20240408113805-5dc76b8fe6bf/go.mod h1:UbC32ft9G/jG+sZI8wLbIBNIrYr7vp/yqMDa9SxVBNA=
 github.com/k1LoW/errors v1.1.1 h1:CrXtr1hSQP2mlJmlIPm3j1kJHnXgnGzZmCPvzYRkdBM=
 github.com/k1LoW/errors v1.1.1/go.mod h1:FnyqU5omnd/+J2ViEsDaIZXTZGuRMZ5uDpLEqrEsMp4=
-github.com/k1LoW/exec v0.4.0 h1:Wc01vrKXOAa1HfIRiDWcn3p2ebl2qVk+kOLqL7mYBL0=
-github.com/k1LoW/exec v0.4.0/go.mod h1:LSd4t5/1qGJHUdB2RUtoHuHfaZ3ks+BfQ+sGHzvwhnE=
+github.com/k1LoW/exec v0.5.0 h1:q5NE43dDGpUKce3ri+3wcBT5+Tu7TV572g7H/ERcgIE=
+github.com/k1LoW/exec v0.5.0/go.mod h1:Sbb874JpySFuYvWv5TirxQ5vAVrcEXbHF0RiXPXAqXA=
 github.com/k1LoW/tail v0.1.0 h1:ER0Zou/6zKF6C6cOmELGR9j8asmsbNxQBkySB3KUWBc=
 github.com/k1LoW/tail v0.1.0/go.mod h1:ibYE1pPmoLQssZi5R6ZHxU5AcH333hDRPoomkBOKw84=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80 h1:6Yzfa6GP0rIo/kULo2bwGEkFvCePZ3qHDDTC3/J9Swo=
@@ -118,8 +118,8 @@ github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD
 github.com/tenntenn/golden v0.5.5 h1:3LPemp4rZUIYeh0MTgIn8nzbY8EKVu0Kyb7AOBM016g=
 github.com/tenntenn/golden v0.5.5/go.mod h1:zPPkSkshkDGyYIFOIRkyydYQB4XErvg+Uufi0Q9H5qE=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-github.com/yuin/goldmark v1.7.13 h1:GPddIs617DnBLFFVJFgpo1aBfe/4xcvMc3SB5t/D0pA=
-github.com/yuin/goldmark v1.7.13/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
+github.com/yuin/goldmark v1.7.14 h1:9F3UqVQdZ5GG5y6TU0l1TbbDhZmqfevaOcinQt88Qi8=
+github.com/yuin/goldmark v1.7.14/go.mod h1:ip/1k0VRfGynBgxOz0yCqHrbZXhcjxyuS66Brc7iBKg=
 go.opentelemetry.io/auto/sdk v1.2.1 h1:jXsnJ4Lmnqd11kwkBV2LgLoFMZKizbCi5fNZ/ipaZ64=
 go.opentelemetry.io/auto/sdk v1.2.1/go.mod h1:KRTj+aOaElaLi+wW1kO/DZRXwkF4C5xPbEe3ZiIhN7Y=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 h1:ssfIgGNANqpVFCndZvcuyKbl0g+UAVcbBcqGkG28H0Y=
