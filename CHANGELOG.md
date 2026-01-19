@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.22.2](https://github.com/k1LoW/deck/compare/v1.22.1...v1.22.2) - 2026-01-19
+### Other Changes
+- chore(deps): bump Songmu/tagpr from 1.10.0 to 1.11.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/483
+- chore(deps): bump the dependencies group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/487
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/486
+
 ## [v1.22.1](https://github.com/k1LoW/deck/compare/v1.22.0...v1.22.1) - 2025-12-20
 ### Other Changes
 - feat: validate layouts before applying slides by @k1LoW in https://github.com/k1LoW/deck/pull/475
