@@ -17,6 +17,7 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/k1LoW/deck"
 	"github.com/k1LoW/deck/config"
+	"github.com/k1LoW/deck/template"
 	"github.com/k1LoW/errors"
 	"github.com/k1LoW/exec"
 	"github.com/yuin/goldmark"
@@ -564,7 +565,7 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 	defer os.RemoveAll(dir)
 
 	output := filepath.Join(dir, "out.png")
-	env := environToMap()
+	env := template.EnvironToMap()
 	env["CODEBLOCK_LANG"] = codeBlock.Language
 	env["CODEBLOCK_CONTENT"] = codeBlock.Content
 	env["CODEBLOCK_VALUE"] = codeBlock.Content // Deprecated, use CODEBLOCK_CONTENT.
@@ -577,7 +578,7 @@ func genCodeImage(ctx context.Context, codeBlockToImageCmd string, codeBlock *Co
 		"output":  output,
 		"env":     env,
 	}
-	replacedCmd, err := expandTemplate(codeBlockToImageCmd, store)
+	replacedCmd, err := template.Expand(codeBlockToImageCmd, store)
 	if err != nil {
 		return nil, err
 	}
@@ -1050,13 +1051,3 @@ func splitPages(b []byte) [][]byte {
 	return bpages
 }
 
-func environToMap() map[string]string {
-	envMap := make(map[string]string)
-	for _, e := range os.Environ() {
-		parts := strings.SplitN(e, "=", 2)
-		if len(parts) == 2 {
-			envMap[parts[0]] = parts[1]
-		}
-	}
-	return envMap
-}
