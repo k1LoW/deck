@@ -2,7 +2,7 @@ package version
 
 const (
 	Name    = "deck"
-	Version = "1.22.1"
+	Version = "1.23.0"
 )
 
 var Revision = "HEAD"
