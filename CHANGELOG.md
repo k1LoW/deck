@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.23.0](https://github.com/k1LoW/deck/compare/v1.22.1...v1.23.0) - 2026-02-02
+### New Features 🎉
+- fix: ignore trashed files by @fuzmish in https://github.com/k1LoW/deck/pull/490
+### Other Changes
+- chore(deps): bump Songmu/tagpr from 1.10.0 to 1.11.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/483
+- chore(deps): bump the dependencies group across 1 directory with 6 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/487
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/486
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/489
+- chore(deps): bump google.golang.org/api from 0.260.0 to 0.262.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/488
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/492
+- chore(deps): bump Songmu/tagpr from 1.12.1 to 1.15.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/491
+
 ## [v1.22.1](https://github.com/k1LoW/deck/compare/v1.22.0...v1.22.1) - 2025-12-20
 ### Other Changes
 - feat: validate layouts before applying slides by @k1LoW in https://github.com/k1LoW/deck/pull/475
