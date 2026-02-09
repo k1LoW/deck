@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.23.1](https://github.com/k1LoW/deck/compare/v1.23.0...v1.23.1) - 2026-02-09
+### Other Changes
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/493
+
 ## [v1.23.0](https://github.com/k1LoW/deck/compare/v1.22.1...v1.23.0) - 2026-02-02
 ### New Features 🎉
 - fix: ignore trashed files by @fuzmish in https://github.com/k1LoW/deck/pull/490
