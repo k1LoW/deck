@@ -83,7 +83,7 @@ func NewImage(pathOrURL string) (_ *Image, err error) {
 			return nil, fmt.Errorf("failed to fetch image from URL %s: %w", pathOrURL, err)
 		}
 		req.Header.Set("User-Agent", userAgent)
-		res, err := client.Do(req)
+		res, err := client.Do(req) //nolint:gosec // The URL is provided by the user via Markdown content, not from an untrusted external source.
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch image from URL %s: %w", pathOrURL, err)
 		}
