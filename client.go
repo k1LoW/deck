@@ -180,7 +180,9 @@ func (d *Deck) getTokenFromWeb(ctx context.Context, config *oauth2.Config) (_ *o
 	}
 	state := base64.RawURLEncoding.EncodeToString(stateBytes)
 	listenCtx, listening := context.WithCancel(ctx)
+	defer listening()
 	doneCtx, done := context.WithCancel(ctx)
+	defer done()
 	// run and stop local server
 	handler := http.NewServeMux()
 	handler.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -274,7 +276,7 @@ func (d *Deck) saveToken(path string, token *oauth2.Token) (err error) {
 		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	defer f.Close()
-	if err := json.NewEncoder(f).Encode(token); err != nil {
+	if err := json.NewEncoder(f).Encode(token); err != nil { //nolint:gosec
 		return fmt.Errorf("unable to cache oauth token: %w", err)
 	}
 	return nil
