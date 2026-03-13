@@ -518,8 +518,8 @@ func (d *Deck) applyTableCellStyles(tableObjectID string, table *Table) []*slide
 		return nil
 	}
 
-	for rowIdx := 0; rowIdx < rows; rowIdx++ {
-		for colIdx := 0; colIdx < cols; colIdx++ {
+	for rowIdx := range rows {
+		for colIdx := range cols {
 			cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx)
 			if cellStyle == nil {
 				continue
@@ -654,8 +654,8 @@ func (d *Deck) applyTableBorderStyles(tableObjectID string, table *Table) []*sli
 	}
 
 	// Apply inner borders per cell based on position
-	for rowIdx := 0; rowIdx < rows; rowIdx++ {
-		for colIdx := 0; colIdx < cols; colIdx++ {
+	for rowIdx := range rows {
+		for colIdx := range cols {
 			isHeaderRow := rowIdx == 0
 			isFirstCol := colIdx == 0
 			isLastRow := rowIdx == rows-1
