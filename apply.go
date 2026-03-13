@@ -612,7 +612,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 
 	bulletRanges := map[int]*bulletRange{}
 	count := int64(0)
-	text := ""
+	var textBuilder strings.Builder
 	bulletStartIndex := int64(0) // reset per body
 	bulletEndIndex := int64(0)   // reset per body
 	currentBullet := BulletNone
@@ -620,7 +620,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 		plen := 0
 		if paragraph.Bullet != BulletNone {
 			if paragraph.Nesting > 0 {
-				text += strings.Repeat("\t", paragraph.Nesting)
+				textBuilder.WriteString(strings.Repeat("\t", paragraph.Nesting))
 				plen += paragraph.Nesting
 			}
 		}
@@ -647,11 +647,11 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 				})
 			}
 			plen += flen
-			text += fValue
+			textBuilder.WriteString(fValue)
 		}
 
 		if len(paragraphs) > j+1 {
-			text += "\n"
+			textBuilder.WriteString("\n")
 			plen++
 		}
 
@@ -675,7 +675,7 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 	reqs = append(reqs, &slides.Request{
 		InsertText: &slides.InsertTextRequest{
 			ObjectId: objectID,
-			Text:     text,
+			Text:     textBuilder.String(),
 		},
 	})
 	var bulletRangeSlice []*bulletRange
@@ -840,7 +840,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 
 			var paragraphInfos []paragraphInfo
 			currentIndex := int64(0)
-			text := ""
+			var textBuilder strings.Builder
 			shapeObjectID := fmt.Sprintf("shape-%s", uuid.New().String())
 
 			for _, textElement := range element.Shape.Text.TextElements {
@@ -864,12 +864,12 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 						if paragraphInfos[len(paragraphInfos)-1].nestingLevel > 0 {
 							// Add tabs for nesting
 							tabs := strings.Repeat("\t", int(paragraphInfos[len(paragraphInfos)-1].nestingLevel))
-							text += tabs
+							textBuilder.WriteString(tabs)
 							currentIndex += int64(countString(tabs))
 						}
 					}
 
-					text += runText
+					textBuilder.WriteString(runText)
 
 					// Adjust style indices based on actual position in new text
 					if textElement.TextRun.Style != nil {
@@ -922,7 +922,7 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 			insertReqs = append(insertReqs, &slides.Request{
 				InsertText: &slides.InsertTextRequest{
 					ObjectId: shapeObjectID,
-					Text:     strings.TrimSuffix(text, "\n"),
+					Text:     strings.TrimSuffix(textBuilder.String(), "\n"),
 				},
 			})
 
