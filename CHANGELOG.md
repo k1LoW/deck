@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.23.1](https://github.com/k1LoW/deck/compare/v1.23.0...v1.23.1) - 2026-03-19
+### Other Changes
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/493
+- chore(deps): bump the dependencies group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/497
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/495
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/498
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/499
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/500
+- fix: resolve gosec lint errors in client.go by @k1LoW in https://github.com/k1LoW/deck/pull/502
+- fix: resolve modernize lint errors in apply.go and table.go by @k1LoW in https://github.com/k1LoW/deck/pull/503
+- chore(deps): bump reviewdog/action-golangci-lint from 2.8.0 to 2.10.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/504
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/505
+- chore(deps): bump google.golang.org/grpc from 1.79.2 to 1.79.3 by @dependabot[bot] in https://github.com/k1LoW/deck/pull/506
+
 ## [v1.23.0](https://github.com/k1LoW/deck/compare/v1.22.1...v1.23.0) - 2026-02-02
 ### New Features 🎉
 - fix: ignore trashed files by @fuzmish in https://github.com/k1LoW/deck/pull/490
