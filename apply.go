@@ -640,8 +640,8 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 						Fields:   r.Fields,
 						TextRange: &slides.Range{
 							Type:       "FIXED_RANGE",
-							StartIndex: ptrInt64(startIndex),
-							EndIndex:   ptrInt64(startIndex + int64(flen)),
+							StartIndex: new(startIndex),
+							EndIndex:   new(startIndex + int64(flen)),
 						},
 					},
 				})
@@ -699,8 +699,8 @@ func (d *Deck) applyParagraphsRequests(objectID string, paragraphs []*Paragraph)
 				BulletPreset: convertBullet(r.bullet),
 				TextRange: &slides.Range{
 					Type:       "FIXED_RANGE",
-					StartIndex: ptrInt64(startIndex),
-					EndIndex:   ptrInt64(endIndex),
+					StartIndex: new(startIndex),
+					EndIndex:   new(endIndex),
 				},
 			},
 		})
@@ -756,8 +756,9 @@ func countString(s string) int {
 	return length
 }
 
+//go:fix inline
 func ptrInt64(i int64) *int64 {
-	return &i
+	return new(i)
 }
 
 func convertBullet(b Bullet) string {
@@ -881,8 +882,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 								Style:    textElement.TextRun.Style,
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(startIdx),
-									EndIndex:   ptrInt64(endIdx),
+									StartIndex: new(startIdx),
+									EndIndex:   new(endIdx),
 								},
 								Fields: "*",
 							},
@@ -936,8 +937,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 								BulletPreset: convertBullet(br.bullet),
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(br.start),
-									EndIndex:   ptrInt64(br.end),
+									StartIndex: new(br.start),
+									EndIndex:   new(br.end),
 								},
 							},
 						})
@@ -962,8 +963,8 @@ func (d *Deck) updateLayout(ctx context.Context, index int, slide *Slide) (err e
 						BulletPreset: convertBullet(br.bullet),
 						TextRange: &slides.Range{
 							Type:       "FIXED_RANGE",
-							StartIndex: ptrInt64(br.start),
-							EndIndex:   ptrInt64(br.end),
+							StartIndex: new(br.start),
+							EndIndex:   new(br.end),
 						},
 					},
 				})

@@ -331,7 +331,7 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 		if entering {
 			switch v := n.(type) {
 			case *ast.Heading:
-				var text string
+				var text strings.Builder
 				seedFragment := deck.Fragment{}
 				if v.Level > titleLevel+1 {
 					// Heading elements that are not at the level of titles or subtitles are embedded in the body,
@@ -346,14 +346,14 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 				deckFrags := toDeckFragments(frags, breaks)
 				for _, frag := range deckFrags {
 					if frag.Value != "" {
-						text += frag.Value
+						text.WriteString(frag.Value)
 					}
 				}
-				content.Headings[v.Level] = append(content.Headings[v.Level], text)
+				content.Headings[v.Level] = append(content.Headings[v.Level], text.String())
 
 				switch v.Level {
 				case titleLevel:
-					content.Titles = append(content.Titles, text)
+					content.Titles = append(content.Titles, text.String())
 					content.TitleBodies = append(content.TitleBodies, &deck.Body{
 						Paragraphs: []*deck.Paragraph{{
 							Fragments: deckFrags,
@@ -364,7 +364,7 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 						content.Bodies = append(content.Bodies, currentBody)
 					}
 				case titleLevel + 1:
-					content.Subtitles = append(content.Subtitles, text)
+					content.Subtitles = append(content.Subtitles, text.String())
 					content.SubtitleBodies = append(content.SubtitleBodies, &deck.Body{
 						Paragraphs: []*deck.Paragraph{{
 							Fragments: deckFrags,

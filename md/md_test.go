@@ -335,10 +335,6 @@ func TestIsPageDelimiter(t *testing.T) {
 	}
 }
 
-// boolPtr is a helper function that returns a pointer to a bool value.
-func boolPtr(b bool) *bool {
-	return &b
-}
 
 func FuzzParse(f *testing.F) {
 	f.Add([]byte(`# Title

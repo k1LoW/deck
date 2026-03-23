@@ -236,23 +236,23 @@ func TestApplyConfig(t *testing.T) {
 				Breaks: nil, // not set
 			},
 			config: &config.Config{
-				Breaks: boolPtr(true),
+				Breaks: new(true),
 			},
 			want: &Frontmatter{
-				Breaks:   boolPtr(true),
+				Breaks:   new(true),
 				Defaults: nil,
 			},
 		},
 		{
 			name: "Keep existing breaks value when already set",
 			initialFrontmatter: &Frontmatter{
-				Breaks: boolPtr(false), // already set
+				Breaks: new(false), // already set
 			},
 			config: &config.Config{
-				Breaks: boolPtr(true),
+				Breaks: new(true),
 			},
 			want: &Frontmatter{
-				Breaks:   boolPtr(false), // keep existing value
+				Breaks:   new(false), // keep existing value
 				Defaults: nil,
 			},
 		},
@@ -260,10 +260,10 @@ func TestApplyConfig(t *testing.T) {
 			name:               "Apply breaks when frontmatter is nil",
 			initialFrontmatter: nil,
 			config: &config.Config{
-				Breaks: boolPtr(true),
+				Breaks: new(true),
 			},
 			want: &Frontmatter{
-				Breaks:   boolPtr(true),
+				Breaks:   new(true),
 				Defaults: nil,
 			},
 		},
@@ -277,7 +277,7 @@ func TestApplyConfig(t *testing.T) {
 					{
 						If:     "page == 1",
 						Layout: "title",
-						Freeze: boolPtr(true),
+						Freeze: new(true),
 					},
 				},
 			},
@@ -287,7 +287,7 @@ func TestApplyConfig(t *testing.T) {
 					{
 						If:     "page == 1",
 						Layout: "title",
-						Freeze: boolPtr(true),
+						Freeze: new(true),
 					},
 				},
 			},
@@ -299,7 +299,7 @@ func TestApplyConfig(t *testing.T) {
 					{
 						If:     "page == 2",
 						Layout: "content",
-						Skip:   boolPtr(true),
+						Skip:   new(true),
 					},
 				},
 			},
@@ -308,12 +308,12 @@ func TestApplyConfig(t *testing.T) {
 					{
 						If:     "page == 1",
 						Layout: "title",
-						Freeze: boolPtr(true),
+						Freeze: new(true),
 					},
 					{
 						If:     "page == 3",
 						Layout: "end",
-						Ignore: boolPtr(true),
+						Ignore: new(true),
 					},
 				},
 			},
@@ -323,17 +323,17 @@ func TestApplyConfig(t *testing.T) {
 					{
 						If:     "page == 2",
 						Layout: "content",
-						Skip:   boolPtr(true),
+						Skip:   new(true),
 					},
 					{
 						If:     "page == 1",
 						Layout: "title",
-						Freeze: boolPtr(true),
+						Freeze: new(true),
 					},
 					{
 						If:     "page == 3",
 						Layout: "end",
-						Ignore: boolPtr(true),
+						Ignore: new(true),
 					},
 				},
 			},

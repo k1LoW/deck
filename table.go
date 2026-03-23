@@ -396,12 +396,12 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 	for rowIdx, row := range table.Rows {
 		for colIdx, cell := range row.Cells {
 			// Create text from fragments
-			text := ""
+			var text strings.Builder
 			for _, fragment := range cell.Fragments {
-				text += fragment.Value
+				text.WriteString(fragment.Value)
 			}
 
-			if text == "" {
+			if text.String() == "" {
 				continue
 			}
 
@@ -415,13 +415,13 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 				InsertText: &slides.InsertTextRequest{
 					ObjectId:       tableObjectID,
 					CellLocation:   cellLocation,
-					Text:           text,
+					Text:           text.String(),
 					InsertionIndex: 0,
 				},
 			})
 
 			// Apply base text style from tableStyle (before fragment styles)
-			textLength := int64(countString(text))
+			textLength := int64(countString(text.String()))
 			if cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx); cellStyle != nil && cellStyle.TextStyle != nil && textLength > 0 {
 				req := buildTableCellTextStyleRequest(cellStyle.TextStyle)
 				if req != nil {
@@ -433,7 +433,7 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 							TextRange: &slides.Range{
 								Type:       "FIXED_RANGE",
 								StartIndex: ptrInt64(0),
-								EndIndex:   ptrInt64(textLength),
+								EndIndex:   new(textLength),
 							},
 							Fields: req.Fields,
 						},
@@ -459,8 +459,8 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 								Style:        r.Style,
 								TextRange: &slides.Range{
 									Type:       "FIXED_RANGE",
-									StartIndex: ptrInt64(startIndex),
-									EndIndex:   ptrInt64(endIndex),
+									StartIndex: new(startIndex),
+									EndIndex:   new(endIndex),
 								},
 								Fields: r.Fields,
 							},
