@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.23.2](https://github.com/k1LoW/deck/compare/v1.23.1...v1.23.2) - 2026-05-04
+### Other Changes
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/507
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/509
+- chore(deps): bump google.golang.org/api from 0.273.0 to 0.274.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/510
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/511
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/512
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/513
+- chore(deps): bump the dependencies group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/518
+- chore(deps): bump the dependencies group across 1 directory with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/519
+
 ## [v1.23.1](https://github.com/k1LoW/deck/compare/v1.23.0...v1.23.1) - 2026-03-19
 ### Other Changes
 - chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/493
