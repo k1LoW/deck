@@ -654,8 +654,7 @@ func generateDeleteActions(before *Slides, mapping *map[int]int) []*action {
 	var actions []*action
 
 	// Delete from back to maintain index consistency
-	for i := len(*before) - 1; i >= 0; i-- {
-		slide := (*before)[i]
+	for i, slide := range slices.Backward(*before) {
 		if slide.delete {
 			// Generate delete action (add in deletion order)
 			actions = append(actions, &action{
