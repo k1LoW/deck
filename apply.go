@@ -756,11 +756,6 @@ func countString(s string) int {
 	return length
 }
 
-//go:fix inline
-func ptrInt64(i int64) *int64 {
-	return new(i)
-}
-
 func convertBullet(b Bullet) string {
 	switch b {
 	case BulletDash:

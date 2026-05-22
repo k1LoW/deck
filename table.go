@@ -432,7 +432,7 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 							Style:        req.Style,
 							TextRange: &slides.Range{
 								Type:       "FIXED_RANGE",
-								StartIndex: ptrInt64(0),
+								StartIndex: new(int64),
 								EndIndex:   new(textLength),
 							},
 							Fields: req.Fields,
