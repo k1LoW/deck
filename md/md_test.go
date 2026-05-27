@@ -46,6 +46,7 @@ func TestParse(t *testing.T) {
 		{"../testdata/skip.md"},
 		{"../testdata/hr.md"},
 		{"../testdata/tables.md"},
+		{"../testdata/key.md"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
@@ -69,6 +70,44 @@ func TestParse(t *testing.T) {
 			}
 			if diff := golden.Diff(t, "", tt.in, got); diff != "" {
 				t.Error(diff)
+			}
+		})
+	}
+}
+
+func TestValidateKeys(t *testing.T) {
+	tests := []struct {
+		name    string
+		src     string
+		wantErr bool
+	}{
+		{
+			name: "no keys",
+			src:  "# A\n\n---\n\n# B\n",
+		},
+		{
+			name: "unique keys",
+			src:  "<!-- {\"key\": \"a\"} -->\n\n# A\n\n---\n\n<!-- {\"key\": \"b\"} -->\n\n# B\n",
+		},
+		{
+			name: "mixed keyed and unkeyed",
+			src:  "<!-- {\"key\": \"a\"} -->\n\n# A\n\n---\n\n# B\n",
+		},
+		{
+			name: "empty keys are not duplicates",
+			src:  "<!-- {\"key\": \"\"} -->\n\n# A\n\n---\n\n<!-- {\"key\": \"\"} -->\n\n# B\n",
+		},
+		{
+			name:    "duplicate keys",
+			src:     "<!-- {\"key\": \"a\"} -->\n\n# A\n\n---\n\n<!-- {\"key\": \"a\"} -->\n\n# B\n",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Parse("../testdata", []byte(tt.src), nil)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

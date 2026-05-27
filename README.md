@@ -434,6 +434,7 @@ You can configure individual pages using JSON comments. Available settings:
 - **`"freeze"`**: Prevents `deck` from modifying the page (useful for slides with completed designs)
 - **`"ignore"`**: Excludes the page from slide generation (for drafts, notes, or unused content)
 - **`"skip"`**: Creates the slide but skips it during presentation playback (automatically advances to next slide)
+- **`"key"`**: Opaque, stable identifier for the page. Has no effect on rendering; intended as a stable reference that survives reorder/insert/delete (useful when an AI agent or script needs to refer to a specific slide). Must be unique within the deck — duplicate keys are rejected at parse time.
 
 ```markdown
 <!-- {"layout": "title-and-body"} -->
@@ -453,6 +454,11 @@ You can configure individual pages using JSON comments. Available settings:
 
 <!-- {"skip": true} -->
 # This slide will be skipped during presentation
+
+---
+
+<!-- {"key": "a7b5"} -->
+# This slide can be referenced by the key "a7b5"
 ```
 
 > [!TIP]
@@ -662,7 +668,7 @@ By collaborating with AI agents to create Markdown-formatted slides, you may be 
     ## Page Configuration
     Use HTML comments for page settings and speaker notes:
     - Page settings: `<!-- {"layout": "title-and-body"} -->`
-    - Available settings: `"freeze": true`, `"ignore": true`, `"skip": true`
+    - Available settings: `"freeze": true`, `"ignore": true`, `"skip": true`, `"key": "<opaque-id>"`
     - Speaker notes: `<!-- This is a speaker note -->` (use separate comments for notes)
 
     ## Important Notes
