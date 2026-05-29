@@ -189,22 +189,6 @@ func Parse(baseDir string, b []byte, cfg *config.Config) (_ *MD, err error) {
 	return md, nil
 }
 
-// validateKeys ensures that page keys are unique within the deck.
-// Empty keys are treated as unset and skipped.
-func (md *MD) validateKeys() error {
-	seen := make(map[string]int, len(md.Contents))
-	for i, content := range md.Contents {
-		if content.Key == "" {
-			continue
-		}
-		if prev, ok := seen[content.Key]; ok {
-			return fmt.Errorf("duplicate page key %q at pages %d and %d", content.Key, prev+1, i+1)
-		}
-		seen[content.Key] = i
-	}
-	return nil
-}
-
 // ParseContent parses a single markdown content into a Content structure.
 // It processes headings, lists, paragraphs, and HTML blocks to create a structured representation.
 func ParseContent(baseDir string, b []byte, breaks bool) (_ *Content, err error) {
@@ -271,6 +255,22 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 		codeBlockToImageCmd = md.Frontmatter.CodeBlockToImageCommand
 	}
 	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
+}
+
+// validateKeys ensures that page keys are unique within the deck.
+// Empty keys are treated as unset and skipped.
+func (md *MD) validateKeys() error {
+	seen := make(map[string]int, len(md.Contents))
+	for i, content := range md.Contents {
+		if content.Key == "" {
+			continue
+		}
+		if prev, ok := seen[content.Key]; ok {
+			return fmt.Errorf("duplicate page key %q at pages %d and %d", content.Key, prev+1, i+1)
+		}
+		seen[content.Key] = i
+	}
+	return nil
 }
 
 func newParser() goldmark.Markdown {
