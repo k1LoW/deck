@@ -1,5 +1,24 @@
 # Changelog
 
+## [v1.24.0](https://github.com/k1LoW/deck/compare/v1.23.1...v1.24.0) - 2026-06-01
+### New Features 🎉
+- feat: reserve "key" field in page configuration for stable slide referencing by @k1LoW in https://github.com/k1LoW/deck/pull/527
+### Other Changes
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/507
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/509
+- chore(deps): bump google.golang.org/api from 0.273.0 to 0.274.0 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/510
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/511
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/512
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/513
+- chore(deps): bump the dependencies group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/518
+- chore(deps): bump the dependencies group across 1 directory with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/519
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/520
+- chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/521
+- fix: resolve govet inline and modernize lint errors by @k1LoW in https://github.com/k1LoW/deck/pull/524
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/522
+- chore(deps): bump the dependencies group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/528
+- chore(deps): bump goreleaser/goreleaser-action from 7.2.1 to 7.2.2 in the dependencies group by @dependabot[bot] in https://github.com/k1LoW/deck/pull/525
+
 ## [v1.23.1](https://github.com/k1LoW/deck/compare/v1.23.0...v1.23.1) - 2026-03-19
 ### Other Changes
 - chore(deps): bump the dependencies group with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/493
