@@ -84,6 +84,7 @@ type Config struct {
 	Freeze *bool  `json:"freeze,omitempty"` // freeze the page
 	Ignore *bool  `json:"ignore,omitempty"` // ignore the page (skip slide generation)
 	Skip   *bool  `json:"skip,omitempty"`   // skip the page (do not show in the presentation)
+	Key    string `json:"key,omitempty"`    // opaque, stable identifier for the page; unique within the deck
 }
 
 type CodeBlock struct {
@@ -97,6 +98,7 @@ type Content struct {
 	Freeze         *bool              `json:"freeze,omitempty"`
 	Ignore         *bool              `json:"ignore,omitempty"`
 	Skip           *bool              `json:"skip,omitempty"`
+	Key            string             `json:"key,omitempty"`
 	Titles         []string           `json:"titles,omitempty"`
 	TitleBodies    []*deck.Body       `json:"-"`
 	Subtitles      []string           `json:"subtitles,omitempty"`
@@ -181,6 +183,9 @@ func Parse(baseDir string, b []byte, cfg *config.Config) (_ *MD, err error) {
 	if err := md.reflectDefaults(); err != nil {
 		return nil, fmt.Errorf("failed to reflect defaults while parsing: %w", err)
 	}
+	if err := md.validateKeys(); err != nil {
+		return nil, err
+	}
 	return md, nil
 }
 
@@ -250,6 +255,22 @@ func (md *MD) ToSlides(ctx context.Context, codeBlockToImageCmd string) (_ deck.
 		codeBlockToImageCmd = md.Frontmatter.CodeBlockToImageCommand
 	}
 	return md.Contents.toSlides(ctx, codeBlockToImageCmd)
+}
+
+// validateKeys ensures that page keys are unique within the deck.
+// Empty keys are treated as unset and skipped.
+func (md *MD) validateKeys() error {
+	seen := make(map[string]int, len(md.Contents))
+	for i, content := range md.Contents {
+		if content.Key == "" {
+			continue
+		}
+		if prev, ok := seen[content.Key]; ok {
+			return fmt.Errorf("duplicate page key %q at pages %d and %d", content.Key, prev+1, i+1)
+		}
+		seen[content.Key] = i
+	}
+	return nil
 }
 
 func newParser() goldmark.Markdown {
@@ -452,6 +473,7 @@ func walkContents(doc ast.Node, baseDir string, b []byte, content *Content, titl
 						content.Freeze = config.Freeze
 						content.Ignore = config.Ignore
 						content.Skip = config.Skip
+						content.Key = config.Key
 						return ast.WalkContinue, nil
 					}
 					content.Comments = append(content.Comments, block)
