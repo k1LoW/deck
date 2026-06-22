@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.24.1](https://github.com/k1LoW/deck/compare/v1.24.0...v1.24.1) - 2026-06-22
+
+### Other Changes
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/530
+- chore(deps): bump the dependencies group with 2 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/533
+
 ## [v1.24.0](https://github.com/k1LoW/deck/compare/v1.23.1...v1.24.0) - 2026-06-01
 ### New Features 🎉
 - feat: reserve "key" field in page configuration for stable slide referencing by @k1LoW in https://github.com/k1LoW/deck/pull/527
