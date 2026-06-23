@@ -1,10 +1,10 @@
-package md
+package template
 
 import (
 	"testing"
 )
 
-func TestExpandTemplate(t *testing.T) {
+func TestExpand(t *testing.T) {
 	tests := []struct {
 		name     string
 		template string
@@ -187,22 +187,22 @@ func TestExpandTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := expandTemplate(tt.template, tt.store)
+			result, err := Expand(tt.template, tt.store)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("expandTemplate() expected error but got none")
+					t.Errorf("Expand() expected error but got none")
 				}
 				return
 			}
 
 			if err != nil {
-				t.Errorf("expandTemplate() unexpected error: %v", err)
+				t.Errorf("Expand() unexpected error: %v", err)
 				return
 			}
 
 			if result != tt.expected {
-				t.Errorf("expandTemplate() = %q, want %q", result, tt.expected)
+				t.Errorf("Expand() = %q, want %q", result, tt.expected)
 			}
 		})
 	}
