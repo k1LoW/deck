@@ -1659,8 +1659,8 @@ var tests = []struct {
 			},
 			{
 				Layout:      "title",
-				Titles:      []string{"Slide C"},
-				TitleBodies: toBodies([]string{"Slide C"}),
+				Titles:      []string{"Slide B"},
+				TitleBodies: toBodies([]string{"Slide B"}),
 			},
 		},
 	},
@@ -1696,6 +1696,243 @@ var tests = []struct {
 				Layout:      "title",
 				Titles:      []string{"Slide B"},
 				TitleBodies: toBodies([]string{"Slide B"}),
+			},
+		},
+	},
+	{
+		name: "freeze slide with insert before frozen slide",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide NEW"},
+				TitleBodies: toBodies([]string{"Slide NEW"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+				Freeze:      true,
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide NEW"},
+				TitleBodies: toBodies([]string{"Slide NEW"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+			},
+		},
+	},
+	{
+		name: "freeze slide with delete before frozen slide",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 3"},
+				TitleBodies: toBodies([]string{"Slide 3"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 3"},
+				TitleBodies: toBodies([]string{"Slide 3"}),
+				Freeze:      true,
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 3"},
+				TitleBodies: toBodies([]string{"Slide 3"}),
+			},
+		},
+	},
+	{
+		// The actual content of the frozen slide has diverged from its
+		// markdown source (the typical reason for freezing). The diverged
+		// content must survive an insertion before the frozen slide.
+		name: "freeze diverged slide with insert before frozen slide",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2 edited manually"},
+				TitleBodies: toBodies([]string{"Slide 2 edited manually"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide NEW"},
+				TitleBodies: toBodies([]string{"Slide NEW"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2"},
+				TitleBodies: toBodies([]string{"Slide 2"}),
+				Freeze:      true,
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide NEW"},
+				TitleBodies: toBodies([]string{"Slide NEW"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 2 edited manually"},
+				TitleBodies: toBodies([]string{"Slide 2 edited manually"}),
+			},
+		},
+	},
+	{
+		name: "freeze all slides with insert between",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide P"},
+				TitleBodies: toBodies([]string{"Slide P"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide Q"},
+				TitleBodies: toBodies([]string{"Slide Q"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide P"},
+				TitleBodies: toBodies([]string{"Slide P"}),
+				Freeze:      true,
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide NEW"},
+				TitleBodies: toBodies([]string{"Slide NEW"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide Q"},
+				TitleBodies: toBodies([]string{"Slide Q"}),
+				Freeze:      true,
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide P"},
+				TitleBodies: toBodies([]string{"Slide P"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide NEW"},
+				TitleBodies: toBodies([]string{"Slide NEW"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide Q"},
+				TitleBodies: toBodies([]string{"Slide Q"}),
+			},
+		},
+	},
+	{
+		// A frozen slide that has no counterpart in the presentation is
+		// created from its markdown content. Freezing protects it from the
+		// next apply onward.
+		name: "freeze new slide without counterpart",
+		before: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+		},
+		after: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide F"},
+				TitleBodies: toBodies([]string{"Slide F"}),
+				Freeze:      true,
+			},
+		},
+		want: Slides{
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide 1"},
+				TitleBodies: toBodies([]string{"Slide 1"}),
+			},
+			{
+				Layout:      "title",
+				Titles:      []string{"Slide F"},
+				TitleBodies: toBodies([]string{"Slide F"}),
 			},
 		},
 	},

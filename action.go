@@ -53,17 +53,32 @@ func generateActions(before, after Slides) (_ []*action, err error) {
 	beforeCopy := copySlides(before)
 	afterCopy := copySlides(after)
 
+	// Resolve which before slide each frozen after slide corresponds to, and
+	// substitute the counterpart's current content into after. The
+	// similarity-based pipeline below then sees the pair as identical and
+	// generates no update/delete actions for it, regardless of slide count
+	// changes (https://github.com/k1LoW/deck/issues/479).
+	frozenPairs := resolveFrozenSlides(beforeCopy, afterCopy)
+	for i, afterSlide := range afterCopy {
+		if !afterSlide.Freeze {
+			continue
+		}
+		if beforeIdx, ok := frozenPairs[i]; ok {
+			preserved := copySlide(beforeCopy[beforeIdx])
+			preserved.Freeze = true
+			afterCopy[i] = preserved
+		} else {
+			// A frozen slide without a counterpart is created from its
+			// markdown content. Freeze must be cleared because it would
+			// suppress content application on append.
+			afterSlide.Freeze = false
+		}
+	}
+
 	// Adjust slide count
 	adjustedBefore, adjustedAfter, err := adjustSlideCount(beforeCopy, afterCopy)
 	if err != nil {
 		return nil, fmt.Errorf("failed to adjust slide count: %w", err)
-	}
-
-	// Prevent actions from being generated from indexes that should be frozen.
-	for i, afterSlide := range adjustedAfter {
-		if afterSlide.Freeze {
-			adjustedBefore[i] = copySlide(afterSlide)
-		}
 	}
 
 	// Map slides algorithm
