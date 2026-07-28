@@ -53,6 +53,8 @@ var (
 	logger              *slog.Logger
 	codeBlockToImageCmd string
 	applyFolderID       string
+	imageUploadCmd      string
+	imageDeleteCmd      string
 	tb                  = tail.New(30)
 )
 
@@ -154,6 +156,12 @@ var applyCmd = &cobra.Command{
 		if targetFolderID != "" {
 			opts = append(opts, deck.WithFolderID(targetFolderID))
 		}
+		if imageUploadCmd != "" {
+			opts = append(opts, deck.WithImageUploadCmd(imageUploadCmd))
+		}
+		if imageDeleteCmd != "" {
+			opts = append(opts, deck.WithImageDeleteCmd(imageDeleteCmd))
+		}
 		d, err := deck.New(ctx, opts...)
 		if err != nil {
 			if errors.Is(err, deck.HTTPClientError) {
@@ -202,6 +210,8 @@ func init() {
 	applyCmd.Flags().StringVarP(&page, "page", "p", "", "page to apply")
 	applyCmd.Flags().StringVarP(&codeBlockToImageCmd, "code-block-to-image-command", "c", "", "command to convert code blocks to images")
 	applyCmd.Flags().StringVarP(&applyFolderID, "folder-id", "", "", "folder id to upload temporary images to")
+	applyCmd.Flags().StringVarP(&imageUploadCmd, "image-upload-command", "u", "", "command to upload images (e.g., 'my-uploader upload')")
+	applyCmd.Flags().StringVarP(&imageDeleteCmd, "image-delete-command", "d", "", "command to delete uploaded images (e.g., 'my-uploader delete')")
 	applyCmd.Flags().BoolVarP(&watch, "watch", "w", false, "watch for changes")
 	applyCmd.Flags().CountVarP(&verbosity, "verbose", "v", "verbose output (can be used multiple times for more verbosity)")
 }

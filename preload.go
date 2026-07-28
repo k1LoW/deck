@@ -1,18 +1,14 @@
 package deck
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"log/slog"
 	"slices"
 	"sync"
-	"time"
 
-	"github.com/k1LoW/errors"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
-	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/slides/v1"
 )
 
@@ -155,7 +151,7 @@ func (d *Deck) preloadCurrentImages(ctx context.Context, actions []*action) (map
 
 // uploadedImageInfo holds information about uploaded images for cleanup.
 type uploadedImageInfo struct {
-	uploadedID string
+	uploadedID string // Google Drive file ID or external storage uploaded ID
 	image      *Image
 }
 
@@ -200,6 +196,9 @@ func (d *Deck) startUploadingImages(
 		image.StartUpload()
 	}
 
+	// Get storage instance
+	storage := d.getStorage()
+
 	// Start uploading images asynchronously
 	go func() {
 		// Process images in parallel
@@ -215,51 +214,17 @@ func (d *Deck) startUploadingImages(
 				}
 				defer sem.Release(1)
 
-				// Upload image to Google Drive
-				df := &drive.File{
-					Name:     fmt.Sprintf("________tmp-for-deck-%s", time.Now().Format(time.RFC3339)),
-					MimeType: string(image.mimeType),
-				}
-				if d.folderID != "" {
-					df.Parents = []string{d.folderID}
-				}
-				uploaded, err := d.driveSrv.Files.Create(df).Media(bytes.NewBuffer(image.Bytes())).SupportsAllDrives(true).Do()
+				mimeType := string(image.mimeType)
+				publicURL, uploadedID, err := storage.Upload(ctx, image.Bytes(), mimeType)
 				if err != nil {
 					image.SetUploadResult("", fmt.Errorf("failed to upload image: %w", err))
 					return err
 				}
-				defer func() {
-					if err != nil {
-						// Clean up uploaded file on error
-						if deleteErr := d.deleteOrTrashFile(ctx, uploaded.Id); deleteErr != nil {
-							err = errors.Join(err, deleteErr)
-						}
-					}
-				}()
-
-				// To specify a URL for CreateImageRequest, we must make the webContentURL readable to anyone
-				// and configure the necessary permissions for this purpose.
-				if err := d.AllowReadingByAnyone(ctx, uploaded.Id); err != nil {
-					image.SetUploadResult("", fmt.Errorf("failed to set permission for image: %w", err))
-					return err
-				}
-
-				// Get webContentLink
-				f, err := d.driveSrv.Files.Get(uploaded.Id).Fields("webContentLink").SupportsAllDrives(true).Do()
-				if err != nil {
-					image.SetUploadResult("", fmt.Errorf("failed to get webContentLink for image: %w", err))
-					return err
-				}
-
-				if f.WebContentLink == "" {
-					image.SetUploadResult("", fmt.Errorf("webContentLink is empty for image: %s", uploaded.Id))
-					return err
-				}
 
 				// Set successful upload result
-				image.SetUploadResult(f.WebContentLink, nil)
+				image.SetUploadResult(publicURL, nil)
 
-				uploadedCh <- uploadedImageInfo{uploadedID: uploaded.Id, image: image}
+				uploadedCh <- uploadedImageInfo{uploadedID: uploadedID, image: image}
 				return nil
 			})
 		}
@@ -279,6 +244,9 @@ func (d *Deck) startUploadingImages(
 func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uploadedImageInfo) error {
 	sem := semaphore.NewWeighted(maxPreloadWorkersNum)
 	var wg sync.WaitGroup
+
+	// Get storage instance
+	storage := d.getStorage()
 
 	for {
 		select {
@@ -300,11 +268,11 @@ func (d *Deck) cleanupUploadedImages(ctx context.Context, uploadedCh <-chan uplo
 					wg.Done()
 				}()
 
-				// Delete uploaded image from Google Drive
+				// Delete uploaded image
 				// Note: We only log errors here instead of returning them to ensure
 				// all images are attempted to be deleted. A single deletion failure
 				// should not prevent cleanup of other successfully uploaded images.
-				if err := d.deleteOrTrashFile(ctx, info.uploadedID); err != nil {
+				if err := storage.Delete(ctx, info.uploadedID); err != nil {
 					d.logger.Error("failed to delete uploaded image",
 						slog.String("id", info.uploadedID),
 						slog.Any("error", err))
