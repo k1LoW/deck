@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.24.2](https://github.com/k1LoW/deck/compare/v1.24.1...v1.24.2) - 2026-09-08
+
+### Other Changes
+- chore(deps): bump google.golang.org/grpc from 1.81.1 to 1.82.1 by @dependabot[bot] in https://github.com/k1LoW/deck/pull/541
+- chore(deps): bump the dependencies group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/543
+- ci: report the coverage of a pull request as well by @k1LoW in https://github.com/k1LoW/deck/pull/550
+
 ## [v1.24.1](https://github.com/k1LoW/deck/compare/v1.24.0...v1.24.1) - 2026-07-07
 
 ### Fix bug 🐛
