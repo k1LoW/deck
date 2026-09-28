@@ -20,7 +20,7 @@ jobs:
         with:
           go-version-file: go.mod
       - id: list
-        uses: shogo82148/actions-go-fuzz/list@7887fe2495518ecf2504c6ebdede1764dec11018 # v1.2.3
+        uses: shogo82148/actions-go-fuzz/list@2caf0a4e74459a82e94234a021500539451f0e00 # v1.2.4
     outputs:
       fuzz-tests: ${{steps.list.outputs.fuzz-tests}}
 
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-      - uses: shogo82148/actions-go-fuzz/run@7887fe2495518ecf2504c6ebdede1764dec11018 # v1.2.3
+      - uses: shogo82148/actions-go-fuzz/run@2caf0a4e74459a82e94234a021500539451f0e00 # v1.2.4
         with:
           packages: ${{ matrix.package }}
           fuzz-regexp: ${{ matrix.func }}
