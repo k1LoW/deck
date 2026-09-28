@@ -32,11 +32,13 @@ integration:
 	  -timeout 30m
 
 depsdev:
-	go install github.com/Songmu/gocredits/cmd/gocredits@latest
 
-prerelease_for_tagpr: depsdev
-	go mod download
-	gocredits -w .
+credits:
+	go install github.com/Songmu/gocredits/cmd/gocredits@v1.0.0
+	gocredits . > CREDITS
+
+prerelease_for_tagpr:
+	$(MAKE) credits
 	git add CHANGELOG.md CREDITS go.mod go.sum
 
-.PHONY: default ci test fulltest build install lint fuzz integration depsdev prerelease_for_tagpr
+.PHONY: default ci test fulltest build install lint fuzz integration depsdev prerelease_for_tagpr credits
