@@ -35,6 +35,8 @@ type Deck struct {
 	tableStyle         *TableStyle
 	logger             *slog.Logger
 	fresh              bool
+	imageUploadCmd     string
+	imageDeleteCmd     string
 }
 
 type Option func(*Deck) error
@@ -66,6 +68,25 @@ func WithProfile(profile string) Option {
 func WithFolderID(folderID string) Option {
 	return func(d *Deck) error {
 		d.folderID = folderID
+		return nil
+	}
+}
+
+// WithImageUploadCmd sets the command to upload images to external storage.
+// The command receives image data via stdin and the environment variable DECK_UPLOAD_MIME.
+// It should output the public URL on the first line and uploaded ID on the second line of stdout.
+func WithImageUploadCmd(cmd string) Option {
+	return func(d *Deck) error {
+		d.imageUploadCmd = cmd
+		return nil
+	}
+}
+
+// WithImageDeleteCmd sets the command to delete uploaded images from external storage.
+// The command receives the uploaded ID via environment variable DECK_DELETE_ID.
+func WithImageDeleteCmd(cmd string) Option {
+	return func(d *Deck) error {
+		d.imageDeleteCmd = cmd
 		return nil
 	}
 }
@@ -571,4 +592,12 @@ func (d *Deck) deleteOrTrashFile(ctx context.Context, id string) error {
 		return nil
 	}
 	return fmt.Errorf("file cannot be deleted or trashed (file ID: %s)", id)
+}
+
+// getStorage returns the appropriate Storage based on configuration.
+func (d *Deck) getStorage() Storage {
+	if d.imageUploadCmd != "" {
+		return newExternalStorage(d.imageUploadCmd, d.imageDeleteCmd)
+	}
+	return newGoogleDriveStorage(d.driveSrv, d.folderID, d.AllowReadingByAnyone, d.deleteOrTrashFile)
 }
