@@ -43,13 +43,16 @@ func Screenshot(t *testing.T, url string) []byte {
 	ctx, cancel2 := context.WithTimeout(ctx, 30*time.Second)
 	t.Cleanup(cancel2)
 
-	var buf []byte
-	if err := chromedp.Run(ctx,
+	if err := chromedp.Do(ctx,
 		chromedp.EmulateViewport(viewportWidth, viewportHeight),
 		chromedp.Navigate(url),
-		chromedp.WaitReady("body", chromedp.ByQuery),
-		chromedp.FullScreenshot(&buf, 100),
+		chromedp.WaitReady("body"),
 	); err != nil {
+		t.Fatalf("Failed to take screenshot: %v", err)
+	}
+
+	buf, err := chromedp.Run(ctx, chromedp.FullScreenshot(100))
+	if err != nil {
 		t.Fatalf("Failed to take screenshot: %v", err)
 	}
 
