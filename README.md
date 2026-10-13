@@ -335,14 +335,6 @@ Create a layout named `style` and add a `Text box` to enter specific words. The 
 
 You can also customize table styles by adding a **2x2 table** to the `style` layout. Each cell in the 2x2 table defines styles for different regions of tables generated from Markdown:
 
-Table comparisons account for the table style and explicit Markdown formatting, so reapplying unchanged content preserves existing table placement and sizing. Automatic header formatting does not apply the `bold` inline style; that style is only applied to explicit Markdown bold formatting.
-
-Each apply fetches the current presentation and takes a deep snapshot of its text, shape, and table styles. Those styles remain fixed while slide updates and refreshes run. The next apply reloads them, including in watch mode.
-
-Table styles are resolved once per apply. The resulting render is reused for both comparison and API requests, keeping the expected appearance and the uploaded content consistent. Comparisons cover table structure, text, horizontal alignment, and the existing bold, italic, link, and inferred code attributes. Style names, colors, font sizes, backgrounds, borders, and table placement are not compared; changes to those properties alone do not force a table update.
-
-Cell comparisons preserve user line breaks and ignore only the single cell terminator added by the API. Equivalent text-run splitting or merging does not count as a change.
-
 ![table](img/table.png)
 
 The following properties are extracted from each cell:
