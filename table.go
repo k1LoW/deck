@@ -44,7 +44,7 @@ func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, curr
 	}
 
 	// Case 2: Tables exist and we need to compare
-	if tablesEqual(existingTables, newTables) {
+	if tablesEqual(existingTables, d.renderTablesForComparison(newTables)) {
 		// Tables are identical, no action needed
 		return nil, nil
 	}
@@ -80,6 +80,54 @@ func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, curr
 	}
 
 	return requests, nil
+}
+
+func (d *Deck) renderTablesForComparison(tables []*Table) []*Table {
+	if tables == nil {
+		return nil
+	}
+	rendered := make([]*Table, len(tables))
+	for i, table := range tables {
+		if table == nil {
+			continue
+		}
+		rendered[i] = &Table{Rows: make([]*TableRow, len(table.Rows))}
+		for rowIdx, row := range table.Rows {
+			if row == nil {
+				continue
+			}
+			renderedRow := &TableRow{Cells: make([]*TableCell, len(row.Cells))}
+			rendered[i].Rows[rowIdx] = renderedRow
+			for colIdx, cell := range row.Cells {
+				if cell == nil {
+					continue
+				}
+				renderedCell := &TableCell{Alignment: cell.Alignment, IsHeader: cell.IsHeader}
+				renderedRow.Cells[colIdx] = renderedCell
+				cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx)
+				if cellStyle != nil && cellStyle.ParagraphStyle != nil && cellStyle.ParagraphStyle.Alignment != "" {
+					renderedCell.Alignment = cellStyle.ParagraphStyle.Alignment
+				}
+				for _, fragment := range cell.Fragments {
+					var style *slides.TextStyle
+					if cellStyle != nil {
+						if req := buildTableCellTextStyleRequest(cellStyle.TextStyle); req != nil {
+							style = req.Style
+						}
+					}
+					if req := d.getInlineStyleRequest(fragment); req != nil {
+						style = mergeStyles(style, req.Style, req.Fields)
+					}
+					if renderedFragment := convertTextRunToFragment(&slides.TextRun{
+						Content: fragment.Value, Style: style,
+					}); renderedFragment != nil {
+						renderedCell.Fragments = append(renderedCell.Fragments, renderedFragment)
+					}
+				}
+			}
+		}
+	}
+	return rendered
 }
 
 // reuseTableRequests creates requests to reuse an existing table by clearing its content and adjusting structure.

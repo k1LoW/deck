@@ -335,6 +335,8 @@ Create a layout named `style` and add a `Text box` to enter specific words. The 
 
 You can also customize table styles by adding a **2x2 table** to the `style` layout. Each cell in the 2x2 table defines styles for different regions of tables generated from Markdown:
 
+Table comparisons account for the table style and explicit Markdown formatting, so reapplying unchanged content preserves existing table placement and sizing. Automatic header formatting does not apply the `bold` inline style; that style is only applied to explicit Markdown bold formatting.
+
 ![table](img/table.png)
 
 The following properties are extracted from each cell:

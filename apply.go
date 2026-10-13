@@ -91,7 +91,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		after = after[:len(ss)]
 	}
 
-	actions, err := generateActions(before, after)
+	actions, err := generateActionsWithTableStyles(before, after, func(index int, tables []*Table) []*Table {
+		if !slices.Contains(pages, index+1) {
+			return nil
+		}
+		return d.renderTablesForComparison(tables)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to generate actions: %w", err)
 	}

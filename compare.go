@@ -24,8 +24,15 @@ func (s *Slide) Equal(other *Slide) bool {
 		bodiesEqual(s.Bodies, other.Bodies) &&
 		imagesEquivalent(s.Images, other.Images) &&
 		blockQuotesEqual(s.BlockQuotes, other.BlockQuotes) &&
-		tablesEqual(s.Tables, other.Tables) &&
+		tablesEqual(s.tablesForComparison(), other.tablesForComparison()) &&
 		s.SpeakerNote == other.SpeakerNote
+}
+
+func (s *Slide) tablesForComparison() []*Table {
+	if s.renderedTables != nil {
+		return s.renderedTables
+	}
+	return s.Tables
 }
 
 func bodiesEqual(bodies1, bodies2 []*Body) bool {
@@ -141,7 +148,7 @@ func tableCellEqual(cell1, cell2 *TableCell) bool {
 	if cell1.Alignment != cell2.Alignment || cell1.IsHeader != cell2.IsHeader {
 		return false
 	}
-	return slices.EqualFunc(cell1.Fragments, cell2.Fragments, func(a, b *Fragment) bool {
+	return slices.EqualFunc(mergeFragments(cell1.Fragments), mergeFragments(cell2.Fragments), func(a, b *Fragment) bool {
 		return strings.TrimRight(a.Value, "\n") == strings.TrimRight(b.Value, "\n") &&
 			a.StylesEqual(b)
 	})
