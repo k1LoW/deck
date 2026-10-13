@@ -1,6 +1,7 @@
 package deck
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -713,4 +714,100 @@ func TestBuildBorderFields(t *testing.T) {
 			t.Errorf("expected tableBorderFill,weight,dashStyle, got %q", fields)
 		}
 	})
+}
+
+func TestApplyTableBorderStylesWeight(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		weight     *slides.Dimension
+		wantWeight bool
+	}{
+		{name: "no weight"},
+		{name: "zero weight", weight: &slides.Dimension{Unit: "PT"}},
+		{name: "negative weight", weight: &slides.Dimension{Magnitude: -1, Unit: "PT"}},
+		{name: "positive weight", weight: &slides.Dimension{Magnitude: 1, Unit: "PT"}, wantWeight: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			for _, withFill := range []bool{true, false} {
+				props := &slides.TableBorderProperties{Weight: tt.weight}
+				if withFill {
+					props.TableBorderFill = &slides.TableBorderFill{
+						SolidFill: &slides.SolidFill{
+							Color: &slides.OpaqueColor{RgbColor: &slides.RgbColor{Red: 1}},
+						},
+					}
+					props.DashStyle = "SOLID"
+				}
+				d := &Deck{tableStyle: &TableStyle{BorderStyle: &TableBorderStyle{
+					OuterHorizontal:      props,
+					OuterVertical:        props,
+					HeaderFirstColRight:  props,
+					HeaderFirstColBottom: props,
+					HeaderOtherColRight:  props,
+					HeaderOtherColBottom: props,
+					DataFirstColRight:    props,
+					DataFirstColBottom:   props,
+					DataOtherColRight:    props,
+					DataOtherColBottom:   props,
+				}}}
+				table := &Table{Rows: []*TableRow{
+					{Cells: []*TableCell{{}, {}, {}}},
+					{Cells: []*TableCell{{}, {}, {}}},
+					{Cells: []*TableCell{{}, {}, {}}},
+				}}
+				requests := d.applyTableBorderStyles("table-id", table)
+				wantCount := 16
+				if len(requests) != wantCount {
+					t.Fatalf("withFill=%v: expected %d requests, got %d", withFill, wantCount, len(requests))
+				}
+				for _, request := range requests {
+					update := request.UpdateTableBorderProperties
+					wantFields := ""
+					if withFill {
+						wantFields = "tableBorderFill"
+					}
+					if tt.wantWeight {
+						if wantFields != "" {
+							wantFields += ","
+						}
+						wantFields += "weight"
+					}
+					if withFill {
+						wantFields += ",dashStyle"
+					}
+					if wantFields == "" {
+						wantFields = "*"
+					}
+					if update.Fields != wantFields {
+						t.Errorf("expected fields %q, got %q", wantFields, update.Fields)
+					}
+					if tt.wantWeight {
+						if diff := cmp.Diff(tt.weight, update.TableBorderProperties.Weight); diff != "" {
+							t.Errorf("weight mismatch (-want +got):\n%s", diff)
+						}
+					} else if update.TableBorderProperties.Weight != nil {
+						t.Errorf("invalid weight was retained: %+v", update.TableBorderProperties.Weight)
+					}
+					b, err := json.Marshal(update)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if strings.Contains(string(b), `"weight":`) != tt.wantWeight {
+						t.Errorf("unexpected weight in request JSON: %s", b)
+					}
+					if withFill && !strings.Contains(string(b), `"alpha":0`) {
+						t.Errorf("transparent border fill was not preserved: %s", b)
+					}
+				}
+				if props.Weight != tt.weight {
+					t.Error("source border weight was modified")
+				}
+			}
+		})
+	}
 }

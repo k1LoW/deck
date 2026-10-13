@@ -770,7 +770,9 @@ func prepareBorderProperties(props *slides.TableBorderProperties) *slides.TableB
 	// Create a shallow copy
 	result := &slides.TableBorderProperties{
 		DashStyle: props.DashStyle,
-		Weight:    props.Weight,
+	}
+	if props.Weight != nil && props.Weight.Magnitude > 0 {
+		result.Weight = props.Weight
 	}
 
 	// Copy TableBorderFill with ForceSendFields for Alpha
