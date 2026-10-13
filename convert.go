@@ -195,25 +195,6 @@ func convertToParagraphs(text *slides.TextContent) []*Paragraph {
 }
 
 func convertTextRunToFragment(textRun *slides.TextRun) *Fragment {
-	// Get styles from TextRun
-	var bold, italic, code bool
-	var link string
-	if textRun.Style != nil {
-		bold = textRun.Style.Bold
-		italic = textRun.Style.Italic
-		if textRun.Style.Link != nil && textRun.Style.Link.Url != "" {
-			link = textRun.Style.Link.Url
-		}
-
-		// Detect code style (based on font family and background color)
-		if textRun.Style.FontFamily == defaultCodeFontFamily ||
-			(textRun.Style.BackgroundColor != nil &&
-				textRun.Style.BackgroundColor.OpaqueColor != nil &&
-				textRun.Style.BackgroundColor.OpaqueColor.RgbColor != nil) {
-			code = true
-		}
-	}
-
 	content := textRun.Content
 	// When checking the API response, a newline is always added to the end of the value of the
 	// TextRun element before the modified paragraph, but since it is not necessary for the
@@ -226,13 +207,26 @@ func convertTextRunToFragment(textRun *slides.TextRun) *Fragment {
 	if content == "" {
 		return nil
 	}
-	return &Fragment{
-		Value:  content,
-		Bold:   bold,
-		Italic: italic,
-		Code:   code,
-		Link:   link,
+	fragment := convertTextStyleToFragment(textRun.Style)
+	fragment.Value = content
+	return fragment
+}
+
+func convertTextStyleToFragment(style *slides.TextStyle) *Fragment {
+	fragment := &Fragment{}
+	if style == nil {
+		return fragment
 	}
+	fragment.Bold = style.Bold
+	fragment.Italic = style.Italic
+	if style.Link != nil {
+		fragment.Link = style.Link.Url
+	}
+	fragment.Code = style.FontFamily == defaultCodeFontFamily ||
+		(style.BackgroundColor != nil &&
+			style.BackgroundColor.OpaqueColor != nil &&
+			style.BackgroundColor.OpaqueColor.RgbColor != nil)
+	return fragment
 }
 
 // convertSlidesToTable converts a Google Slides table to deck Table structure.
@@ -274,20 +268,31 @@ func convertSlidesToTable(slidesTable *slides.Table) *Table {
 
 // extractFragmentsFromTableCell extracts text fragments from a table cell.
 func extractFragmentsFromTableCell(cell *slides.TableCell) []*Fragment {
-	if cell.Text == nil || len(cell.Text.TextElements) == 0 {
+	if cell == nil || cell.Text == nil || len(cell.Text.TextElements) == 0 {
 		return nil
 	}
 
 	var fragments []*Fragment
 
 	for _, element := range cell.Text.TextElements {
-		if element.TextRun != nil {
-			if frag := convertTextRunToFragment(element.TextRun); frag != nil {
-				fragments = append(fragments, frag)
-			}
+		if element.TextRun != nil && element.TextRun.Content != "" {
+			fragment := convertTextStyleToFragment(element.TextRun.Style)
+			fragment.Value = element.TextRun.Content
+			fragments = append(fragments, fragment)
 		}
 	}
-
+	if len(fragments) == 0 {
+		return nil
+	}
+	// Strip the API's single cell terminator, not user line breaks in individual runs.
+	last := fragments[len(fragments)-1]
+	last.Value = strings.TrimSuffix(last.Value, "\n")
+	if last.Value == "" {
+		fragments = fragments[:len(fragments)-1]
+	}
+	for _, fragment := range fragments {
+		fragment.Value = strings.ReplaceAll(fragment.Value, "\v", "\n")
+	}
 	return fragments
 }
 

@@ -45,9 +45,18 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		return fmt.Errorf("invalid page number in pages: %v", pages)
 	}
 
+	// Each apply starts with fresh slides and styles, including in watch mode.
+	d.fresh = false
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
+	if err := d.snapshotStyles(); err != nil {
+		return fmt.Errorf("failed to snapshot presentation styles: %w", err)
+	}
+	d.stylesFrozen = true
+	defer func() {
+		d.stylesFrozen = false
+	}()
 
 	// Validate layouts before processing
 	if err := d.validateLayouts(ss); err != nil {
@@ -91,7 +100,12 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		after = after[:len(ss)]
 	}
 
-	actions, err := generateActions(before, after)
+	actions, err := generateActionsWithTableStyles(before, after, func(index int, tables []*Table) []*tableRender {
+		if !slices.Contains(pages, index+1) {
+			return nil
+		}
+		return d.renderTables(tables)
+	})
 	if err != nil {
 		return fmt.Errorf("failed to generate actions: %w", err)
 	}
@@ -539,7 +553,10 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 	}
 
 	// set tables - compare with existing and only create/update as needed
-	tableRequests, err := d.handleTableUpdates(currentSlide.ObjectId, slide.Tables, currentTables)
+	if slide.renderedTables == nil {
+		slide.renderedTables = d.renderTables(slide.Tables)
+	}
+	tableRequests, err := d.handleTableUpdates(currentSlide.ObjectId, slide.renderedTables, currentTables)
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle table updates: %w", err)
 	}

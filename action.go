@@ -44,7 +44,11 @@ type action struct {
 	slide       *Slide
 }
 
-func generateActions(before, after Slides) (_ []*action, err error) {
+func generateActions(before, after Slides) ([]*action, error) {
+	return generateActionsWithTableStyles(before, after, nil)
+}
+
+func generateActionsWithTableStyles(before, after Slides, renderTables func(int, []*Table) []*tableRender) (_ []*action, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()
@@ -52,6 +56,11 @@ func generateActions(before, after Slides) (_ []*action, err error) {
 	// First, deep copy before and after slides
 	beforeCopy := copySlides(before)
 	afterCopy := copySlides(after)
+	if renderTables != nil {
+		for i, slide := range afterCopy {
+			slide.renderedTables = renderTables(i, slide.Tables)
+		}
+	}
 
 	// Resolve which before slide each frozen after slide corresponds to, and
 	// substitute the counterpart's current content into after. The
@@ -518,6 +527,7 @@ func copySlide(slide *Slide) *Slide {
 	// Copy unexported fields manually
 	copied.new = slide.new
 	copied.delete = slide.delete
+	copied.renderedTables = slide.renderedTables
 
 	return copied
 }
@@ -562,7 +572,7 @@ func getSimilarity(beforeSlide, afterSlide *Slide) int {
 		if len(beforeSlide.BlockQuotes) > 0 && blockQuotesEqual(beforeSlide.BlockQuotes, afterSlide.BlockQuotes) {
 			score += 30
 		}
-		if len(beforeSlide.Tables) > 0 && tablesEqual(beforeSlide.Tables, afterSlide.Tables) {
+		if len(beforeSlide.Tables) > 0 && tablesEqual(beforeSlide.tablesForComparison(), afterSlide.tablesForComparison()) {
 			score += 35
 		}
 	}
