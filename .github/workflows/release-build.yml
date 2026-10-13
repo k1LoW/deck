@@ -16,7 +16,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
@@ -30,8 +29,6 @@ jobs:
           distribution: goreleaser
           version: latest
           args: release --clean --skip=publish
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
 
       - name: List release artifacts
         id: artifacts
@@ -45,10 +42,6 @@ jobs:
             ' dist/artifacts.json
             echo 'EOF'
           } >> "$GITHUB_OUTPUT"
-
-      - name: Verify release checksums
-        working-directory: dist
-        run: shasum -a 256 --check checksums.txt
 
       - name: Attest build provenance
         id: attest

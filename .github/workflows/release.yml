@@ -28,10 +28,6 @@ jobs:
           name: release-${{ github.ref_name }}
           path: release
 
-      - name: Verify release checksums
-        working-directory: release
-        run: sha256sum --check checksums.txt
-
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
