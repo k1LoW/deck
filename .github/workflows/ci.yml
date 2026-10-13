@@ -10,10 +10,10 @@ jobs:
   job-test:
     name: Test
     runs-on: ubuntu-latest
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
+      checks: write
       pull-requests: write
     steps:
       - name: Check out source code
@@ -25,9 +25,6 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-
-      - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Run lint
         uses: reviewdog/action-golangci-lint@db65103266f304d8ac929ad6c0cd02d14f6837ba # v2.10.1

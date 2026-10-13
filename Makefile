@@ -5,7 +5,7 @@ BUILD_LDFLAGS = "-s -w -X $(PKG)/version.Revision=$(COMMIT)"
 
 default: test
 
-ci: depsdev test
+ci: test
 
 test:
 	go test ./... -coverprofile=coverage.out -covermode=count -count=1
@@ -31,8 +31,6 @@ integration:
 	  'TestApply$$|TestRoundTripSlidesToGoogleSlidesPresentationAndBack$$|TestApplyMarkdown$$|TestAction$$' \
 	  -timeout 30m
 
-depsdev:
-
 credits:
 	go install github.com/Songmu/gocredits/cmd/gocredits@v1.0.0
 	gocredits . > CREDITS
@@ -41,4 +39,4 @@ prerelease_for_tagpr:
 	$(MAKE) credits
 	git add CHANGELOG.md CREDITS go.mod go.sum
 
-.PHONY: default ci test fulltest build install lint fuzz integration depsdev prerelease_for_tagpr credits
+.PHONY: default ci test fulltest build install lint fuzz integration prerelease_for_tagpr credits
