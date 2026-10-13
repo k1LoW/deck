@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.24.5](https://github.com/k1LoW/deck/compare/v1.24.4...v1.24.5) - 2026-10-13
+
+### Other Changes
+- chore: simplify and harden GitHub Actions workflows by @Songmu in https://github.com/k1LoW/deck/pull/564
+
 ## [v1.24.4](https://github.com/k1LoW/deck/compare/v1.24.3...v1.24.4) - 2026-10-13
 
 ### Other Changes
