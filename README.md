@@ -33,6 +33,18 @@ $ go install github.com/k1LoW/deck/cmd/deck@latest
 
 Download the binary from the [releases page](https://github.com/k1LoW/deck/releases)
 
+### Verify release artifacts
+
+Verify a downloaded archive, package, or `checksums.txt` with the GitHub CLI
+using attestations stored on GitHub:
+
+```console
+$ gh attestation verify deck_vX.Y.Z_linux_amd64.tar.gz \
+    --repo k1LoW/deck \
+    --signer-workflow k1LoW/deck/.github/workflows/release-build.yml \
+    --source-ref refs/tags/vX.Y.Z
+```
+
 ## Usage
 
 ### Setup
