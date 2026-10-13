@@ -9,14 +9,13 @@ on:
 jobs:
   tagpr:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       tagpr-tag: ${{ steps.run-tagpr.outputs.tag }}
     permissions:
       contents: write
       pull-requests: write
-      packages: write
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      issues: read
     steps:
       - name: Check out source code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,14 +30,16 @@ jobs:
       - id: run-tagpr
         name: Run tagpr
         uses: Songmu/tagpr@967f2ab22be958948fb5bd439bfa3d404dd9dee8 # v1.21.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
     needs: tagpr
     if: needs.tagpr.outputs.tagpr-tag != ''
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       actions: write
-      contents: read
     steps:
       - name: Start release workflow
         env:
