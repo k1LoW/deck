@@ -343,8 +343,6 @@ The following properties are extracted from each cell:
 - **Text alignment** (horizontal: left/center/right, vertical: top/middle/bottom)
 - **Border style** (color, weight, dash style, transparent)
 
-Border weights of zero or less are not applied; other border properties are still applied.
-
 Border mapping:
 - Cell `[0,0]` Top/Left borders → Outer borders of the entire table
 - Cell `[0,0]` Right/Bottom borders → Header row, 1st column inner borders

@@ -3,7 +3,6 @@ package deck
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -735,9 +734,7 @@ func (d *Deck) applyTableBorderStyles(tableObjectID string, table *Table) []*sli
 		}
 	}
 
-	return slices.DeleteFunc(requests, func(request *slides.Request) bool {
-		return request.UpdateTableBorderProperties.Fields == ""
-	})
+	return requests
 }
 
 // buildBorderFields builds the fields string for UpdateTableBorderPropertiesRequest.
@@ -757,6 +754,9 @@ func buildBorderFields(props *slides.TableBorderProperties) string {
 		fields = append(fields, "dashStyle")
 	}
 
+	if len(fields) == 0 {
+		return "*"
+	}
 	return strings.Join(fields, ",")
 }
 

@@ -684,8 +684,8 @@ func TestBuildBorderFields(t *testing.T) {
 	t.Run("empty properties", func(t *testing.T) {
 		t.Parallel()
 		fields := buildBorderFields(&slides.TableBorderProperties{})
-		if fields != "" {
-			t.Errorf("expected empty string, got %q", fields)
+		if fields != "*" {
+			t.Errorf("expected *, got %q", fields)
 		}
 	})
 
@@ -762,9 +762,6 @@ func TestApplyTableBorderStylesWeight(t *testing.T) {
 				}}
 				requests := d.applyTableBorderStyles("table-id", table)
 				wantCount := 16
-				if !withFill && !tt.wantWeight {
-					wantCount = 0
-				}
 				if len(requests) != wantCount {
 					t.Fatalf("withFill=%v: expected %d requests, got %d", withFill, wantCount, len(requests))
 				}
@@ -782,6 +779,9 @@ func TestApplyTableBorderStylesWeight(t *testing.T) {
 					}
 					if withFill {
 						wantFields += ",dashStyle"
+					}
+					if wantFields == "" {
+						wantFields = "*"
 					}
 					if update.Fields != wantFields {
 						t.Errorf("expected fields %q, got %q", wantFields, update.Fields)
