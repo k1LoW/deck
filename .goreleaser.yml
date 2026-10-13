@@ -77,6 +77,6 @@ nfpms:
       - rpm
       - apk
     bindir: /usr/bin
-    epoch: 1
+    epoch: "1"
 release:
-  use_existing_draft: true
+  disable: true
