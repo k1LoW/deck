@@ -149,7 +149,6 @@ func tableCellEqual(cell1, cell2 *TableCell) bool {
 		return false
 	}
 	return slices.EqualFunc(mergeFragments(cell1.Fragments), mergeFragments(cell2.Fragments), func(a, b *Fragment) bool {
-		return strings.TrimRight(a.Value, "\n") == strings.TrimRight(b.Value, "\n") &&
-			a.StylesEqual(b)
+		return a.Value == b.Value && a.StylesEqual(b)
 	})
 }

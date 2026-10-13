@@ -3,6 +3,7 @@ package deck
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/google/uuid"
@@ -268,15 +269,7 @@ func (d *Deck) reuseTableRequests(existingElement *slides.PageElement, newTable 
 
 // hasTableCellContent checks if a table cell has any text content.
 func hasTableCellContent(cell *slides.TableCell) bool {
-	if cell == nil || cell.Text == nil {
-		return false
-	}
-	for _, element := range cell.Text.TextElements {
-		if element.TextRun != nil && strings.TrimSpace(element.TextRun.Content) != "" {
-			return true
-		}
-	}
-	return false
+	return len(extractFragmentsFromTableCell(cell)) > 0
 }
 
 func (d *Deck) fillTableContentForActions(ctx context.Context, actions []*action) error {
@@ -539,11 +532,9 @@ func (d *Deck) renderTable(table *Table) *tableRender {
 						})
 						style = mergeStyles(style, r.Style, r.Fields)
 					}
-					if renderedFragment := convertTextRunToFragment(&slides.TextRun{
-						Content: fragment.Value, Style: style,
-					}); renderedFragment != nil {
-						renderedCell.Fragments = append(renderedCell.Fragments, renderedFragment)
-					}
+					renderedFragment := convertTextStyleToFragment(style)
+					renderedFragment.Value = strings.ReplaceAll(fragment.Value, "\v", "\n")
+					renderedCell.Fragments = append(renderedCell.Fragments, renderedFragment)
 					startIndex = endIndex
 				}
 			}
@@ -887,20 +878,8 @@ func hasTableContent(table *slides.Table) bool {
 		if row == nil {
 			continue
 		}
-		for _, cell := range row.TableCells {
-			if cell == nil || cell.Text == nil {
-				continue
-			}
-			// Check if the cell has any text elements with actual content
-			for _, element := range cell.Text.TextElements {
-				if element.TextRun != nil && element.TextRun.Content != "" {
-					// Skip if it's just whitespace or newline
-					trimmed := strings.TrimSpace(element.TextRun.Content)
-					if trimmed != "" {
-						return true
-					}
-				}
-			}
+		if slices.ContainsFunc(row.TableCells, hasTableCellContent) {
+			return true
 		}
 	}
 

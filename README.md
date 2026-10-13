@@ -341,6 +341,8 @@ Each apply fetches the current presentation and takes a deep snapshot of its tex
 
 Table styles are resolved once per apply. The resulting render is reused for both comparison and API requests, keeping the expected appearance and the uploaded content consistent. Comparisons cover table structure, text, horizontal alignment, and the existing bold, italic, link, and inferred code attributes. Style names, colors, font sizes, backgrounds, borders, and table placement are not compared; changes to those properties alone do not force a table update.
 
+Cell comparisons preserve user line breaks and ignore only the single cell terminator added by the API. Equivalent text-run splitting or merging does not count as a change.
+
 ![table](img/table.png)
 
 The following properties are extracted from each cell:
