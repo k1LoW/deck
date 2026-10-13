@@ -2,10 +2,12 @@ package deck
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -233,8 +235,8 @@ func TestGenerateActionsWithTableStyles(t *testing.T) {
 			if tt.alignment != "" {
 				beforeCell.Alignment = tt.alignment
 			}
-			actions, err := generateActionsWithTableStyles(before, after, func(_ int, tables []*Table) []*Table {
-				return d.renderTablesForComparison(tables)
+			actions, err := generateActionsWithTableStyles(before, after, func(_ int, tables []*Table) []*tableRender {
+				return d.renderTables(tables)
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -303,7 +305,7 @@ func TestGenerateActionsWithStyledTableSlideChanges(t *testing.T) {
 			}
 			d := &Deck{tableStyle: defaultTableStyle()}
 			actions, err := generateActionsWithTableStyles(makeSlides(tt.before, true), makeSlides(tt.after, false),
-				func(_ int, tables []*Table) []*Table { return d.renderTablesForComparison(tables) })
+				func(_ int, tables []*Table) []*tableRender { return d.renderTables(tables) })
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -342,11 +344,112 @@ func TestHandleUnchangedStyledTable(t *testing.T) {
 			}},
 		}}},
 	}}
-	requests, err := d.handleTableUpdates("slide", []*Table{table}, current)
+	requests, err := d.handleTableUpdates("slide", d.renderTables([]*Table{table}), current)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(requests) != 0 {
 		t.Fatalf("unchanged table must not be cleared during other slide updates: %v", requests)
+	}
+}
+
+func TestTableRenderReusesResolvedRequests(t *testing.T) {
+	t.Parallel()
+
+	d := &Deck{
+		tableStyle: defaultTableStyle(),
+		styles:     map[string]*slides.TextStyle{styleBold: {Bold: false, Italic: true}},
+	}
+	d.tableStyle.HeaderFirstCol.ParagraphStyle = &slides.ParagraphStyle{Alignment: "CENTER"}
+	d.tableStyle.BorderStyle = &TableBorderStyle{
+		OuterHorizontal: &slides.TableBorderProperties{
+			Weight: &slides.Dimension{Magnitude: 1, Unit: "PT"}, DashStyle: "SOLID",
+		},
+	}
+	table := &Table{Rows: []*TableRow{{Cells: []*TableCell{{
+		IsHeader: true, Alignment: "START",
+		Fragments: []*Fragment{{Value: "A\U0001f600"}, {Value: "B", Bold: true}},
+	}}}}}
+	rendered := d.renderTable(table)
+	want := &Table{Rows: []*TableRow{{Cells: []*TableCell{{
+		IsHeader: true, Alignment: "CENTER",
+		Fragments: []*Fragment{{Value: "A\U0001f600", Bold: true}, {Value: "B", Italic: true}},
+	}}}}}
+	if diff := cmp.Diff(want, rendered.content); diff != "" {
+		t.Fatalf("unexpected rendered content (-want +got):\n%s", diff)
+	}
+	if len(rendered.requests) != 8 {
+		t.Fatalf("rendering changed request count: got %d, want 8", len(rendered.requests))
+	}
+	template, err := json.Marshal(rendered.requests)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Emission must use the resolved result, not look up Markdown or styles again.
+	table.Rows[0].Cells[0].Fragments[0].Value = "changed"
+	d.styles[styleBold] = &slides.TextStyle{Bold: true}
+	d.tableStyle.HeaderFirstCol.TextStyle.Bold = false
+	d.tableStyle.HeaderFirstCol.ParagraphStyle.Alignment = "END"
+
+	for _, objectID := range []string{"first-table", "second-table"} {
+		requests, err := rendered.requestsForObject(objectID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := json.Marshal(requests)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := strings.Count(string(encoded), `"objectId":"`+objectID+`"`); got != len(requests) {
+			t.Fatalf("bound %d of %d requests to %s", got, len(requests), objectID)
+		}
+		if got := requests[0].InsertText.Text; got != "A\U0001f600B" {
+			t.Fatalf("emission reread changed Markdown: %q", got)
+		}
+		inline := requests[2].UpdateTextStyle
+		if inline.Style.Bold || !inline.Style.Italic {
+			t.Fatalf("emission reread changed inline style: %+v", inline.Style)
+		}
+		if *inline.TextRange.StartIndex != 3 || *inline.TextRange.EndIndex != 4 {
+			t.Fatalf("incorrect UTF-16 text range: %+v", inline.TextRange)
+		}
+	}
+	unchanged, err := json.Marshal(rendered.requests)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(template), string(unchanged)); diff != "" {
+		t.Fatalf("binding mutated the reusable requests (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(want, rendered.content); diff != "" {
+		t.Fatalf("emission changed comparison content (-want +got):\n%s", diff)
+	}
+
+	d.presentation = &slides.Presentation{Slides: []*slides.Page{{
+		ObjectId: "slide",
+		PageElements: []*slides.PageElement{{
+			ObjectId: "actual-table", Description: descriptionTableFromMarkdown, Table: &slides.Table{},
+		}},
+	}}}
+	requests, err := d.collectTableContentRequests("slide", []*tableRender{rendered})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantRequests, err := rendered.requestsForObject("actual-table")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(wantRequests, requests); diff != "" {
+		t.Fatalf("table content did not reuse the render (-want +got):\n%s", diff)
+	}
+}
+
+func TestTableRenderUnsupportedRequest(t *testing.T) {
+	t.Parallel()
+
+	rendered := &tableRender{requests: []*slides.Request{{DeleteObject: &slides.DeleteObjectRequest{}}}}
+	if _, err := rendered.requestsForObject("table"); err == nil {
+		t.Fatal("unsupported render request must fail explicitly")
 	}
 }

@@ -48,7 +48,7 @@ func generateActions(before, after Slides) ([]*action, error) {
 	return generateActionsWithTableStyles(before, after, nil)
 }
 
-func generateActionsWithTableStyles(before, after Slides, renderTables func(int, []*Table) []*Table) (_ []*action, err error) {
+func generateActionsWithTableStyles(before, after Slides, renderTables func(int, []*Table) []*tableRender) (_ []*action, err error) {
 	defer func() {
 		err = errors.WithStack(err)
 	}()

@@ -21,8 +21,8 @@ type Slide struct {
 	new    bool
 	delete bool
 
-	// Keep rendered table styles separate from the Markdown used for API requests.
-	renderedTables []*Table
+	// Resolve table styles once, then reuse the result for comparison and API requests.
+	renderedTables []*tableRender
 }
 
 // Body represents the content body of a slide.

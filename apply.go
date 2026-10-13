@@ -91,11 +91,11 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		after = after[:len(ss)]
 	}
 
-	actions, err := generateActionsWithTableStyles(before, after, func(index int, tables []*Table) []*Table {
+	actions, err := generateActionsWithTableStyles(before, after, func(index int, tables []*Table) []*tableRender {
 		if !slices.Contains(pages, index+1) {
 			return nil
 		}
-		return d.renderTablesForComparison(tables)
+		return d.renderTables(tables)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to generate actions: %w", err)
@@ -544,7 +544,10 @@ func (d *Deck) prepareToApplyPage(ctx context.Context, index int, slide *Slide, 
 	}
 
 	// set tables - compare with existing and only create/update as needed
-	tableRequests, err := d.handleTableUpdates(currentSlide.ObjectId, slide.Tables, currentTables)
+	if slide.renderedTables == nil {
+		slide.renderedTables = d.renderTables(slide.Tables)
+	}
+	tableRequests, err := d.handleTableUpdates(currentSlide.ObjectId, slide.renderedTables, currentTables)
 	if err != nil {
 		return nil, fmt.Errorf("failed to handle table updates: %w", err)
 	}

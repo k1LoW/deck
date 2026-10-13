@@ -337,6 +337,8 @@ You can also customize table styles by adding a **2x2 table** to the `style` lay
 
 Table comparisons account for the table style and explicit Markdown formatting, so reapplying unchanged content preserves existing table placement and sizing. Automatic header formatting does not apply the `bold` inline style; that style is only applied to explicit Markdown bold formatting.
 
+Table styles are resolved once per apply. The resulting render is reused for both comparison and API requests, keeping the expected appearance and the uploaded content consistent.
+
 ![table](img/table.png)
 
 The following properties are extracted from each cell:

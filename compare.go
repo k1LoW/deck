@@ -30,7 +30,7 @@ func (s *Slide) Equal(other *Slide) bool {
 
 func (s *Slide) tablesForComparison() []*Table {
 	if s.renderedTables != nil {
-		return s.renderedTables
+		return tableRenderContents(s.renderedTables)
 	}
 	return s.Tables
 }

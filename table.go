@@ -11,7 +11,45 @@ import (
 
 const descriptionTableFromMarkdown = "Table generated from markdown"
 
-func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, currentTables []*slides.PageElement) ([]*slides.Request, error) {
+type tableRender struct {
+	content  *Table
+	requests []*slides.Request
+}
+
+func (r *tableRender) requestsForObject(objectID string) ([]*slides.Request, error) {
+	requests := make([]*slides.Request, len(r.requests))
+	for i, request := range r.requests {
+		bound := *request
+		switch {
+		case request.InsertText != nil:
+			insert := *request.InsertText
+			insert.ObjectId = objectID
+			bound.InsertText = &insert
+		case request.UpdateTextStyle != nil:
+			style := *request.UpdateTextStyle
+			style.ObjectId = objectID
+			bound.UpdateTextStyle = &style
+		case request.UpdateParagraphStyle != nil:
+			style := *request.UpdateParagraphStyle
+			style.ObjectId = objectID
+			bound.UpdateParagraphStyle = &style
+		case request.UpdateTableCellProperties != nil:
+			properties := *request.UpdateTableCellProperties
+			properties.ObjectId = objectID
+			bound.UpdateTableCellProperties = &properties
+		case request.UpdateTableBorderProperties != nil:
+			properties := *request.UpdateTableBorderProperties
+			properties.ObjectId = objectID
+			bound.UpdateTableBorderProperties = &properties
+		default:
+			return nil, fmt.Errorf("unsupported table render request at index %d", i)
+		}
+		requests[i] = &bound
+	}
+	return requests, nil
+}
+
+func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*tableRender, currentTables []*slides.PageElement) ([]*slides.Request, error) {
 	var requests []*slides.Request
 
 	// Filter only tables created by deck (with descriptionTableFromMarkdown)
@@ -44,7 +82,7 @@ func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, curr
 	}
 
 	// Case 2: Tables exist and we need to compare
-	if tablesEqual(existingTables, d.renderTablesForComparison(newTables)) {
+	if tablesEqual(existingTables, tableRenderContents(newTables)) {
 		// Tables are identical, no action needed
 		return nil, nil
 	}
@@ -57,7 +95,7 @@ func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, curr
 	for i := range maxTables {
 		if i < len(deckTables) && i < len(newTables) {
 			// Reuse existing deck-created table: clear content and adjust structure
-			tableReqs, err := d.reuseTableRequests(deckTables[i], newTables[i])
+			tableReqs, err := d.reuseTableRequests(deckTables[i], newTables[i].content)
 			if err != nil {
 				return nil, fmt.Errorf("failed to reuse table %d: %w", i, err)
 			}
@@ -71,7 +109,7 @@ func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, curr
 			})
 		} else if i < len(newTables) {
 			// Create new tables for additional ones needed
-			createReqs, err := d.createTableStructureRequest(slideObjectID, newTables[i], i)
+			createReqs, err := d.createTableStructureRequest(slideObjectID, newTables[i].content, i)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create table structure request: %w", err)
 			}
@@ -82,52 +120,30 @@ func (d *Deck) handleTableUpdates(slideObjectID string, newTables []*Table, curr
 	return requests, nil
 }
 
-func (d *Deck) renderTablesForComparison(tables []*Table) []*Table {
+func (d *Deck) renderTables(tables []*Table) []*tableRender {
 	if tables == nil {
 		return nil
 	}
-	rendered := make([]*Table, len(tables))
+	rendered := make([]*tableRender, len(tables))
 	for i, table := range tables {
-		if table == nil {
-			continue
-		}
-		rendered[i] = &Table{Rows: make([]*TableRow, len(table.Rows))}
-		for rowIdx, row := range table.Rows {
-			if row == nil {
-				continue
-			}
-			renderedRow := &TableRow{Cells: make([]*TableCell, len(row.Cells))}
-			rendered[i].Rows[rowIdx] = renderedRow
-			for colIdx, cell := range row.Cells {
-				if cell == nil {
-					continue
-				}
-				renderedCell := &TableCell{Alignment: cell.Alignment, IsHeader: cell.IsHeader}
-				renderedRow.Cells[colIdx] = renderedCell
-				cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx)
-				if cellStyle != nil && cellStyle.ParagraphStyle != nil && cellStyle.ParagraphStyle.Alignment != "" {
-					renderedCell.Alignment = cellStyle.ParagraphStyle.Alignment
-				}
-				for _, fragment := range cell.Fragments {
-					var style *slides.TextStyle
-					if cellStyle != nil {
-						if req := buildTableCellTextStyleRequest(cellStyle.TextStyle); req != nil {
-							style = req.Style
-						}
-					}
-					if req := d.getInlineStyleRequest(fragment); req != nil {
-						style = mergeStyles(style, req.Style, req.Fields)
-					}
-					if renderedFragment := convertTextRunToFragment(&slides.TextRun{
-						Content: fragment.Value, Style: style,
-					}); renderedFragment != nil {
-						renderedCell.Fragments = append(renderedCell.Fragments, renderedFragment)
-					}
-				}
-			}
+		if table != nil {
+			rendered[i] = d.renderTable(table)
 		}
 	}
 	return rendered
+}
+
+func tableRenderContents(rendered []*tableRender) []*Table {
+	if rendered == nil {
+		return nil
+	}
+	tables := make([]*Table, len(rendered))
+	for i, table := range rendered {
+		if table != nil {
+			tables[i] = table.content
+		}
+	}
+	return tables
 }
 
 // reuseTableRequests creates requests to reuse an existing table by clearing its content and adjusting structure.
@@ -290,7 +306,7 @@ func (d *Deck) fillTableContentForActions(ctx context.Context, actions []*action
 			if slideObjectID != "" {
 				// Only fill content for slides that actually have table changes
 				// This is determined by the handleTableUpdates logic
-				requests, err := d.collectTableContentRequests(slideObjectID, action.slide.Tables)
+				requests, err := d.collectTableContentRequests(slideObjectID, action.slide.renderedTables)
 				if err != nil {
 					return fmt.Errorf("failed to collect table content requests for slide %d: %w", action.index, err)
 				}
@@ -376,7 +392,7 @@ func (d *Deck) createTableStructureRequest(slideObjectID string, table *Table, i
 }
 
 // collectTableContentRequests collects all table content requests for a slide.
-func (d *Deck) collectTableContentRequests(slideObjectID string, tables []*Table) ([]*slides.Request, error) {
+func (d *Deck) collectTableContentRequests(slideObjectID string, tables []*tableRender) ([]*slides.Request, error) {
 	if len(tables) == 0 {
 		return nil, nil
 	}
@@ -426,7 +442,7 @@ func (d *Deck) collectTableContentRequests(slideObjectID string, tables []*Table
 			continue
 		}
 
-		tableReqs, err := d.createTableContentRequests(tableObjectID, table)
+		tableReqs, err := table.requestsForObject(tableObjectID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create table content requests for table %d: %w", i, err)
 		}
@@ -436,13 +452,18 @@ func (d *Deck) collectTableContentRequests(slideObjectID string, tables []*Table
 	return requests, nil
 }
 
-// createTableContentRequests creates requests to fill table content.
-func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([]*slides.Request, error) {
+func (d *Deck) renderTable(table *Table) *tableRender {
+	rendered := &tableRender{content: &Table{Rows: make([]*TableRow, len(table.Rows))}}
 	var requests []*slides.Request
 
 	// Fill table cells with content
 	for rowIdx, row := range table.Rows {
+		renderedRow := &TableRow{Cells: make([]*TableCell, len(row.Cells))}
+		rendered.content.Rows[rowIdx] = renderedRow
 		for colIdx, cell := range row.Cells {
+			renderedCell := &TableCell{Alignment: cell.Alignment, IsHeader: cell.IsHeader}
+			renderedRow.Cells[colIdx] = renderedCell
+
 			// Create text from fragments
 			var text strings.Builder
 			for _, fragment := range cell.Fragments {
@@ -461,7 +482,6 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 			// Insert text into cell
 			requests = append(requests, &slides.Request{
 				InsertText: &slides.InsertTextRequest{
-					ObjectId:       tableObjectID,
 					CellLocation:   cellLocation,
 					Text:           text.String(),
 					InsertionIndex: 0,
@@ -470,20 +490,20 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 
 			// Apply base text style from tableStyle (before fragment styles)
 			textLength := int64(countString(text.String()))
-			if cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx); cellStyle != nil && cellStyle.TextStyle != nil && textLength > 0 {
-				req := buildTableCellTextStyleRequest(cellStyle.TextStyle)
-				if req != nil {
+			var baseStyle *slides.UpdateTextStyleRequest
+			if cellStyle := d.tableStyle.cellStyle(rowIdx, colIdx); cellStyle != nil && textLength > 0 {
+				baseStyle = buildTableCellTextStyleRequest(cellStyle.TextStyle)
+				if baseStyle != nil {
 					requests = append(requests, &slides.Request{
 						UpdateTextStyle: &slides.UpdateTextStyleRequest{
-							ObjectId:     tableObjectID,
 							CellLocation: cellLocation,
-							Style:        req.Style,
+							Style:        baseStyle.Style,
 							TextRange: &slides.Range{
 								Type:       "FIXED_RANGE",
 								StartIndex: new(int64),
 								EndIndex:   new(textLength),
 							},
-							Fields: req.Fields,
+							Fields: baseStyle.Fields,
 						},
 					})
 				}
@@ -499,10 +519,14 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 					}
 					endIndex := startIndex + int64(flen)
 
+					var style *slides.TextStyle
+					if baseStyle != nil {
+						base := *baseStyle.Style
+						style = &base
+					}
 					if r := d.getInlineStyleRequest(fragment); r != nil {
 						requests = append(requests, &slides.Request{
 							UpdateTextStyle: &slides.UpdateTextStyleRequest{
-								ObjectId:     tableObjectID,
 								CellLocation: cellLocation,
 								Style:        r.Style,
 								TextRange: &slides.Range{
@@ -513,6 +537,12 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 								Fields: r.Fields,
 							},
 						})
+						style = mergeStyles(style, r.Style, r.Fields)
+					}
+					if renderedFragment := convertTextRunToFragment(&slides.TextRun{
+						Content: fragment.Value, Style: style,
+					}); renderedFragment != nil {
+						renderedCell.Fragments = append(renderedCell.Fragments, renderedFragment)
 					}
 					startIndex = endIndex
 				}
@@ -522,7 +552,6 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 			if cell.Alignment != "" {
 				requests = append(requests, &slides.Request{
 					UpdateParagraphStyle: &slides.UpdateParagraphStyleRequest{
-						ObjectId:     tableObjectID,
 						CellLocation: cellLocation,
 						Style: &slides.ParagraphStyle{
 							Alignment: cell.Alignment,
@@ -538,12 +567,22 @@ func (d *Deck) createTableContentRequests(tableObjectID string, table *Table) ([
 	}
 
 	// Apply cell styles from tableStyle
-	requests = append(requests, d.applyTableCellStyles(tableObjectID, table)...)
+	cellStyleRequests := d.applyTableCellStyles("", table)
+	for _, request := range cellStyleRequests {
+		if style := request.UpdateParagraphStyle; style != nil {
+			row := rendered.content.Rows[style.CellLocation.RowIndex]
+			if col := int(style.CellLocation.ColumnIndex); col < len(row.Cells) {
+				row.Cells[col].Alignment = style.Style.Alignment
+			}
+		}
+	}
+	requests = append(requests, cellStyleRequests...)
 
 	// Apply border styles from tableStyle
-	requests = append(requests, d.applyTableBorderStyles(tableObjectID, table)...)
+	requests = append(requests, d.applyTableBorderStyles("", table)...)
 
-	return requests, nil
+	rendered.requests = requests
+	return rendered
 }
 
 // applyTableCellStyles applies cell styles from d.tableStyle.
