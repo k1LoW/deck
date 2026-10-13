@@ -33,31 +33,41 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Collect release artifacts
+      - name: List release artifacts
+        id: artifacts
         run: |
-          mkdir release
-          cp dist/checksums.txt release/
-          while read -r _checksum filename; do
-            cp "dist/$filename" release/
-          done < dist/checksums.txt
-          (cd release && shasum -a 256 --check checksums.txt)
+          {
+            echo 'paths<<EOF'
+            jq -er '
+              .[]
+              | select(.type | IN("Archive", "Linux Package", "Checksum"))
+              | .path
+            ' dist/artifacts.json
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Verify release checksums
+        working-directory: dist
+        run: shasum -a 256 --check checksums.txt
 
       - name: Attest build provenance
         id: attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
         with:
-          subject-path: release/*
+          subject-path: ${{ steps.artifacts.outputs.paths }}
 
       - name: Collect provenance bundle
         env:
           BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
-        run: cp "$BUNDLE_PATH" release/provenance.sigstore.json
+        run: cp "$BUNDLE_PATH" dist/provenance.sigstore.json
 
       - name: Upload release artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ github.ref_name }}
-          path: release/*
+          path: |
+            ${{ steps.artifacts.outputs.paths }}
+            dist/provenance.sigstore.json
           if-no-files-found: error
           retention-days: 1
           overwrite: true
