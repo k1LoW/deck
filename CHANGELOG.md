@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.24.3](https://github.com/k1LoW/deck/compare/v1.24.2...v1.24.3) - 2026-10-13
+
+### Fix bug 🐛
+- fix: omit nonpositive table border weights by @Songmu in https://github.com/k1LoW/deck/pull/558
+### Other Changes
+- fix: checkout PR head for labeled integration tests by @Songmu in https://github.com/k1LoW/deck/pull/560
+- fix: avoid reapplying unchanged styled tables by @Songmu in https://github.com/k1LoW/deck/pull/561
+- chore(deps): bump the dependencies group with 4 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/555
+- chore(deps): bump the dependencies group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/557
+
 ## [v1.24.2](https://github.com/k1LoW/deck/compare/v1.24.1...v1.24.2) - 2026-09-28
 
 ### Other Changes
