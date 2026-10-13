@@ -35,28 +35,15 @@ Download the binary from the [releases page](https://github.com/k1LoW/deck/relea
 
 ### Verify release artifacts
 
-Releases produced by the attested release workflow include build provenance for
-archives, packages, and `checksums.txt`. Download `provenance.sigstore.json` from
-the same release and verify a downloaded artifact with the GitHub CLI:
+Verify a downloaded archive, package, or `checksums.txt` with the GitHub CLI
+using attestations stored on GitHub:
 
 ```console
 $ gh attestation verify deck_vX.Y.Z_linux_amd64.tar.gz \
     --repo k1LoW/deck \
-    --bundle provenance.sigstore.json \
     --signer-workflow k1LoW/deck/.github/workflows/release-build.yml \
     --source-ref refs/tags/vX.Y.Z
 ```
-
-The release flow starts after tagpr creates a tag and a draft release.
-The `release.yml` workflow runs on that tag and calls `release-build.yml` to
-generate artifacts with GoReleaser without publishing or generating release
-notes, using only the tagged commit. It selects archives, packages, and checksums
-from `dist/artifacts.json` with jq, attests those files, and uploads the same file
-list together with the provenance bundle. A separate job publishes the existing
-draft only after the build and attestation succeed, preserving tagpr's release
-notes.
-To retry an unpublished release, run
-`gh workflow run release.yml --ref vX.Y.Z --repo k1LoW/deck`.
 
 ## Usage
 
