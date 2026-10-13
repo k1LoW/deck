@@ -20,9 +20,18 @@ func TestApplyUnchangedStyledTable(t *testing.T) {
 	t.Parallel()
 
 	var calls atomic.Int64
+	var reads atomic.Int64
+	var presentation *slides.Presentation
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			reads.Add(1)
+			if err := json.NewEncoder(w).Encode(presentation); err != nil {
+				t.Error(err)
+			}
+			return
+		}
 		calls.Add(1)
-		http.Error(w, "unchanged slides must not make API requests", http.StatusBadRequest)
+		http.Error(w, "unchanged slides must not make update requests", http.StatusBadRequest)
 	}))
 	t.Cleanup(server.Close)
 	srv, err := slides.NewService(context.Background(),
@@ -41,10 +50,22 @@ func TestApplyUnchangedStyledTable(t *testing.T) {
 		styles:             map[string]*slides.TextStyle{styleBold: {Bold: false, Italic: true}},
 		logger:             slog.New(slog.NewTextHandler(io.Discard, nil)),
 		presentation: &slides.Presentation{
-			Layouts: []*slides.Page{{
-				ObjectId:         "layout",
-				LayoutProperties: &slides.LayoutProperties{DisplayName: "Body"},
-			}},
+			Layouts: []*slides.Page{
+				{
+					ObjectId:         "layout",
+					LayoutProperties: &slides.LayoutProperties{DisplayName: "Body"},
+				},
+				{
+					ObjectId: "style-layout", LayoutProperties: &slides.LayoutProperties{DisplayName: layoutNameForStyle},
+					PageElements: []*slides.PageElement{{Shape: &slides.Shape{
+						Text: &slides.TextContent{TextElements: []*slides.TextElement{{
+							TextRun: &slides.TextRun{
+								Content: styleBold, Style: &slides.TextStyle{Bold: false, Italic: true},
+							},
+						}}},
+					}}},
+				},
+			},
 			Slides: []*slides.Page{{
 				ObjectId: "slide",
 				SlideProperties: &slides.SlideProperties{
@@ -73,6 +94,7 @@ func TestApplyUnchangedStyledTable(t *testing.T) {
 			}},
 		},
 	}
+	presentation = d.presentation
 	target := Slides{{
 		Layout: "Body",
 		Tables: []*Table{{Rows: []*TableRow{{Cells: []*TableCell{{
@@ -85,7 +107,10 @@ func TestApplyUnchangedStyledTable(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := calls.Load(); got != 0 {
-		t.Fatalf("unchanged styled table made %d API requests", got)
+		t.Fatalf("unchanged styled table made %d update requests", got)
+	}
+	if got := reads.Load(); got != 1 {
+		t.Fatalf("apply must fetch the presentation once, got %d reads", got)
 	}
 	if target[0].Tables[0].Rows[0].Cells[0].Fragments[0].Bold {
 		t.Fatal("comparison changed the Markdown's explicit bold flag")
@@ -96,12 +121,16 @@ func TestApplyUnchangedStyledTable(t *testing.T) {
 		SlideProperties: d.presentation.Slides[0].SlideProperties,
 		PageElements:    d.presentation.Slides[0].PageElements,
 	})
+	presentation = d.presentation
 	target = append(target, copySlide(target[0]))
 	if err := d.ApplyPages(context.Background(), target, []int{1}); err != nil {
 		t.Fatal(err)
 	}
 	if got := calls.Load(); got != 0 {
-		t.Fatalf("partial apply changed an unselected styled table: %d API requests", got)
+		t.Fatalf("partial apply changed an unselected styled table: %d update requests", got)
+	}
+	if got := reads.Load(); got != 2 {
+		t.Fatalf("each apply must reload the style layout once, got %d reads", got)
 	}
 }
 

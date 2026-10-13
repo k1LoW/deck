@@ -337,7 +337,9 @@ You can also customize table styles by adding a **2x2 table** to the `style` lay
 
 Table comparisons account for the table style and explicit Markdown formatting, so reapplying unchanged content preserves existing table placement and sizing. Automatic header formatting does not apply the `bold` inline style; that style is only applied to explicit Markdown bold formatting.
 
-Table styles are resolved once per apply. The resulting render is reused for both comparison and API requests, keeping the expected appearance and the uploaded content consistent.
+Each apply fetches the current presentation and takes a deep snapshot of its text, shape, and table styles. Those styles remain fixed while slide updates and refreshes run. The next apply reloads them, including in watch mode.
+
+Table styles are resolved once per apply. The resulting render is reused for both comparison and API requests, keeping the expected appearance and the uploaded content consistent. Comparisons cover table structure, text, horizontal alignment, and the existing bold, italic, link, and inferred code attributes. Style names, colors, font sizes, backgrounds, borders, and table placement are not compared; changes to those properties alone do not force a table update.
 
 ![table](img/table.png)
 

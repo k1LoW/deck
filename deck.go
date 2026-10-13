@@ -35,6 +35,7 @@ type Deck struct {
 	tableStyle         *TableStyle
 	logger             *slog.Logger
 	fresh              bool
+	stylesFrozen       bool
 }
 
 type Option func(*Deck) error
@@ -490,7 +491,7 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 	}
 	d.presentation = presentation
 
-	// set default layouts and detect style
+	// set default layouts
 	for _, l := range d.presentation.Layouts {
 		layout := l.LayoutProperties.Name
 		switch {
@@ -504,31 +505,9 @@ func (d *Deck) refresh(ctx context.Context) (err error) {
 			}
 		}
 
-		if l.LayoutProperties.DisplayName == layoutNameForStyle {
-			for _, e := range l.PageElements {
-				// Extract text styles from shapes
-				if e.Shape != nil && e.Shape.Text != nil {
-					for _, t := range e.Shape.Text.TextElements {
-						if t.TextRun == nil {
-							continue
-						}
-						styleName := strings.Trim(t.TextRun.Content, " \n")
-						if styleName == "" {
-							continue
-						}
-						d.styles[styleName] = t.TextRun.Style
-						d.shapes[styleName] = e.Shape.ShapeProperties
-					}
-				}
-
-				// Extract table style from 2x2 table
-				if e.Table != nil {
-					if ts := extractTableStyleFromLayout(e.Table); ts != nil {
-						d.tableStyle = ts
-					}
-				}
-			}
-		}
+	}
+	if !d.stylesFrozen {
+		d.loadStyles()
 	}
 
 	// If the default layouts that were derived are renamed or otherwise disappear, search for them again.

@@ -45,9 +45,18 @@ func (d *Deck) ApplyPages(ctx context.Context, ss Slides, pages []int) (err erro
 		return fmt.Errorf("invalid page number in pages: %v", pages)
 	}
 
+	// Each apply starts with fresh slides and styles, including in watch mode.
+	d.fresh = false
 	if err := d.refresh(ctx); err != nil {
 		return fmt.Errorf("failed to refresh presentation: %w", err)
 	}
+	if err := d.snapshotStyles(); err != nil {
+		return fmt.Errorf("failed to snapshot presentation styles: %w", err)
+	}
+	d.stylesFrozen = true
+	defer func() {
+		d.stylesFrozen = false
+	}()
 
 	// Validate layouts before processing
 	if err := d.validateLayouts(ss); err != nil {
