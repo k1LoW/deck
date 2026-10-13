@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.24.4](https://github.com/k1LoW/deck/compare/v1.24.3...v1.24.4) - 2026-10-13
+
+### Other Changes
+- Separate release builds from publishing and add attestations by @Songmu in https://github.com/k1LoW/deck/pull/562
+
 ## [v1.24.3](https://github.com/k1LoW/deck/compare/v1.24.2...v1.24.3) - 2026-10-13
 
 ### Fix bug 🐛
