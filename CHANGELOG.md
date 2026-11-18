@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.24.5](https://github.com/k1LoW/deck/compare/v1.24.4...v1.24.5) - 2026-11-18
+
+### Other Changes
+- chore: simplify and harden GitHub Actions workflows by @Songmu in https://github.com/k1LoW/deck/pull/564
+- chore(deps): bump go.opentelemetry.io/otel/trace from 1.45.0 to 1.47.0 by @dependabot[bot] in https://github.com/k1LoW/deck/pull/571
+- chore(deps): bump the dependencies group with 5 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/567
+- chore(deps): bump the dependencies group across 1 directory with 8 updates by @dependabot[bot] in https://github.com/k1LoW/deck/pull/572
+
 ## [v1.24.4](https://github.com/k1LoW/deck/compare/v1.24.3...v1.24.4) - 2026-10-13
 
 ### Other Changes
