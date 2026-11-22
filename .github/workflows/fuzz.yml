@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
       - id: list
-        uses: shogo82148/actions-go-fuzz/list@0d0b84304d01c5a83a1b4453eb138fec74c1f662 # v1.2.6
+        uses: shogo82148/actions-go-fuzz/list@f5addfafb428396a1321238d916c421eb25a1136 # v1.2.7
     outputs:
       fuzz-tests: ${{steps.list.outputs.fuzz-tests}}
 
@@ -37,10 +37,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: go.mod
-      - uses: shogo82148/actions-go-fuzz/run@0d0b84304d01c5a83a1b4453eb138fec74c1f662 # v1.2.6
+      - uses: shogo82148/actions-go-fuzz/run@f5addfafb428396a1321238d916c421eb25a1136 # v1.2.7
         with:
           packages: ${{ matrix.package }}
           fuzz-regexp: ${{ matrix.func }}

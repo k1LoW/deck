@@ -29,7 +29,7 @@ jobs:
         workload_identity_provider: projects/195438090918/locations/global/workloadIdentityPools/deck-integration/providers/github
         service_account: deck-integration-test@braided-shift-468913-t8.iam.gserviceaccount.com
     - name: Set up Go
-      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
       with:
         go-version-file: go.mod
     - name: Set up Chrome
