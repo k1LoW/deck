@@ -113,6 +113,22 @@ func TestValidateKeys(t *testing.T) {
 	}
 }
 
+func TestDiffContentsEqualBoolConfig(t *testing.T) {
+	src := []byte("<!-- {\"skip\": true} -->\n\n# A\n")
+	oldMD, err := Parse(".", src, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newMD, err := Parse(".", src, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := DiffContents(oldMD.Contents, newMD.Contents); len(got) != 0 {
+		t.Errorf("DiffContents() = %v, want no changed pages", got)
+	}
+}
+
 func TestGenCodeImage(t *testing.T) {
 	ctx := context.Background()
 
@@ -373,7 +389,6 @@ func TestIsPageDelimiter(t *testing.T) {
 		})
 	}
 }
-
 
 func FuzzParse(f *testing.F) {
 	f.Add([]byte(`# Title

@@ -908,6 +908,13 @@ func jsonEqual[T any](a, b T) bool {
 	return bytes.Equal(aBytes, bBytes)
 }
 
+func boolPtrEqual(a, b *bool) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
 // contentEqual compares two Content structs and returns true if they are equal.
 func contentEqual(old, new *Content) bool {
 	if old == nil || new == nil {
@@ -915,7 +922,7 @@ func contentEqual(old, new *Content) bool {
 	}
 
 	// Compare layout and flags
-	if old.Layout != new.Layout || old.Freeze != new.Freeze || old.Skip != new.Skip || old.Ignore != new.Ignore {
+	if old.Layout != new.Layout || !boolPtrEqual(old.Freeze, new.Freeze) || !boolPtrEqual(old.Skip, new.Skip) || !boolPtrEqual(old.Ignore, new.Ignore) {
 		return false
 	}
 
